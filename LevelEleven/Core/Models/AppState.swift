@@ -36,6 +36,25 @@ final class AppState {
     var sessionHistory: [BallerSession] = []
     var liveActivityEnabled: Bool = true
 
+    // MARK: - Computation Cache (TTL = 10s – aligns with HomeView timer tick)
+
+    private struct CacheEntry<T> {
+        let value: T
+        let computedAt: Date
+    }
+    private var levelCache:      [String: CacheEntry<Double>] = [:]
+    private var activeDosesCache:[String: CacheEntry<[Dose]>] = [:]
+    private let cacheTTL: TimeInterval = 10
+
+    private func invalidateCache() {
+        levelCache.removeAll()
+        activeDosesCache.removeAll()
+    }
+
+    private func cacheKey(profileId: String, date: Date) -> String {
+        "\(profileId)_\(Int(date.timeIntervalSince1970 / cacheTTL))"
+    }
+
     // MARK: - Persistence Keys
 
     private enum StorageKey {
@@ -442,6 +461,7 @@ final class AppState {
 
     func addDose(_ dose: Dose) {
         doses.append(dose)
+        invalidateCache()
         saveDoses()
 
         if activeSession != nil {
@@ -451,7 +471,8 @@ final class AppState {
     }
 
     func logDose(substanceId: String, route: DoseRoute, amount: Double) {
-        guard let profileId = activeProfileId else { return }
+        guard let profileId = activeProfileId,
+              let profileIdx = profiles.firstIndex(where: { $0.id == profileId }) else { return }
         let dose = Dose(
             profileId: profileId,
             substanceId: substanceId,
@@ -460,18 +481,33 @@ final class AppState {
             timestamp: Date()
         )
         doses.append(dose)
+        // Update lastUsedDate for tolerance decay tracking
+        if let tolIdx = profiles[profileIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
+            profiles[profileIdx].tolerances[tolIdx].lastUsedDate = Date()
+        } else {
+            profiles[profileIdx].tolerances.append(Tolerance(substanceId: substanceId, level: 0, lastUsedDate: Date()))
+        }
+        invalidateCache()
         saveDoses()
+        saveProfiles()
     }
 
     func activeDoses(for profileId: String, at date: Date = Date()) -> [Dose] {
-        doses.filter { dose in
+        let key = cacheKey(profileId: profileId, date: date)
+        if let cached = activeDosesCache[key],
+           date.timeIntervalSince(cached.computedAt) < cacheTTL {
+            return cached.value
+        }
+        let result = doses.filter { dose in
             guard dose.profileId == profileId,
                   let substance = Substances.byId[dose.substanceId] else { return false }
             let minutesAgo = dose.minutesAgo(from: date)
-            // Active window: peak duration + 3 half-lives (≈2.5% remaining — pharmacologically negligible)
-            let activeWindow = substance.durationMinutes + substance.halfLifeMinutes * 3
+            // Active window: route-specific duration + 3 half-lives (≈2.5% remaining)
+            let activeWindow = substance.duration(for: dose.route) + substance.halfLifeMinutes * 3
             return minutesAgo >= 0 && minutesAgo < activeWindow
         }
+        activeDosesCache[key] = CacheEntry(value: result, computedAt: date)
+        return result
     }
 
     func recentDoses(for profileId: String, hours: Double = 24) -> [Dose] {
@@ -484,6 +520,7 @@ final class AppState {
 
     func clearDoses(for profileId: String) {
         doses.removeAll { $0.profileId == profileId }
+        invalidateCache()
         saveDoses()
     }
 
@@ -493,28 +530,31 @@ final class AppState {
         let p = profile ?? activeProfile
         guard let profile = p else { return 0 }
 
-        let active = activeDoses(for: profile.id, at: date)
-        guard !active.isEmpty else { return 0 }
-
-        var totalIntensity: Double = 0
-
-        for dose in active {
-            guard let substance = Substances.byId[dose.substanceId] else { continue }
-
-            let minutesAgo = dose.minutesAgo(from: date)
-            let intensity = calculateIntensity(
-                dose: dose,
-                substance: substance,
-                minutesAgo: minutesAgo,
-                profile: profile
-            )
-            totalIntensity += intensity
+        let key = cacheKey(profileId: profile.id, date: date)
+        if let cached = levelCache[key],
+           date.timeIntervalSince(cached.computedAt) < cacheTTL {
+            return cached.value
         }
 
-        return min(11, totalIntensity)
+        let active = activeDoses(for: profile.id, at: date)
+        guard !active.isEmpty else {
+            levelCache[key] = CacheEntry(value: 0, computedAt: date)
+            return 0
+        }
+
+        var totalIntensity: Double = 0
+        for dose in active {
+            guard let substance = Substances.byId[dose.substanceId] else { continue }
+            let minutesAgo = dose.minutesAgo(from: date)
+            totalIntensity += calculateIntensity(dose: dose, substance: substance, minutesAgo: minutesAgo, profile: profile)
+        }
+
+        let result = min(11, totalIntensity)
+        levelCache[key] = CacheEntry(value: result, computedAt: date)
+        return result
     }
 
-    private func calculateIntensity(
+    func calculateIntensity(
         dose: Dose,
         substance: Substance,
         minutesAgo: Double,
@@ -522,9 +562,9 @@ final class AppState {
     ) -> Double {
         guard minutesAgo >= 0 else { return 0 }
 
-        let onset = substance.onsetMinutes
-        let peak = substance.peakMinutes
-        let duration = substance.durationMinutes
+        let onset = substance.onset(for: dose.route)
+        let peak = substance.peak(for: dose.route)
+        let duration = substance.duration(for: dose.route)
         let halfLife = substance.halfLifeMinutes
 
         var phase: Double = 0

@@ -357,7 +357,7 @@ struct SessionDetailView: View {
             
             Chart {
                 ForEach(levelData, id: \.profileId) { profileData in
-                    ForEach(profileData.points, id: \.time) { point in
+                    ForEach(profileData.points) { point in
                         LineMark(
                             x: .value("Time", point.time),
                             y: .value("Level", point.level)
@@ -435,15 +435,7 @@ struct SessionDetailView: View {
     
     private func calculatePeakLevel(for profile: Profile) -> Double {
         let endTime = session.endedAt ?? Date()
-        var maxLevel: Double = 0
-        let interval: TimeInterval = 5 * 60
-        var time = session.startedAt
-        while time <= endTime {
-            let level = appState.currentLevel(for: profile, at: time)
-            if level > maxLevel { maxLevel = level }
-            time = time.addingTimeInterval(interval)
-        }
-        return maxLevel
+        return LevelTimelineService.peakLevel(for: profile, from: session.startedAt, to: endTime, appState: appState)
     }
     
     private func calculateMaxGroupLevel() -> Double {
@@ -494,40 +486,12 @@ struct SessionDetailView: View {
         }
     }
     
-    struct ProfileLevelData: Identifiable {
-        let id = UUID()
-        let profileId: String
-        let name: String
-        let points: [LevelPoint]
-    }
-    
-    struct LevelPoint {
-        let time: Date
-        let level: Double
-    }
-    
-    private func calculateLevelTimeline() -> [ProfileLevelData] {
+    private func calculateLevelTimeline() -> [ProfileLevelTimeline] {
         let endTime = session.endedAt ?? Date()
-        let interval: TimeInterval = 10 * 60
-        
-        var profileData: [ProfileLevelData] = []
-        
-        for participant in session.participants {
-            guard let profile = appState.profiles.first(where: { $0.id == participant.profileId }) else { continue }
-            
-            var points: [LevelPoint] = []
-            var time = session.startedAt
-            
-            while time <= endTime {
-                let level = appState.currentLevel(for: profile, at: time)
-                points.append(LevelPoint(time: time, level: level))
-                time = time.addingTimeInterval(interval)
-            }
-            
-            profileData.append(ProfileLevelData(profileId: profile.id, name: profile.name, points: points))
+        return session.participants.compactMap { participant -> ProfileLevelTimeline? in
+            guard let profile = appState.profiles.first(where: { $0.id == participant.profileId }) else { return nil }
+            return LevelTimelineService.buildTimeline(for: profile, from: session.startedAt, to: endTime, appState: appState)
         }
-        
-        return profileData
     }
     
     private func timeFormatted(_ date: Date) -> String {

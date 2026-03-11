@@ -2,14 +2,16 @@
 //  Warnings.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-11
 //
 //  Warnsystem für Substanz-Interaktionen und Level-basierte Risiken.
 //  WarningSeverity-Enum (info, caution, warning, danger) ist Comparable und
 //  liefert Farbe + SF-Symbol je Stufe.
-//  WarningSystem.checkInteractions() prüft aktive Substanz-IDs auf bekannte
-//  Kombinations-Risiken (z. B. GHB+Alkohol, Opioid+Depressant, Stimulant-Stacking).
-//  WarningSystem.checkLevel() gibt Warnungen bei persönlichem Limit oder Level ≥ 8/10 aus.
+//
+//  checkInteractions() prüft:
+//  - Klassische Kombinations-Risiken (GHB+Alkohol, Opioid+Depressant, …)
+//  - Temporale Checks: GHB-Rebound, Kokain→MDMA-Timing, SSRI-Interaktionen
+//  - Neue: Stimulants+Alkohol als .warning (Herzrisiko), Entzugs-Krampfrisiko
 //
 //  HINWEIS: Beim Hinzufügen neuer Substanzen auch Interaktionen hier ergänzen.
 //  Warnungen sind nach Severity absteigend sortiert (danger zuerst).
@@ -25,26 +27,26 @@ enum WarningSeverity: Int, Comparable {
     case caution = 1
     case warning = 2
     case danger = 3
-    
+
     static func < (lhs: WarningSeverity, rhs: WarningSeverity) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
-    
+
     var color: Color {
         switch self {
-        case .info: return .blue
+        case .info:    return .blue
         case .caution: return .yellow
         case .warning: return .orange
-        case .danger: return .red
+        case .danger:  return .red
         }
     }
-    
+
     var icon: String {
         switch self {
-        case .info: return "info.circle.fill"
+        case .info:    return "info.circle.fill"
         case .caution: return "exclamationmark.circle.fill"
         case .warning: return "exclamationmark.triangle.fill"
-        case .danger: return "xmark.octagon.fill"
+        case .danger:  return "xmark.octagon.fill"
         }
     }
 }
@@ -58,15 +60,28 @@ struct Warning: Identifiable {
 }
 
 struct WarningSystem {
-    
-    static func checkInteractions(substances: [String]) -> [Warning] {
+
+    // MARK: - Interaction Checks
+
+    /// Prüft Interaktionen basierend auf aktiven Dosen + Dosishistorie + Profil.
+    /// - Parameters:
+    ///   - activeDoses: Dosen die aktuell noch im aktiven Fenster liegen.
+    ///   - allDoses:    Gesamte Dosishistorie des Profils (für temporale Checks).
+    ///   - profile:     Nutzerprofil (SSRI-Status, persönliches Limit, etc.)
+    ///   - now:         Referenz-Zeitpunkt (default: Date())
+    static func checkInteractions(
+        activeDoses: [Dose],
+        allDoses: [Dose],
+        profile: Profile,
+        now: Date = Date()
+    ) -> [Warning] {
         var warnings: [Warning] = []
-        let set = Set(substances)
-        
-        // Respiratory Depression: Opioids + Depressants
-        let opioids = Set(["morphine"])
+        let activeIds = Set(activeDoses.map { $0.substanceId })
+
+        // ── DANGER: Atemwegslähmung – Opioide + Depressiva ─────────────────────
+        let opioids     = Set(["morphine"])
         let depressants = Set(["alcohol", "ghb", "alprazolam"])
-        if !opioids.isDisjoint(with: set) && !depressants.isDisjoint(with: set) {
+        if !opioids.isDisjoint(with: activeIds) && !depressants.isDisjoint(with: activeIds) {
             warnings.append(Warning(
                 severity: .danger,
                 title: "Respiratory Depression Risk",
@@ -74,9 +89,9 @@ struct WarningSystem {
                 advice: "Avoid this combination. Have naloxone ready. Don't use alone."
             ))
         }
-        
-        // GHB + Alcohol
-        if set.contains("ghb") && set.contains("alcohol") {
+
+        // ── DANGER: GHB + Alkohol ────────────────────────────────────────────────
+        if activeIds.contains("ghb") && activeIds.contains("alcohol") {
             warnings.append(Warning(
                 severity: .danger,
                 title: "Dangerous Combination",
@@ -84,11 +99,23 @@ struct WarningSystem {
                 advice: "Never mix G with alcohol. This can cause coma or death."
             ))
         }
-        
-        // Serotonin Syndrome: MDMA + other serotonergics
+
+        // ── DANGER: SSRI + Serotonergika ────────────────────────────────────────
+        if profile.takeSSRI {
+            let serotonergics = Set(["mdma", "lsd", "psilocybin"])
+            if !serotonergics.isDisjoint(with: activeIds) {
+                warnings.append(Warning(
+                    severity: .danger,
+                    title: "Serotonin Syndrome Risk",
+                    message: "SSRIs combined with serotonergic substances significantly increase serotonin syndrome risk.",
+                    advice: "Symptoms: hyperthermia, agitation, tremor, rapid heart rate. Seek emergency help immediately."
+                ))
+            }
+        }
+
+        // ── WARNING: Serotonin-Syndrom – mehrere Serotonergika ─────────────────
         let serotonergics = Set(["mdma", "lsd", "psilocybin"])
-        let seroCount = set.intersection(serotonergics).count
-        if seroCount >= 2 {
+        if activeIds.intersection(serotonergics).count >= 2 {
             warnings.append(Warning(
                 severity: .warning,
                 title: "Serotonin Syndrome Risk",
@@ -96,11 +123,10 @@ struct WarningSystem {
                 advice: "Symptoms: high temperature, agitation, tremor. Seek medical help if severe."
             ))
         }
-        
-        // Stimulant Stacking
+
+        // ── WARNING: Stimulant Stacking ─────────────────────────────────────────
         let stimulants = Set(["cocaine", "amphetamine", "3mmc", "4mmc", "mdma"])
-        let stimCount = set.intersection(stimulants).count
-        if stimCount >= 2 {
+        if activeIds.intersection(stimulants).count >= 2 {
             warnings.append(Warning(
                 severity: .warning,
                 title: "Cardiovascular Strain",
@@ -108,19 +134,20 @@ struct WarningSystem {
                 advice: "Stay hydrated (not too much), take breaks, cool down regularly."
             ))
         }
-        
-        // Stimulants + Alcohol dehydration
-        if !stimulants.isDisjoint(with: set) && set.contains("alcohol") {
+
+        // ── WARNING: Stimulants + Alkohol – Herzrisiko ──────────────────────────
+        // Upgrade von .caution → .warning: Alkohol maskiert Überkonsumption + Herzbelastung
+        if !stimulants.isDisjoint(with: activeIds) && activeIds.contains("alcohol") {
             warnings.append(Warning(
-                severity: .caution,
-                title: "Dehydration Risk",
-                message: "Stimulants mask alcohol effects, leading to overconsumption.",
-                advice: "Drink water regularly. Don't rely on feeling drunk to stop drinking."
+                severity: .warning,
+                title: "Heart Strain & Masked Intoxication",
+                message: "Stimulants mask alcohol effects, leading to overconsumption and increased cardiac load.",
+                advice: "Drink water regularly. Monitor heart rate. Don't rely on how drunk you feel to stop drinking."
             ))
         }
-        
-        // Ketamine + Depressants
-        if set.contains("ketamine") && !depressants.isDisjoint(with: set) {
+
+        // ── WARNING: Ketamin + Depressiva ───────────────────────────────────────
+        if activeIds.contains("ketamine") && !depressants.isDisjoint(with: activeIds) {
             warnings.append(Warning(
                 severity: .warning,
                 title: "Aspiration Risk",
@@ -128,9 +155,55 @@ struct WarningSystem {
                 advice: "If unconscious, place in recovery position. Monitor breathing."
             ))
         }
-        
-        // MDMA Timing
-        if set.contains("mdma") {
+
+        // ── TEMPORALE CHECKS ────────────────────────────────────────────────────
+
+        // GHB Rebound: GHB in letzten 4h gewesen, aber jetzt nicht mehr aktiv
+        let recentGHB = allDoses.filter { $0.substanceId == "ghb" && $0.minutesAgo(from: now) < 240 }
+        if !recentGHB.isEmpty && !activeIds.contains("ghb") {
+            warnings.append(Warning(
+                severity: .warning,
+                title: "GHB Rebound Risk",
+                message: "GHB was taken within the last 4 hours and is now wearing off. Rebound effects possible.",
+                advice: "Do NOT redose. Rebound can cause anxiety and distress. Wait it out."
+            ))
+        }
+
+        // Kokain → MDMA Timing: Kokain in letzten 6h + MDMA aktiv
+        let recentCocaine = allDoses.filter { $0.substanceId == "cocaine" && $0.minutesAgo(from: now) < 360 }
+        if activeIds.contains("mdma") && !recentCocaine.isEmpty {
+            let minAgo = recentCocaine.map { $0.minutesAgo(from: now) }.min() ?? 0
+            if minAgo < 60 {
+                warnings.append(Warning(
+                    severity: .warning,
+                    title: "Cocaine + MDMA: Cardiac Risk",
+                    message: "Cocaine and MDMA taken simultaneously puts severe strain on the heart.",
+                    advice: "Monitor heart rate closely. Avoid redosing. Cool down."
+                ))
+            } else {
+                warnings.append(Warning(
+                    severity: .caution,
+                    title: "Recent Cocaine + MDMA",
+                    message: "Cocaine \(Int(minAgo / 60))h before MDMA – heart still under residual stress.",
+                    advice: "Keep doses low. Monitor heart rate. Stay cool and hydrated."
+                ))
+            }
+        }
+
+        // Krampfanfallrisiko: Stimulanzien aktiv + Alkohol kürzlich (aber jetzt nicht mehr aktiv)
+        let recentAlcohol = allDoses.filter { $0.substanceId == "alcohol" && $0.minutesAgo(from: now) < 480 }
+        let alcoholNowActive = activeIds.contains("alcohol")
+        if !stimulants.isDisjoint(with: activeIds) && !recentAlcohol.isEmpty && !alcoholNowActive {
+            warnings.append(Warning(
+                severity: .warning,
+                title: "Seizure Risk",
+                message: "Stimulants while alcohol is wearing off can trigger seizures in susceptible individuals.",
+                advice: "Avoid stimulants during alcohol withdrawal. Stay with friends. Seek help if you feel unwell."
+            ))
+        }
+
+        // ── INFO: MDMA Guidelines ───────────────────────────────────────────────
+        if activeIds.contains("mdma") {
             warnings.append(Warning(
                 severity: .info,
                 title: "MDMA Guidelines",
@@ -138,13 +211,15 @@ struct WarningSystem {
                 advice: "Stay cool, take breaks from dancing, sip water (not too much)."
             ))
         }
-        
+
         return warnings.sorted { $0.severity > $1.severity }
     }
-    
+
+    // MARK: - Level Checks
+
     static func checkLevel(level: Double, limit: Int) -> [Warning] {
         var warnings: [Warning] = []
-        
+
         if level >= Double(limit) {
             warnings.append(Warning(
                 severity: .warning,
@@ -153,7 +228,7 @@ struct WarningSystem {
                 advice: "Consider stopping. Take a break. Stay with friends."
             ))
         }
-        
+
         if level >= 8 {
             warnings.append(Warning(
                 severity: .warning,
@@ -162,7 +237,7 @@ struct WarningSystem {
                 advice: "Find a safe place. Stay with trusted friends. Hydrate."
             ))
         }
-        
+
         if level >= 10 {
             warnings.append(Warning(
                 severity: .danger,
@@ -171,7 +246,7 @@ struct WarningSystem {
                 advice: "Do not take more. Stay safe. Consider medical help if unwell."
             ))
         }
-        
+
         return warnings
     }
 }

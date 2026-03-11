@@ -41,18 +41,44 @@ struct Tolerance: Codable, Hashable, Identifiable {
     var id: String { substanceId }
     let substanceId: String
     var level: Int
-    
-    init(substanceId: String, level: Int) {
+    /// Letzter Konsumierdatum – nil = unbekannt (kein Decay)
+    var lastUsedDate: Date?
+
+    init(substanceId: String, level: Int, lastUsedDate: Date? = nil) {
         self.substanceId = substanceId
         self.level = max(0, min(11, level))
+        self.lastUsedDate = lastUsedDate
     }
-    
-    var factor: Double {
-        switch level {
+
+    /// Effektiver Toleranzlevel nach Abstinenz-Decay.
+    /// Decay-Kurve (Abstinenz in Tagen → verlorene Level):
+    ///   0–6 Tage:  kein Abbau
+    ///   7–13 Tage: -1 Level
+    ///   14–27 Tage: -2 Level
+    ///   28–55 Tage: -50 % (halber Peak)
+    ///   56+ Tage:   vollständig zurück auf 0
+    var effectiveLevel: Int {
+        guard let lastUsed = lastUsedDate else { return level }
+        let days = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 0
+        let decay: Int
+        switch days {
+        case 0...6:    decay = 0
+        case 7...13:   decay = 1
+        case 14...27:  decay = 2
+        case 28...55:  decay = level / 2
+        default:       decay = level
+        }
+        return max(0, level - decay)
+    }
+
+    var factor: Double { factorFor(effectiveLevel) }
+
+    private func factorFor(_ lvl: Int) -> Double {
+        switch lvl {
         case 0: return 0.5
-        case 1...3: return 0.6 + Double(level) * 0.1
-        case 4...6: return 0.9 + Double(level - 4) * 0.15
-        case 7...9: return 1.3 + Double(level - 7) * 0.25
+        case 1...3: return 0.6 + Double(lvl) * 0.1
+        case 4...6: return 0.9 + Double(lvl - 4) * 0.15
+        case 7...9: return 1.3 + Double(lvl - 7) * 0.25
         case 10: return 2.0
         case 11: return 2.5
         default: return 1.0
@@ -69,10 +95,13 @@ struct Profile: Identifiable, Codable, Hashable {
     var weightKg: Double
     var sex: BiologicalSex
     var hasADHD: Bool
+    /// Nimmt der Nutzer SSRIs (selektive Serotonin-Wiederaufnahmehemmer)?
+    /// Erhöht das Risiko eines Serotonin-Syndroms bei Kombination mit MDMA/LSD.
+    var takeSSRI: Bool
     var tolerances: [Tolerance]
     var favorites: [String]
     var personalLimit: Int
-    
+
     init(
         id: String = UUID().uuidString,
         name: String,
@@ -82,6 +111,7 @@ struct Profile: Identifiable, Codable, Hashable {
         weightKg: Double = 70,
         sex: BiologicalSex = .male,
         hasADHD: Bool = false,
+        takeSSRI: Bool = false,
         tolerances: [Tolerance] = [],
         favorites: [String] = [],
         personalLimit: Int = 7
@@ -95,24 +125,25 @@ struct Profile: Identifiable, Codable, Hashable {
         self.weightKg = max(30, min(300, weightKg))
         self.sex = sex
         self.hasADHD = hasADHD
+        self.takeSSRI = takeSSRI
         self.tolerances = tolerances
         self.favorites = favorites
         self.personalLimit = max(1, min(11, personalLimit))
     }
     
     func tolerance(for substanceId: String) -> Int {
-        tolerances.first { $0.substanceId == substanceId }?.level ?? 5
+        tolerances.first { $0.substanceId == substanceId }?.effectiveLevel ?? 5
     }
-    
+
     func tolerance(for category: SubstanceCategory) -> Int {
-        // Find highest tolerance for any substance in this category
+        // Find highest effective tolerance for any substance in this category
         let categorySubstances = Substances.all.filter { $0.category == category }
         let levels = categorySubstances.compactMap { substance -> Int? in
-            tolerances.first { $0.substanceId == substance.id }?.level
+            tolerances.first { $0.substanceId == substance.id }?.effectiveLevel
         }
         return levels.max() ?? 5
     }
-    
+
     func toleranceFactor(for substanceId: String) -> Double {
         tolerances.first { $0.substanceId == substanceId }?.factor ?? 1.0
     }

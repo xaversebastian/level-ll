@@ -43,15 +43,15 @@ struct WarningsView: View {
     
     private var currentWarnings: [Warning] {
         guard let profile = appState.activeProfile else { return [] }
-        
+
         let active = appState.activeDoses(for: profile.id)
-        let substances = active.map { $0.substanceId }
-        
-        var warnings = WarningSystem.checkInteractions(substances: substances)
-        
+        let allDoses = appState.recentDoses(for: profile.id, hours: 8)
+
+        var warnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile)
+
         let level = appState.currentLevel(for: profile)
         warnings.append(contentsOf: WarningSystem.checkLevel(level: level, limit: profile.personalLimit))
-        
+
         return warnings.sorted { $0.severity > $1.severity }
     }
     
@@ -113,12 +113,9 @@ struct WarningsBannerView: View {
     
     private func getTopWarning() -> Warning? {
         guard let profile = appState.activeProfile else { return nil }
-        
         let active = appState.activeDoses(for: profile.id)
-        let substances = active.map { $0.substanceId }
-        
-        let warnings = WarningSystem.checkInteractions(substances: substances)
-        return warnings.first
+        let allDoses = appState.recentDoses(for: profile.id, hours: 8)
+        return WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile).first
     }
 }
 
