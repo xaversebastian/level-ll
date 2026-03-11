@@ -2,7 +2,18 @@
 //  MainTabView.swift
 //  LevelEleven
 //
-//  Main tab navigation: Home, Profiles, Baller(+), Emergency, More
+//  Version: 1.0  |  2026-03-11
+//
+//  Root-View der App. Beinhaltet die Tab-Bar (Home, Profiles, [Baller+], Emergency, More)
+//  und erstellt AppState als @State – das ist die einzige Stelle, wo AppState instanziiert wird.
+//  Der mittlere Tab-Button ist ein FAB (Floating Action Button) für den Baller-Mode-Sheet.
+//  MoreView (Substanzinfo, Timeline, Settings) und SubstanceDetailView sind hier ebenfalls definiert.
+//
+//  HINWEIS: AppState wird per .environment(appState) in alle Child-Views injiziert.
+//  Neue Top-Level-Tabs hier registrieren.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

@@ -1,16 +1,25 @@
 //
 //  BallerLiveActivityWidget.swift
-//  LevelEleven
+//  LevelElevenWidget
 //
-//  Lock Screen and Dynamic Island widget for active Baller Mode sessions.
+//  Version: 1.0  |  2026-03-11
 //
-//  SETUP: This file goes in a Widget Extension target.
-//  1. In Xcode: File → New → Target → Widget Extension
-//  2. Name it "LevelElevenWidget"
-//  3. Check "Include Live Activity"
-//  4. Add this file, BallerActivityAttributes.swift, and Color+Hex.swift to the widget target
-//  5. Add NSSupportsLiveActivities = YES to the main app's Info.plist
-//  6. Add BallerActivityAttributes.swift to BOTH the main app target and widget target
+//  Lock-Screen- und Dynamic-Island-Widget für aktive Baller-Mode-Sessions.
+//  Lock Screen: Session-Name, Timer, Teilnehmeranzahl, Peak-Level, Doses.
+//             Darunter: Mini-Level-Bars für bis zu 5 Teilnehmer.
+//  Dynamic Island expanded: Leading = Name/Timer, Trailing = Peak/Doses,
+//             Bottom = Teilnehmer-Emojis mit Level-Bars.
+//  Compact/Minimal: Teilnehmeranzahl + höchstes Level.
+//
+//  SETUP: Diese Datei ins Widget-Extension-Target:
+//  1. Xcode: File → New → Target → Widget Extension → "LevelElevenWidget"
+//  2. "Include Live Activity" ankreuzen
+//  3. Diese Datei, BallerActivityAttributes.swift und Color+Hex.swift zum Widget-Target hinzufügen
+//  4. NSSupportsLiveActivities = YES in der App-Info.plist
+//  5. BallerActivityAttributes.swift BEIDEN Targets (App + Widget) zuordnen
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 #if canImport(ActivityKit) && canImport(WidgetKit)

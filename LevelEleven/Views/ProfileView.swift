@@ -2,7 +2,18 @@
 //  ProfileView.swift
 //  LevelEleven
 //
-//  Profile management screen.
+//  Version: 1.0  |  2026-03-11
+//
+//  Profilverwaltung: Liste aller Profile mit Swipe-to-Delete und Edit.
+//  Tipp auf ein Profil setzt es als aktives Profil. Plus-Button öffnet ProfileEditorView.
+//  ProfileEditorView (in dieser Datei) erlaubt Erstellen und Bearbeiten:
+//  Name, Emoji-Avatar (Grid-Picker), Alter/Gewicht/Geschlecht, ADHS-Flag,
+//  persönliches Limit (1–11) und Toleranzwerte je Substanz (Stepper 0–11).
+//
+//  HINWEIS: Löschen eines Profils entfernt auch alle zugehörigen Doses (AppState.deleteProfile).
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI
@@ -104,21 +115,19 @@ struct ProfileEditorView: View {
     @State private var tolerances: [String: Int] = [:]
     @State private var showEmojiPicker = false
     
-    // Diverse emoji options organized by category
+    // Avatar emoji options – using face emojis that render reliably on all iOS versions
     private let avatarCategories: [(name: String, emojis: [String])] = [
-        ("People", [
-            "🧑", "🧑🏻", "🧑🏼", "🧑🏽", "🧑🏾", "🧑🏿",
-            "👩", "👩🏻", "👩🏼", "👩🏽", "👩🏾", "👩🏿",
-            "👨", "👨🏻", "👨🏼", "👨🏽", "👨🏾", "👨🏿"
+        ("Faces", [
+            "😎", "🥰", "😊", "🤓", "🥳", "😏",
+            "🤠", "🥸", "😇", "🤩", "😌", "😈"
         ]),
-        ("Style", [
-            "🧔", "🧔🏻", "🧔🏼", "🧔🏽", "🧔🏾", "🧔🏿",
-            "👱", "👱🏻", "👱🏼", "👱🏽", "👱🏾", "👱🏿",
-            "🧑‍🦱", "🧑🏻‍🦱", "🧑🏼‍🦱", "🧑🏽‍🦱", "🧑🏾‍🦱", "🧑🏿‍🦱"
+        ("People", [
+            "👨🏻", "👨🏼", "👨🏽", "👨🏾", "👨🏿", "👨",
+            "👩🏻", "👩🏼", "👩🏽", "👩🏾", "👩🏿", "💀"
         ]),
         ("Vibes", [
-            "😎", "🤓", "🥳", "😊", "🙂", "😏",
-            "🤠", "🥸", "😇", "🤩", "😌", "🧘"
+            "🔥", "💜", "⚡️", "🌈", "🍀", "🎯",
+            "🦄", "🐺", "🦊", "🐱", "🎵", "👑"
         ])
     ]
     

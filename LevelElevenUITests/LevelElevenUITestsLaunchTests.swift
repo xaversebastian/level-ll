@@ -2,7 +2,18 @@
 //  LevelElevenUITestsLaunchTests.swift
 //  LevelElevenUITests
 //
-//  Created by Xaver Freytag on 04/01/2026.
+//  Version: 1.0  |  2026-03-11
+//
+//  Launch-Screenshot-Test für alle UI-Konfigurationen (Light/Dark/Sprachvarianten).
+//  runsForEachTargetApplicationUIConfiguration = true sorgt dafür, dass
+//  der Test einmal pro App-Konfiguration ausgeführt wird.
+//  testLaunch() startet die App und macht einen Screenshot (keepAlways).
+//
+//  HINWEIS: Screenshots werden im Xcode-Test-Reporter gespeichert.
+//  Nützlich für automatische Regression von Launch-Screens nach UI-Änderungen.
+//
+//  Author: Xaver Freytag
+//  Created: 2026-01-04
 //
 
 import XCTest

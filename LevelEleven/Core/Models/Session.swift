@@ -2,7 +2,19 @@
 //  Session.swift
 //  LevelEleven
 //
-//  Baller Mode session for local group tracking.
+//  Version: 1.0  |  2026-03-11
+//
+//  Datenmodell für Baller-Mode-Gruppensessions (lokal, kein Server).
+//  BallerSession hält startedAt/endedAt, Teilnehmerliste (SessionParticipant)
+//  und liefert berechnete Felder wie durationMinutes, durationFormatted.
+//  SessionParticipant trackt joinedAt/leftAt und ob ein Profil noch aktiv teilnimmt.
+//  addParticipant() / removeParticipant() erlauben dynamisches Hinzufügen/Entfernen.
+//
+//  HINWEIS: Sessions werden in AppState.sessionHistory persistiert (Codable + UserDefaults).
+//  Doses sind NICHT Teil der Session-Struct – sie werden über AppState.sessionDoses() gefiltert.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import Foundation

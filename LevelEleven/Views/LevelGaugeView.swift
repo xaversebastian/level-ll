@@ -2,7 +2,19 @@
 //  LevelGaugeView.swift
 //  LevelEleven
 //
-//  Animated level gauge with liquid glass design.
+//  Version: 1.0  |  2026-03-11
+//
+//  Animiertes kreisförmiges Level-Gauge mit Liquid-Glass-Ästhetik.
+//  Größe: 280 pt, Ring-Breite: 28 pt. Zeigt Level 0–11 als Kreisbogen
+//  mit Angular-Gradient und äußerem Glow-Effekt.
+//  Spring-Animation beim Erscheinen und bei Level-Änderungen.
+//  LevelGaugeMiniView (40 pt) für kompakte Darstellungen in Gruppen-Views.
+//
+//  HINWEIS: Tick-Marks (12 Striche bei 0–11) zeigen aktive Stufen farbig,
+//  inaktive grau. Bei Level 0 bleibt der Ring leer (kein Trim).
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

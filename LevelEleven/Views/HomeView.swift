@@ -2,7 +2,18 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Main home screen with integrated level display.
+//  Version: 1.0  |  2026-03-11
+//
+//  Hauptscreen mit Level-Gauge-Hero, Profil-Picker, Warnungs-Card, aktive-Substanzen-Card
+//  und Live-Status-Card (Level / Active / Phase).
+//  Ein Timer aktualisiert alle 10 Sekunden currentTime, damit Level-Berechnung live bleibt.
+//  Tipp auf Gauge öffnet Timeline-Sheet; Tipp auf Profil-Pill öffnet Profil-Wechsel-Sheet.
+//
+//  HINWEIS: Alle Level-Berechnungen laufen in AppState; HomeView ist rein deklarativ.
+//  Bei Performance-Problemen: Timer-Intervall erhöhen oder Berechnungen in Task auslagern.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

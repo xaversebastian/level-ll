@@ -2,7 +2,20 @@
 //  EmergencyView.swift
 //  LevelEleven
 //
-//  Emergency information, Glasgow Coma Scale, and harm reduction tips.
+//  Version: 1.0  |  2026-03-11
+//
+//  Notfall-Tab mit vier Bereichen:
+//  1. Notruf-Button (lokalisiert: 911/999/000/112 per Locale)
+//  2. Glasgow Coma Scale (GCS) Rechner (Eye/Verbal/Motor, Score 3–15)
+//  3. Overdose-Checkliste (Recovery Position, Notruf, etc.)
+//  4. Harm-Reduction-Tipps
+//  GCS-Info-Sheet erklärt die Skala und substanzspezifische Hinweise.
+//
+//  HINWEIS: localEmergencyNumber() nutzt Locale.current.region – funktioniert offline.
+//  Der Notruf-Link öffnet die Telefon-App (tel:-URL-Schema).
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

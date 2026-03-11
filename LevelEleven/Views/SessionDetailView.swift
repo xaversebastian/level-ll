@@ -2,7 +2,19 @@
 //  SessionDetailView.swift
 //  LevelEleven
 //
-//  Detailed view of a past Baller Mode session with timeline and stats.
+//  Version: 1.0  |  2026-03-11
+//
+//  Detailansicht einer archivierten Baller-Mode-Session.
+//  Zeigt Header-Card (Dauer, Teilnehmer, Doses), Level-History-Chart (Swift Charts),
+//  Teilnehmer-Liste mit Peak-Level und Substanz-Mengen, chronologische Dose-Timeline,
+//  sowie Statistik-Karten (Doses/h, Ø Abstand, Max Gruppen-Level, Substanzanzahl).
+//  "Resume"-Button in der Toolbar setzt die Session als aktive Session fort.
+//
+//  HINWEIS: calculatePeakLevel() und calculateLevelTimeline() iterieren in 5-/10-Minuten-
+//  Schritten über die Session-Dauer – bei sehr langen Sessions kann das CPU-intensiv sein.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

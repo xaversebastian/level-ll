@@ -2,7 +2,19 @@
 //  Profile.swift
 //  LevelEleven
 //
-//  User profile with tolerances.
+//  Version: 1.0  |  2026-03-11
+//
+//  Nutzerprofil für pharmakokinetische Berechnungen und Dosisempfehlungen.
+//  Enthält Name, Emoji-Avatar, Alter, Gewicht (kg), biologisches Geschlecht (BiologicalSex)
+//  sowie substanzspezifische Toleranzen (Tolerance-Struct, Level 0–11).
+//  metabolismFactor kombiniert Geschlecht, ADHS-Status und Alter zu einem Multiplikator.
+//  toleranceFactor(for:) liefert den Verstärkungsfaktor einer Substanz für dieses Profil.
+//
+//  HINWEIS: Toleranz-Level 0–11 entsprechen der lEVEl-Skala; factor wird in AppState.calculateIntensity() genutzt.
+//  Gewicht wird auf 30–300 kg und Alter auf 13–99 Jahre geclampt.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import Foundation

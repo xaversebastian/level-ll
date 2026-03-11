@@ -2,7 +2,19 @@
 //  Substance.swift
 //  LevelEleven
 //
-//  Substance model with pharmacokinetic data and harm reduction info.
+//  Version: 1.0  |  2026-03-11
+//
+//  Substanz-Datenmodell mit pharmakokinetischen Parametern und Harm-Reduction-Infos.
+//  SubstanceCategory-Enum definiert Kategorien (alcohol, stimulant, depressant, …)
+//  mit zugehörigem SF-Symbol und Hex-Farbe.
+//  DoseRoute-Enum modelliert Einnahmeweg mit Bioverfügbarkeit und Onset-Multiplikator.
+//  Substances.all enthält alle statisch definierten Substanzen; Substances.byId für O(1)-Lookup.
+//
+//  HINWEIS: Neue Substanzen nur in Substances.all eintragen – kein Backend nötig.
+//  Daten basieren auf Literaturwerten (PsychonautWiki, TripSit); keine medizinische Garantie.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import Foundation
