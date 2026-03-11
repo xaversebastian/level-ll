@@ -26,14 +26,17 @@ struct Dose: Identifiable, Codable, Hashable {
     let route: DoseRoute
     let amount: Double
     let timestamp: Date
-    
+    /// Optionale Notiz (Kontext, Ort, Stimmung, …)
+    var note: String?
+
     init(
         id: String = UUID().uuidString,
         profileId: String,
         substanceId: String,
         route: DoseRoute,
         amount: Double,
-        timestamp: Date = Date()
+        timestamp: Date = Date(),
+        note: String? = nil
     ) {
         self.id = id
         self.profileId = profileId
@@ -41,9 +44,14 @@ struct Dose: Identifiable, Codable, Hashable {
         self.route = route
         self.amount = max(0, amount) // prevent negative doses
         self.timestamp = min(timestamp, Date()) // prevent future timestamps
+        self.note = note?.trimmingCharacters(in: .whitespaces).nilIfEmpty
     }
-    
+
     func minutesAgo(from date: Date = Date()) -> Double {
         date.timeIntervalSince(timestamp) / 60.0
     }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

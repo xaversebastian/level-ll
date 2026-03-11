@@ -226,6 +226,12 @@ struct SessionDetailView: View {
                 Text("\(Int(dose.amount))\(substance?.unit.rawValue ?? "mg") \(dose.route.rawValue)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let note = dose.note {
+                    Text("💬 \(note)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                }
             }
             
             Spacer()

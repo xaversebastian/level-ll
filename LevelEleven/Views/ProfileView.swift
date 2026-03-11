@@ -111,8 +111,11 @@ struct ProfileEditorView: View {
     @State private var weightKg = 70.0
     @State private var sex: BiologicalSex = .male
     @State private var hasADHD = false
+    @State private var takeSSRI = false
     @State private var personalLimit = 7
     @State private var tolerances: [String: Int] = [:]
+    /// Originale Toleranz-Objekte mit lastUsedDate – wird beim Speichern preserviert
+    @State private var existingTolerances: [Tolerance] = []
     @State private var showEmojiPicker = false
     
     // Avatar emoji options – using face emojis that render reliably on all iOS versions
@@ -254,7 +257,14 @@ struct ProfileEditorView: View {
             }
             
             Toggle("Has ADHD", isOn: $hasADHD)
-            
+
+            VStack(alignment: .leading, spacing: 2) {
+                Toggle("Takes SSRIs", isOn: $takeSSRI)
+                Text("Increases serotonin syndrome risk with MDMA/LSD")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Text("Personal Limit")
                 Spacer()
@@ -269,18 +279,39 @@ struct ProfileEditorView: View {
     }
     
     private var tolerancesSection: some View {
-        Section("Tolerances") {
+        Section(header: Text("Tolerances"), footer: Text("Tolerance decays over time with abstinence. Effective level shown when lower than peak.").font(.caption)) {
             ForEach(Substances.all) { substance in
-                HStack {
+                let peakLevel = tolerances[substance.id] ?? 5
+                let existing = existingTolerances.first { $0.substanceId == substance.id }
+                let effectiveLevel = existing.map { t -> Int in
+                    // Use current edited level as base for decay calculation
+                    var copy = t; copy.level = peakLevel; return copy.effectiveLevel
+                } ?? peakLevel
+                let isDecaying = effectiveLevel < peakLevel
+
+                HStack(alignment: .center, spacing: 8) {
                     Image(systemName: substance.category.icon)
                         .foregroundStyle(Color(hex: substance.category.color))
-                    
-                    Text(substance.shortName)
-                    
+                        .frame(width: 20)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(substance.shortName)
+                        if isDecaying {
+                            HStack(spacing: 4) {
+                                Text("Peak: \(peakLevel) → Effective: \(effectiveLevel)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+
                     Spacer()
-                    
+
                     Stepper(
-                        "\(tolerances[substance.id] ?? 5)",
+                        "\(peakLevel)",
                         value: Binding(
                             get: { tolerances[substance.id] ?? 5 },
                             set: { tolerances[substance.id] = $0 }
@@ -300,15 +331,21 @@ struct ProfileEditorView: View {
         weightKg = p.weightKg
         sex = p.sex
         hasADHD = p.hasADHD
+        takeSSRI = p.takeSSRI
         personalLimit = p.personalLimit
+        existingTolerances = p.tolerances
         for t in p.tolerances {
             tolerances[t.substanceId] = t.level
         }
     }
-    
+
     private func saveProfile() {
-        let toleranceArray = tolerances.map { Tolerance(substanceId: $0.key, level: $0.value) }
-        
+        // Preserve lastUsedDate from existing tolerances
+        let toleranceArray = tolerances.map { substanceId, level -> Tolerance in
+            let existing = existingTolerances.first { $0.substanceId == substanceId }
+            return Tolerance(substanceId: substanceId, level: level, lastUsedDate: existing?.lastUsedDate)
+        }
+
         if let existing = profile {
             var updated = existing
             updated.name = name.trimmingCharacters(in: .whitespaces)
@@ -317,6 +354,7 @@ struct ProfileEditorView: View {
             updated.weightKg = weightKg
             updated.sex = sex
             updated.hasADHD = hasADHD
+            updated.takeSSRI = takeSSRI
             updated.personalLimit = personalLimit
             updated.tolerances = toleranceArray
             appState.updateProfile(updated)
@@ -328,12 +366,13 @@ struct ProfileEditorView: View {
                 weightKg: weightKg,
                 sex: sex,
                 hasADHD: hasADHD,
+                takeSSRI: takeSSRI,
                 tolerances: toleranceArray,
                 personalLimit: personalLimit
             )
             appState.addProfile(newProfile)
         }
-        
+
         dismiss()
     }
 }

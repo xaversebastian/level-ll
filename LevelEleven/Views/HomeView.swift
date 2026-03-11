@@ -360,12 +360,15 @@ struct HomeView: View {
             }
         }
 
-        let baselineText: String = {
-            if maxEndTime <= 0 { return "Now" }
-            let h = Int(maxEndTime) / 60
-            let m = Int(maxEndTime) % 60
-            return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+        // Sobriety countdown via AppState (pharmacokinetically accurate)
+        let minutesToSober = appState.minutesUntilBaseline(for: profile, from: currentTime)
+        let soberText: String = {
+            guard let min = minutesToSober, min > 0 else { return "✓ Sober" }
+            let h = Int(min) / 60
+            let m = Int(min) % 60
+            return h > 0 ? "~\(h)h \(m)m" : "~\(m)m"
         }()
+        let soberColor: Color = minutesToSober == nil ? .green : (minutesToSober! > 120 ? .primary : .orange)
 
         return HStack(spacing: 0) {
             VStack(spacing: 4) {
@@ -392,10 +395,10 @@ struct HomeView: View {
             Divider().frame(height: 40)
 
             VStack(spacing: 4) {
-                Text(baselineText)
-                    .font(.system(size: active.isEmpty ? 28 : 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(maxEndTime <= 0 ? .green : .primary)
-                Text(active.isEmpty ? "Baseline" : strongestPhase)
+                Text(soberText)
+                    .font(.system(size: minutesToSober == nil ? 28 : 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(soberColor)
+                Text(active.isEmpty ? "Sober" : strongestPhase)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

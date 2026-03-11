@@ -16,9 +16,14 @@ import SwiftUI
 
 @main
 struct LevelElevenApp: App {
+    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
     var body: some Scene {
         WindowGroup {
             MainTabView()
+                .fullScreenCover(isPresented: $showOnboarding) {
+                    OnboardingView()
+                }
         }
     }
 }
