@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		47FF52D42F54D4C00074A26A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 478FA0F32F54B5CB001E3B93 /* WidgetKit.framework */; };
+		47FF52D52F54D4C00074A26A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 478FA0F52F54B5CB001E3B93 /* SwiftUI.framework */; };
+		47FF52E62F54D4C10074A26A /* LevelElevenWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 47FF52D32F54D4C00074A26A /* LevelElevenWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		47075A7F2F0AFC7C00275F98 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,17 +27,77 @@
 			remoteGlobalIDString = 47075A702F0AFC7A00275F98;
 			remoteInfo = LevelEleven;
 		};
+		47FF52E42F54D4C10074A26A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 47075A692F0AFC7A00275F98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 47FF52D22F54D4C00074A26A;
+			remoteInfo = LevelElevenWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		478FA1082F54B5CC001E3B93 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				47FF52E62F54D4C10074A26A /* LevelElevenWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		47075A712F0AFC7A00275F98 /* LevelEleven.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LevelEleven.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		47075A7E2F0AFC7C00275F98 /* LevelElevenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LevelElevenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		47075A882F0AFC7C00275F98 /* LevelElevenUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LevelElevenUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		478FA0F32F54B5CB001E3B93 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		478FA0F52F54B5CB001E3B93 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		47FF52D32F54D4C00074A26A /* LevelElevenWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LevelElevenWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		47FF52E72F54D4C10074A26A /* Exceptions for "LevelElevenWidget" folder in "LevelElevenWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 47FF52D22F54D4C00074A26A /* LevelElevenWidgetExtension */;
+		};
+		47FF52F02F54D50F0074A26A /* Exceptions for "LevelElevenWidget" folder in "LevelEleven" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				BallerActivityAttributes.swift,
+			);
+			target = 47075A702F0AFC7A00275F98 /* LevelEleven */;
+		};
+		47FF52F32F54D5190074A26A /* Exceptions for "LevelEleven" folder in "LevelElevenWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Extensions/Color+Hex.swift",
+				Extensions/Theme.swift,
+			);
+			target = 47FF52D22F54D4C00074A26A /* LevelElevenWidgetExtension */;
+		};
+		47FF52F82F54DC890074A26A /* Exceptions for "LevelEleven" folder in "LevelEleven" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 47075A702F0AFC7A00275F98 /* LevelEleven */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		47075A732F0AFC7A00275F98 /* LevelEleven */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				47FF52F82F54DC890074A26A /* Exceptions for "LevelEleven" folder in "LevelEleven" target */,
+				47FF52F32F54D5190074A26A /* Exceptions for "LevelEleven" folder in "LevelElevenWidgetExtension" target */,
+			);
 			path = LevelEleven;
 			sourceTree = "<group>";
 		};
@@ -43,6 +109,15 @@
 		47075A8B2F0AFC7C00275F98 /* LevelElevenUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = LevelElevenUITests;
+			sourceTree = "<group>";
+		};
+		47FF52D62F54D4C00074A26A /* LevelElevenWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				47FF52F02F54D50F0074A26A /* Exceptions for "LevelElevenWidget" folder in "LevelEleven" target */,
+				47FF52E72F54D4C10074A26A /* Exceptions for "LevelElevenWidget" folder in "LevelElevenWidgetExtension" target */,
+			);
+			path = LevelElevenWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +144,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		47FF52D02F54D4C00074A26A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47FF52D52F54D4C00074A26A /* SwiftUI.framework in Frameworks */,
+				47FF52D42F54D4C00074A26A /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +162,8 @@
 				47075A732F0AFC7A00275F98 /* LevelEleven */,
 				47075A812F0AFC7C00275F98 /* LevelElevenTests */,
 				47075A8B2F0AFC7C00275F98 /* LevelElevenUITests */,
+				47FF52D62F54D4C00074A26A /* LevelElevenWidget */,
+				478FA0F22F54B5CB001E3B93 /* Frameworks */,
 				47075A722F0AFC7A00275F98 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +174,18 @@
 				47075A712F0AFC7A00275F98 /* LevelEleven.app */,
 				47075A7E2F0AFC7C00275F98 /* LevelElevenTests.xctest */,
 				47075A882F0AFC7C00275F98 /* LevelElevenUITests.xctest */,
+				47FF52D32F54D4C00074A26A /* LevelElevenWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		478FA0F22F54B5CB001E3B93 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				478FA0F32F54B5CB001E3B93 /* WidgetKit.framework */,
+				478FA0F52F54B5CB001E3B93 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +198,12 @@
 				47075A6D2F0AFC7A00275F98 /* Sources */,
 				47075A6E2F0AFC7A00275F98 /* Frameworks */,
 				47075A6F2F0AFC7A00275F98 /* Resources */,
+				478FA1082F54B5CC001E3B93 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				47FF52E52F54D4C10074A26A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				47075A732F0AFC7A00275F98 /* LevelEleven */,
@@ -163,6 +261,28 @@
 			productReference = 47075A882F0AFC7C00275F98 /* LevelElevenUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		47FF52D22F54D4C00074A26A /* LevelElevenWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47FF52E82F54D4C10074A26A /* Build configuration list for PBXNativeTarget "LevelElevenWidgetExtension" */;
+			buildPhases = (
+				47FF52CF2F54D4C00074A26A /* Sources */,
+				47FF52D02F54D4C00074A26A /* Frameworks */,
+				47FF52D12F54D4C00074A26A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				47FF52D62F54D4C00074A26A /* LevelElevenWidget */,
+			);
+			name = LevelElevenWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = LevelElevenWidgetExtension;
+			productReference = 47FF52D32F54D4C00074A26A /* LevelElevenWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -170,8 +290,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					47075A702F0AFC7A00275F98 = {
 						CreatedOnToolsVersion = 26.2;
@@ -183,6 +303,10 @@
 					47075A872F0AFC7C00275F98 = {
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = 47075A702F0AFC7A00275F98;
+					};
+					47FF52D22F54D4C00074A26A = {
+						CreatedOnToolsVersion = 26.3;
+						LastSwiftMigration = 2630;
 					};
 				};
 			};
@@ -203,6 +327,7 @@
 				47075A702F0AFC7A00275F98 /* LevelEleven */,
 				47075A7D2F0AFC7C00275F98 /* LevelElevenTests */,
 				47075A872F0AFC7C00275F98 /* LevelElevenUITests */,
+				47FF52D22F54D4C00074A26A /* LevelElevenWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +348,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		47075A862F0AFC7C00275F98 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47FF52D12F54D4C00074A26A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +385,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		47FF52CF2F54D4C00074A26A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +404,11 @@
 			isa = PBXTargetDependency;
 			target = 47075A702F0AFC7A00275F98 /* LevelEleven */;
 			targetProxy = 47075A892F0AFC7C00275F98 /* PBXContainerItemProxy */;
+		};
+		47FF52E52F54D4C10074A26A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 47FF52D22F54D4C00074A26A /* LevelElevenWidgetExtension */;
+			targetProxy = 47FF52E42F54D4C10074A26A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -328,6 +472,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -385,6 +530,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -395,16 +541,23 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CZF7599734;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LevelEleven/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = level;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -412,13 +565,18 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xaver.LevelEleven;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -427,16 +585,23 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CZF7599734;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LevelEleven/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = level;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -444,13 +609,18 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xaver.LevelEleven;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -538,6 +708,73 @@
 			};
 			name = Release;
 		};
+		47FF52E92F54D4C10074A26A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CZF7599734;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LevelElevenWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LevelElevenWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xaver.LevelEleven.LevelElevenWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		47FF52EA2F54D4C10074A26A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CZF7599734;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LevelElevenWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LevelElevenWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xaver.LevelEleven.LevelElevenWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -573,6 +810,15 @@
 			buildConfigurations = (
 				47075A992F0AFC7C00275F98 /* Debug */,
 				47075A9A2F0AFC7C00275F98 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		47FF52E82F54D4C10074A26A /* Build configuration list for PBXNativeTarget "LevelElevenWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47FF52E92F54D4C10074A26A /* Debug */,
+				47FF52EA2F54D4C10074A26A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

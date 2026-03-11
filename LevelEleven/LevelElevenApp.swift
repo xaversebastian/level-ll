@@ -2,7 +2,7 @@
 //  LevelElevenApp.swift
 //  LevelEleven
 //
-//  Created by Xaver Freytag on 04/01/2026.
+//  App entry point.
 //
 
 import SwiftUI
@@ -11,7 +11,7 @@ import SwiftUI
 struct LevelElevenApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
         }
     }
 }
