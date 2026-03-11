@@ -471,7 +471,7 @@ final class AppState {
         }
     }
 
-    func logDose(substanceId: String, route: DoseRoute, amount: Double) {
+    func logDose(substanceId: String, route: DoseRoute, amount: Double, note: String? = nil) {
         guard let profileId = activeProfileId,
               let profileIdx = profiles.firstIndex(where: { $0.id == profileId }) else { return }
         let dose = Dose(
@@ -479,7 +479,8 @@ final class AppState {
             substanceId: substanceId,
             route: route,
             amount: amount,
-            timestamp: Date()
+            timestamp: Date(),
+            note: note
         )
         doses.append(dose)
         // Update lastUsedDate for tolerance decay tracking
@@ -625,6 +626,31 @@ final class AppState {
         case 9...11: return .levelMagenta
         default: return .gray
         }
+    }
+
+    /// Minuten bis das Profil ≈sober ist (Level < 0.1). nil = bereits sober.
+    /// Schrittweite 5 min, max 24h (1440 min) um Performance zu begrenzen.
+    func minutesUntilBaseline(for profile: Profile? = nil, from date: Date = Date()) -> Double? {
+        let p = profile ?? activeProfile
+        guard let profile = p else { return nil }
+        guard currentLevel(for: profile, at: date) >= 0.1 else { return nil }
+        let step: Double = 5
+        var elapsed: Double = step
+        while elapsed <= 1440 {
+            let future = date.addingTimeInterval(elapsed * 60)
+            if currentLevel(for: profile, at: future) < 0.1 { return elapsed }
+            elapsed += step
+        }
+        return 1440 // Fallback: >24h
+    }
+
+    /// True wenn für das aktive Profil mindestens eine .danger Warning existiert.
+    var hasDangerWarning: Bool {
+        guard let profile = activeProfile else { return false }
+        let active = activeDoses(for: profile.id)
+        let all = recentDoses(for: profile.id, hours: 8)
+        let warnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: all, profile: profile)
+        return warnings.contains { $0.severity == .danger }
     }
 
     // MARK: - Live Activity Settings

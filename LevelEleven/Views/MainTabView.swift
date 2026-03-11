@@ -47,6 +47,7 @@ struct MainTabView: View {
                     .tabItem {
                         Label("Emergency", systemImage: "cross.fill")
                     }
+                    .badge(appState.hasDangerWarning ? "!" : nil)
                 
                 MoreView()
                     .tag(4)
@@ -88,7 +89,8 @@ struct MainTabView: View {
 
 struct MoreView: View {
     @Environment(AppState.self) private var appState
-    
+    @State private var exportURL: URL?
+
     var body: some View {
         NavigationStack {
             List {
@@ -99,17 +101,23 @@ struct MoreView: View {
                     } label: {
                         Label("Quick Dose", systemImage: "bolt.fill")
                     }
-                    
+
                     NavigationLink {
                         SubstanceInfoView()
                     } label: {
                         Label("Substance Info", systemImage: "book.fill")
                     }
-                    
+
                     NavigationLink {
                         TimelineView()
                     } label: {
                         Label("Timeline", systemImage: "chart.xyaxis.line")
+                    }
+
+                    if let url = buildExportURL() {
+                        ShareLink(item: url) {
+                            Label("Export Dose History", systemImage: "square.and.arrow.up")
+                        }
                     }
                 }
                 
@@ -177,6 +185,27 @@ struct MoreView: View {
             }
             .navigationTitle("More")
         }
+    }
+
+    private func buildExportURL() -> URL? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        var csv = "Date,Profile,Substance,Route,Amount,Unit,Note\n"
+        let profileMap = Dictionary(uniqueKeysWithValues: appState.profiles.map { ($0.id, $0.name) })
+        let sortedDoses = appState.doses.sorted { $0.timestamp < $1.timestamp }
+        for dose in sortedDoses {
+            let date = formatter.string(from: dose.timestamp)
+            let profile = profileMap[dose.profileId] ?? dose.profileId
+            let substance = Substances.byId[dose.substanceId]?.name ?? dose.substanceId
+            let route = dose.route.displayName
+            let amount = dose.amount
+            let unit = Substances.byId[dose.substanceId]?.unit.symbol ?? ""
+            let note = dose.note?.replacingOccurrences(of: ",", with: ";") ?? ""
+            csv += "\(date),\(profile),\(substance),\(route),\(amount),\(unit),\(note)\n"
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("LevelEleven-Export.csv")
+        try? csv.write(to: url, atomically: true, encoding: .utf8)
+        return appState.doses.isEmpty ? nil : url
     }
 }
 
@@ -265,11 +294,35 @@ struct SubstanceDetailView: View {
                 }
             }
             
-            Section("Timing (\(substance.primaryRoute.displayName))") {
-                timingRow(label: "Onset", minutes: substance.onsetMinutes)
-                timingRow(label: "Peak", minutes: substance.peakMinutes)
-                timingRow(label: "Duration", minutes: substance.durationMinutes)
-                timingRow(label: "Half-life", minutes: substance.halfLifeMinutes)
+            if substance.onsetByRoute != nil || substance.durationByRoute != nil || substance.peakByRoute != nil {
+                // Route-spezifische Zeiten als Tabelle
+                Section("Timing (by Route)") {
+                    Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+                        GridRow {
+                            Text("Route").font(.caption.bold()).foregroundStyle(.secondary)
+                            Text("Onset").font(.caption.bold()).foregroundStyle(.secondary)
+                            Text("Peak").font(.caption.bold()).foregroundStyle(.secondary)
+                            Text("Duration").font(.caption.bold()).foregroundStyle(.secondary)
+                        }
+                        Divider()
+                        ForEach(substance.routes, id: \.self) { route in
+                            GridRow {
+                                Text(route.displayName).font(.subheadline)
+                                Text(formatTime(substance.onset(for: route))).font(.subheadline).foregroundStyle(.secondary)
+                                Text(formatTime(substance.peak(for: route))).font(.subheadline).foregroundStyle(.secondary)
+                                Text(formatTime(substance.duration(for: route))).font(.subheadline).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    timingRow(label: "Half-life", minutes: substance.halfLifeMinutes)
+                }
+            } else {
+                Section("Timing (\(substance.primaryRoute.displayName))") {
+                    timingRow(label: "Onset", minutes: substance.onsetMinutes)
+                    timingRow(label: "Peak", minutes: substance.peakMinutes)
+                    timingRow(label: "Duration", minutes: substance.durationMinutes)
+                    timingRow(label: "Half-life", minutes: substance.halfLifeMinutes)
+                }
             }
             
             Section("Routes") {
