@@ -120,6 +120,7 @@ struct QuickDoseView: View {
         .searchable(text: $searchText, prompt: "Search substances")
     }
 
+    @ViewBuilder
     private func substanceRow(_ substance: Substance, recentDoses: [Dose]) -> some View {
         let lastDose = recentDoses.filter { $0.substanceId == substance.id }.first
         Button {
