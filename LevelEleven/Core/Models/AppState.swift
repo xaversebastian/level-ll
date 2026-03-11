@@ -68,6 +68,8 @@ final class AppState {
             normalizeActiveProfileFlag()
         }
 
+        migrateAvatarEmojis()
+
         loadSessionHistory()
         loadActiveSession()
         loadLiveActivityEnabled()
@@ -315,6 +317,34 @@ final class AppState {
         }
     }
 
+    // MARK: - Emoji Migration
+
+    /// Fixes avatarEmojis that don't render on all iOS versions.
+    /// Some standalone person emojis (🧑, 👩 without skin tone) render as [?] on certain devices.
+    private func migrateAvatarEmojis() {
+        // Known problematic emojis → safe replacements
+        let emojiReplacements: [String: String] = [
+            "\u{1F9D1}": "😎",   // 🧑 (Person) → 😎
+            "\u{1F469}": "🥰",   // 👩 (Woman) → 🥰
+        ]
+
+        var needsSave = false
+        for i in profiles.indices {
+            if let replacement = emojiReplacements[profiles[i].avatarEmoji] {
+                profiles[i].avatarEmoji = replacement
+                needsSave = true
+            }
+            // Also fix empty or whitespace-only emojis
+            if profiles[i].avatarEmoji.trimmingCharacters(in: .whitespaces).isEmpty {
+                profiles[i].avatarEmoji = "😎"
+                needsSave = true
+            }
+        }
+        if needsSave {
+            saveProfiles()
+        }
+    }
+
     // MARK: - Default Profiles
 
     private func setupDefaultProfiles() {
@@ -322,7 +352,7 @@ final class AppState {
             id: "xaver",
             name: "Xaver",
             isActive: true,
-            avatarEmoji: "🧑",
+            avatarEmoji: "😎",
             age: 31,
             weightKg: 83,
             sex: .male,
@@ -343,7 +373,7 @@ final class AppState {
             id: "silja",
             name: "Silja",
             isActive: false,
-            avatarEmoji: "👩",
+            avatarEmoji: "🥰",
             age: 35,
             weightKg: 57,
             sex: .female,

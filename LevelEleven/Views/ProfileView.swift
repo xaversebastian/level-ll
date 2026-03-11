@@ -115,21 +115,19 @@ struct ProfileEditorView: View {
     @State private var tolerances: [String: Int] = [:]
     @State private var showEmojiPicker = false
     
-    // Diverse emoji options organized by category
+    // Avatar emoji options – using face emojis that render reliably on all iOS versions
     private let avatarCategories: [(name: String, emojis: [String])] = [
-        ("People", [
-            "🧑", "🧑🏻", "🧑🏼", "🧑🏽", "🧑🏾", "🧑🏿",
-            "👩", "👩🏻", "👩🏼", "👩🏽", "👩🏾", "👩🏿",
-            "👨", "👨🏻", "👨🏼", "👨🏽", "👨🏾", "👨🏿"
+        ("Faces", [
+            "😎", "🥰", "😊", "🤓", "🥳", "😏",
+            "🤠", "🥸", "😇", "🤩", "😌", "😈"
         ]),
-        ("Style", [
-            "🧔", "🧔🏻", "🧔🏼", "🧔🏽", "🧔🏾", "🧔🏿",
-            "👱", "👱🏻", "👱🏼", "👱🏽", "👱🏾", "👱🏿",
-            "🧑‍🦱", "🧑🏻‍🦱", "🧑🏼‍🦱", "🧑🏽‍🦱", "🧑🏾‍🦱", "🧑🏿‍🦱"
+        ("People", [
+            "👨🏻", "👨🏼", "👨🏽", "👨🏾", "👨🏿", "👨",
+            "👩🏻", "👩🏼", "👩🏽", "👩🏾", "👩🏿", "💀"
         ]),
         ("Vibes", [
-            "😎", "🤓", "🥳", "😊", "🙂", "😏",
-            "🤠", "🥸", "😇", "🤩", "😌", "🧘"
+            "🔥", "💜", "⚡️", "🌈", "🍀", "🎯",
+            "🦄", "🐺", "🦊", "🐱", "🎵", "👑"
         ])
     ]
     
