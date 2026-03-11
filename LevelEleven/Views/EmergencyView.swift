@@ -12,6 +12,15 @@ struct EmergencyView: View {
     @State private var verbalScore: Int = 5
     @State private var motorScore: Int = 6
     @State private var showGCSInfo = false
+
+    private var localEmergencyNumber: String {
+        switch Locale.current.region?.identifier ?? "" {
+        case "US", "CA", "MX": return "911"
+        case "GB": return "999"
+        case "AU", "NZ": return "000"
+        default: return "112" // EU + international fallback
+        }
+    }
     
     private var gcsTotal: Int {
         eyeScore + verbalScore + motorScore
@@ -43,10 +52,10 @@ struct EmergencyView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.red)
             
-            Text("In an emergency: Call 112")
+            Text("In an emergency: Call \(localEmergencyNumber)")
                 .font(.title2.bold())
-            
-            Link(destination: URL(string: "tel:112")!) {
+
+            Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
                 HStack {
                     Image(systemName: "phone.fill")
                     Text("Call Emergency")
@@ -271,7 +280,7 @@ struct EmergencyView: View {
                         Text("Important Notes")
                             .font(.headline)
                         
-                        Text("• GCS ≤ 8 means coma - call 112 immediately")
+                        Text("• GCS ≤ 8 means coma - call \(localEmergencyNumber) immediately")
                         Text("• Substance intoxication can cause GCS to drop rapidly")
                         Text("• Opioid overdose: Naloxone can help")
                         Text("• GHB/Alcohol: Recovery position, monitor breathing")
@@ -313,7 +322,7 @@ struct EmergencyView: View {
                 .font(.headline)
             
             checklistItem("Check responsiveness", icon: "hand.raised.fill")
-            checklistItem("Call 112 emergency", icon: "phone.fill")
+            checklistItem("Call \(localEmergencyNumber) emergency", icon: "phone.fill")
             checklistItem("Recovery position", icon: "person.fill")
             checklistItem("Stay with the person", icon: "person.2.fill")
             checklistItem("Do not leave them alone", icon: "exclamationmark.triangle.fill")

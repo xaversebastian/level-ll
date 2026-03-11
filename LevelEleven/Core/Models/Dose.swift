@@ -27,8 +27,8 @@ struct Dose: Identifiable, Codable, Hashable {
         self.profileId = profileId
         self.substanceId = substanceId
         self.route = route
-        self.amount = amount
-        self.timestamp = timestamp
+        self.amount = max(0, amount) // prevent negative doses
+        self.timestamp = min(timestamp, Date()) // prevent future timestamps
     }
     
     func minutesAgo(from date: Date = Date()) -> Double {

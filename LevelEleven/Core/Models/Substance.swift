@@ -297,7 +297,7 @@ struct Substances {
             onsetMinutes: 45,
             peakMinutes: 180,
             durationMinutes: 720,
-            halfLifeMinutes: 300,
+            halfLifeMinutes: 210, // ~3.5h biological half-life (literature: 2.5–5h)
             unit: .ug,
             lightDose: 25,
             commonDose: 75,

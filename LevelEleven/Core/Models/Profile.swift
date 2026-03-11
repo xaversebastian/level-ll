@@ -75,11 +75,12 @@ struct Profile: Identifiable, Codable, Hashable {
         personalLimit: Int = 7
     ) {
         self.id = id
-        self.name = name
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        self.name = trimmed.isEmpty ? "User" : trimmed
         self.isActive = isActive
-        self.avatarEmoji = avatarEmoji
-        self.age = age
-        self.weightKg = weightKg
+        self.avatarEmoji = avatarEmoji.isEmpty ? "😎" : avatarEmoji
+        self.age = max(13, min(99, age))
+        self.weightKg = max(30, min(300, weightKg))
         self.sex = sex
         self.hasADHD = hasADHD
         self.tolerances = tolerances

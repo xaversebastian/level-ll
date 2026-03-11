@@ -140,7 +140,9 @@ final class AppState {
             let data = try JSONEncoder().encode(profiles)
             UserDefaults.standard.set(data, forKey: StorageKey.profiles)
         } catch {
-            // Intentionally not crashing; consider logging in debug builds.
+            #if DEBUG
+            print("[AppState] saveProfiles failed: \(error)")
+            #endif
         }
     }
 
@@ -149,7 +151,9 @@ final class AppState {
         do {
             profiles = try JSONDecoder().decode([Profile].self, from: data)
         } catch {
-            // If decode fails, keep as empty; defaults will be applied in init.
+            #if DEBUG
+            print("[AppState] loadProfiles decode failed: \(error) — falling back to defaults")
+            #endif
         }
     }
 
@@ -158,6 +162,9 @@ final class AppState {
             let data = try JSONEncoder().encode(doses)
             UserDefaults.standard.set(data, forKey: StorageKey.doses)
         } catch {
+            #if DEBUG
+            print("[AppState] saveDoses failed: \(error)")
+            #endif
         }
     }
 
@@ -166,6 +173,9 @@ final class AppState {
         do {
             doses = try JSONDecoder().decode([Dose].self, from: data)
         } catch {
+            #if DEBUG
+            print("[AppState] loadDoses decode failed: \(error) — doses cleared")
+            #endif
         }
     }
 
@@ -243,6 +253,9 @@ final class AppState {
             let data = try JSONEncoder().encode(sessionHistory)
             UserDefaults.standard.set(data, forKey: StorageKey.sessionHistory)
         } catch {
+            #if DEBUG
+            print("[AppState] saveSessionHistory failed: \(error)")
+            #endif
         }
     }
 
@@ -251,6 +264,9 @@ final class AppState {
         do {
             sessionHistory = try JSONDecoder().decode([BallerSession].self, from: data)
         } catch {
+            #if DEBUG
+            print("[AppState] loadSessionHistory decode failed: \(error) — history cleared")
+            #endif
         }
     }
 
@@ -260,6 +276,9 @@ final class AppState {
                 let data = try JSONEncoder().encode(session)
                 UserDefaults.standard.set(data, forKey: StorageKey.activeSession)
             } catch {
+                #if DEBUG
+                print("[AppState] saveActiveSession failed: \(error)")
+                #endif
             }
         } else {
             UserDefaults.standard.removeObject(forKey: StorageKey.activeSession)
@@ -274,6 +293,9 @@ final class AppState {
                 activeSession = session
             }
         } catch {
+            #if DEBUG
+            print("[AppState] loadActiveSession decode failed: \(error) — no active session restored")
+            #endif
         }
     }
 
@@ -409,7 +431,9 @@ final class AppState {
             guard dose.profileId == profileId,
                   let substance = Substances.byId[dose.substanceId] else { return false }
             let minutesAgo = dose.minutesAgo(from: date)
-            return minutesAgo >= 0 && minutesAgo < substance.durationMinutes * 1.5
+            // Active window: peak duration + 3 half-lives (≈2.5% remaining — pharmacologically negligible)
+            let activeWindow = substance.durationMinutes + substance.halfLifeMinutes * 3
+            return minutesAgo >= 0 && minutesAgo < activeWindow
         }
     }
 
@@ -464,22 +488,24 @@ final class AppState {
         let onset = substance.onsetMinutes
         let peak = substance.peakMinutes
         let duration = substance.durationMinutes
+        let halfLife = substance.halfLifeMinutes
 
         var phase: Double = 0
 
         if minutesAgo < onset {
+            // Onset: 0 → 0.3
             phase = minutesAgo / onset * 0.3
         } else if minutesAgo < peak {
+            // Rising: 0.3 → 1.0
             let progress = (minutesAgo - onset) / (peak - onset)
             phase = 0.3 + progress * 0.7
         } else if minutesAgo < duration {
+            // Falling: 1.0 → 0.2
             let progress = (minutesAgo - peak) / (duration - peak)
             phase = 1.0 - progress * 0.8
-        } else if minutesAgo < duration * 1.5 {
-            let progress = (minutesAgo - duration) / (duration * 0.5)
-            phase = 0.2 - progress * 0.2
         } else {
-            phase = 0
+            // Exponential decay using substance half-life (pharmacokinetically accurate)
+            phase = 0.2 * pow(0.5, (minutesAgo - duration) / halfLife)
         }
 
         let doseRatio = dose.amount / substance.commonDose
