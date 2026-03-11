@@ -109,12 +109,30 @@ struct Substance: Identifiable, Codable, Hashable {
     let description: String
     let risks: [String]
     let saferUse: [String]
-    
+
+    // Route-spezifische Pharmakokinetik – nil bedeutet: globalen Wert + Route-Multiplikator nutzen
+    var onsetByRoute:    [DoseRoute: Double]? = nil
+    var peakByRoute:     [DoseRoute: Double]? = nil
+    var durationByRoute: [DoseRoute: Double]? = nil
+
     var primaryRoute: DoseRoute { routes.first ?? .oral }
-    
-    func adjustedOnset(for route: DoseRoute) -> Double {
-        onsetMinutes * route.onsetMultiplier
+
+    // MARK: - Route-aware accessors
+
+    func onset(for route: DoseRoute) -> Double {
+        onsetByRoute?[route] ?? onsetMinutes * route.onsetMultiplier
     }
+
+    func peak(for route: DoseRoute) -> Double {
+        peakByRoute?[route] ?? peakMinutes
+    }
+
+    func duration(for route: DoseRoute) -> Double {
+        durationByRoute?[route] ?? durationMinutes
+    }
+
+    // Legacy – keeps existing call sites compiling
+    func adjustedOnset(for route: DoseRoute) -> Double { onset(for: route) }
 }
 
 struct Substances {
@@ -156,7 +174,11 @@ struct Substances {
             strongDose: 80,
             description: "Powerful stimulant derived from coca leaves. Blocks dopamine reuptake, producing intense euphoria.",
             risks: ["Cardiovascular strain", "Very high addiction potential", "Nasal membrane damage", "Overheating", "Psychosis with prolonged use"],
-            saferUse: ["Small lines, long breaks", "Do not mix with alcohol (cocaethylene)", "Monitor heart rate", "Do not share straws (hepatitis risk)"]
+            saferUse: ["Small lines, long breaks", "Do not mix with alcohol (cocaethylene)", "Monitor heart rate", "Do not share straws (hepatitis risk)"],
+            // IV/smoked: near-instant onset, short intense peak, shorter total duration
+            onsetByRoute:    [.nasal: 5, .smoked: 1, .iv: 1],
+            peakByRoute:     [.nasal: 20, .smoked: 10, .iv: 10],
+            durationByRoute: [.nasal: 60, .smoked: 30, .iv: 30]
         ),
         
         // AMPHETAMINE
@@ -216,7 +238,11 @@ struct Substances {
             strongDose: 50,
             description: "Dissociative anesthetic. Produces dissociation and altered perception. 'K-hole' at high doses.",
             risks: ["Bladder damage with frequent use", "Immobility", "Aspiration risk if vomiting", "Dangerous with depressants"],
-            saferUse: ["Start with low doses", "Safe environment", "Do not mix with alcohol/GHB", "Take long breaks between sessions"]
+            saferUse: ["Start with low doses", "Safe environment", "Do not mix with alcohol/GHB", "Take long breaks between sessions"],
+            // IV: near-instant with very short duration; oral: slower, longer
+            onsetByRoute:    [.nasal: 5, .iv: 1, .oral: 20],
+            peakByRoute:     [.nasal: 20, .iv: 10, .oral: 30],
+            durationByRoute: [.nasal: 60, .iv: 30, .oral: 90]
         ),
         
         // GHB
@@ -256,7 +282,11 @@ struct Substances {
             strongDose: 9,
             description: "Cannabinoid agonist. Relaxing, euphoric, enhances sensory perception. Oral route is much stronger!",
             risks: ["Anxiety/paranoia with overdose", "Delayed onset when oral (do not redose!)", "Impairs reaction time", "Developmental risks for adolescents"],
-            saferUse: ["Start low", "Wait 2 hours with edibles", "Mind set & setting", "Do not drive"]
+            saferUse: ["Start low", "Wait 2 hours with edibles", "Mind set & setting", "Do not drive"],
+            // Oral (edible) differs drastically from smoked: 12× longer onset, 2× longer duration
+            onsetByRoute:    [.smoked: 5, .oral: 60],
+            peakByRoute:     [.smoked: 20, .oral: 150],
+            durationByRoute: [.smoked: 120, .oral: 360]
         ),
         
         // 3-MMC
@@ -376,7 +406,11 @@ struct Substances {
             strongDose: 40,
             description: "Classic opioid analgesic. Strong pain relief and euphoria. High addiction potential.",
             risks: ["Respiratory depression (can be fatal!)", "Rapid tolerance development", "Severe physical dependence", "Overdose risk"],
-            saferUse: ["Have naloxone available", "Never use alone", "Start with low doses", "DO NOT mix with other depressants", "Mind tolerance after breaks"]
+            saferUse: ["Have naloxone available", "Never use alone", "Start with low doses", "DO NOT mix with other depressants", "Mind tolerance after breaks"],
+            // IV morphine: rapid onset, shorter peak and total duration vs. oral
+            onsetByRoute:    [.oral: 30, .iv: 5],
+            peakByRoute:     [.oral: 60, .iv: 20],
+            durationByRoute: [.oral: 300, .iv: 180]
         )
     ]
     

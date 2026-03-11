@@ -195,8 +195,8 @@ struct HomeView: View {
 
     private func warningsCard(_ profile: Profile) -> some View {
         let active = appState.activeDoses(for: profile.id, at: currentTime)
-        let substances = active.map { $0.substanceId }
-        let warnings = WarningSystem.checkInteractions(substances: substances)
+        let allDoses = appState.recentDoses(for: profile.id, hours: 8)
+        let warnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile, now: currentTime)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {

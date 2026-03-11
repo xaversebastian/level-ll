@@ -288,7 +288,10 @@ struct BallerModeView: View {
     }
 
     private func liveLevelChart(_ session: BallerSession) -> some View {
-        let levelData = calculateLiveLevelTimeline(session)
+        let levelData = session.participantIds.compactMap { profileId -> ProfileLevelTimeline? in
+            guard let profile = appState.profiles.first(where: { $0.id == profileId }) else { return nil }
+            return LevelTimelineService.buildTimeline(for: profile, from: session.startedAt, to: currentTime, appState: appState)
+        }
 
         return VStack(alignment: .leading, spacing: 8) {
             Text("Level Timeline")
@@ -297,7 +300,7 @@ struct BallerModeView: View {
 
             Chart {
                 ForEach(levelData, id: \.profileId) { profileData in
-                    ForEach(profileData.points, id: \.time) { point in
+                    ForEach(profileData.points) { point in
                         LineMark(
                             x: .value("Time", point.time),
                             y: .value("Level", point.level)
@@ -370,55 +373,7 @@ struct BallerModeView: View {
     }
 
     private func calculateLivePeakLevel(for profile: Profile, session: BallerSession) -> Double {
-        let interval: TimeInterval = 5 * 60
-        var time = session.startedAt
-        var maxLevel: Double = 0
-
-        while time <= currentTime {
-            let level = appState.currentLevel(for: profile, at: time)
-            if level > maxLevel { maxLevel = level }
-            time = time.addingTimeInterval(interval)
-        }
-        let finalLevel = appState.currentLevel(for: profile, at: currentTime)
-        if finalLevel > maxLevel { maxLevel = finalLevel }
-
-        return maxLevel
-    }
-
-    struct LiveProfileLevelData: Identifiable {
-        let id = UUID()
-        let profileId: String
-        let name: String
-        let points: [LiveLevelPoint]
-    }
-
-    struct LiveLevelPoint {
-        let time: Date
-        let level: Double
-    }
-
-    private func calculateLiveLevelTimeline(_ session: BallerSession) -> [LiveProfileLevelData] {
-        let interval: TimeInterval = 10 * 60
-        var profileData: [LiveProfileLevelData] = []
-
-        for profileId in session.participantIds {
-            guard let profile = appState.profiles.first(where: { $0.id == profileId }) else { continue }
-
-            var points: [LiveLevelPoint] = []
-            var time = session.startedAt
-
-            while time <= currentTime {
-                let level = appState.currentLevel(for: profile, at: time)
-                points.append(LiveLevelPoint(time: time, level: level))
-                time = time.addingTimeInterval(interval)
-            }
-            let finalLevel = appState.currentLevel(for: profile, at: currentTime)
-            points.append(LiveLevelPoint(time: currentTime, level: finalLevel))
-
-            profileData.append(LiveProfileLevelData(profileId: profile.id, name: profile.name, points: points))
-        }
-
-        return profileData
+        LevelTimelineService.peakLevel(for: profile, from: session.startedAt, to: currentTime, appState: appState)
     }
 
     private func sessionHeader(_ session: BallerSession) -> some View {
