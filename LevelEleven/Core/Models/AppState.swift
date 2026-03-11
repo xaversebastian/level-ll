@@ -9,6 +9,7 @@
 //  Author: Silja & Xaver / ChatGPT 5 – K3/4
 //  Created: 2026-02-23
 //
+// neuer Kommentar
 
 import Foundation
 import SwiftUI
