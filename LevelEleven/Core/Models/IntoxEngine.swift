@@ -2,7 +2,19 @@
 //  IntoxEngine.swift
 //  LevelEleven
 //
-//  Pharmacokinetic calculations and dose recommendations.
+//  Version: 1.0  |  2026-03-11
+//
+//  Pharmakokinetiksystem für individuelle Dosisempfehlungen.
+//  recommendDose() berechnet eine Startdosis basierend auf Körpergewicht (Ref: 70 kg),
+//  Toleranz, Einnahmeweg-Bioverfügbarkeit, biologischem Geschlecht und ADHS-Status.
+//  DoseRecommendation liefert Dosis + Korrekturfaktoren-Liste + Warnmeldungen.
+//
+//  HINWEIS: Die eigentliche Level-Berechnung (currentLevel, calculateIntensity) liegt in AppState.
+//  Dieses Enum ist zustandslos (nur statische Methoden).
+//  Für klinische oder forensische Zwecke NICHT geeignet – vereinfachtes Modell.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import Foundation

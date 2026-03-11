@@ -2,7 +2,19 @@
 //  LevelElevenUITests.swift
 //  LevelElevenUITests
 //
-//  Created by Xaver Freytag on 04/01/2026.
+//  Version: 1.0  |  2026-03-11
+//
+//  UI-Test-Suite für LevelEleven (XCTest-Framework).
+//  Startet die App via XCUIApplication, testet UI-Elemente und Flows.
+//  continueAfterFailure = false bricht den Test beim ersten Fehler ab.
+//  testLaunchPerformance() misst die App-Startzeit via XCTApplicationLaunchMetric.
+//
+//  HINWEIS: UI-Tests laufen auf dem Simulator oder Gerät.
+//  Placeholder-Test vorhanden. Hier echte UI-Flows (Tab-Navigation,
+//  Profil erstellen, Dose loggen) als Tests ausbauen.
+//
+//  Author: Xaver Freytag
+//  Created: 2026-01-04
 //
 
 import XCTest

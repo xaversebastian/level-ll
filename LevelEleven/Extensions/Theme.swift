@@ -2,7 +2,19 @@
 //  Theme.swift
 //  LevelEleven
 //
-//  App-wide color theme derived from the lEVEl logo.
+//  Version: 1.0  |  2026-03-11
+//
+//  App-weites Farbschema, abgeleitet aus dem lEVEl-Logo.
+//  Definiert statische Color-Extensions: levelDarkBlue, levelOrange,
+//  levelViolet, levelMagenta, levelTeal, levelGreen.
+//  accent = levelViolet (primäre Akzentfarbe),
+//  accentHighlight = levelOrange (sekundäre Hervorhebung).
+//
+//  HINWEIS: Alle Views sollen Color.accent / Color.accentHighlight statt
+//  Hardcoded-Farben verwenden, damit Theme-Änderungen zentral greifen.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

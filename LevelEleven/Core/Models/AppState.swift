@@ -2,9 +2,17 @@
 //  AppState.swift
 //  LevelEleven
 //
-//  Central app state using @Observable (iOS 17+).
+//  Version: 1.1  |  2026-03-11
 //
-//  Persistence added for profiles, doses, and activeProfileId using UserDefaults + JSON.
+//  Zentraler App-State als @Observable-Klasse (iOS 17+).
+//  Verwaltet Profile, Doses, aktive Session und sessionHistory.
+//  Persistenz über UserDefaults + JSON (alle Typen sind Codable).
+//  Views greifen per @Environment(AppState.self) darauf zu – kein EnvironmentObject nötig.
+//  Kapselt außerdem Live-Activity-Start/-Stop/-Update für Baller Mode.
+//
+//  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
+//  UserDefaults-Keys sind als private StorageKey-Enum definiert.
+//  currentLevel() und levelColor() können direkt aus Views aufgerufen werden.
 //
 //  Author: Silja & Xaver / ChatGPT 5 – K3/4
 //  Created: 2026-02-23

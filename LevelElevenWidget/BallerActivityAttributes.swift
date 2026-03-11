@@ -2,10 +2,19 @@
 //  BallerActivityAttributes.swift
 //  LevelEleven
 //
-//  ActivityKit attributes for Baller Mode Live Activity on Lock Screen & Dynamic Island.
+//  Version: 1.0  |  2026-03-11
 //
-//  SETUP: Add a Widget Extension target in Xcode, enable "Supports Live Activities" in Info.plist,
-//  and add NSSupportsLiveActivities = YES to the main app's Info.plist.
+//  ActivityKit-Typen für die Baller-Mode-Live-Activity (iOS 16.2+).
+//  BallerActivityAttributes: statische Attribute (sessionName, startDate).
+//  ContentState: dynamisch aktualisierbare Werte (participantLevels, totalDoses,
+//  highestLevel, participantCount). ParticipantLevel: Name, Emoji, Level je Person.
+//
+//  SETUP: Widget Extension Target erstellen, NSSupportsLiveActivities = YES in beiden
+//  Info.plist-Dateien (App + Widget) setzen.
+//  Diese Datei muss BEIDEN Targets (App + Widget) zugeordnet sein.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 #if canImport(ActivityKit)

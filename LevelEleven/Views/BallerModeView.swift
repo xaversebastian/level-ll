@@ -2,7 +2,20 @@
 //  BallerModeView.swift
 //  LevelEleven
 //
-//  Local group session - select profiles and track together.
+//  Version: 1.0  |  2026-03-11
+//
+//  Live-Gruppenscreen für aktive Baller-Mode-Sessions.
+//  Zeigt Teilnehmer-Cards mit Level-Balken, Live-Statistiken (Swift Charts),
+//  Gruppen-Durchschnitt und Peak-Level je Teilnehmer.
+//  Timer aktualisiert alle 30 Sekunden. "End"-Button beendet die Session.
+//  Enthält auch: SessionSetupView (Neue Session), GroupDoseView (Gruppen-Dose-Logger),
+//  AddParticipantView (Teilnehmer nachholen).
+//
+//  HINWEIS: Alle Sub-Views (Setup, GroupDose, AddParticipant) sind in dieser Datei definiert.
+//  calculateLiveLevelTimeline() iteriert in 10-Minuten-Schritten – bei langen Sessions ggf. optimieren.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI

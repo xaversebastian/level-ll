@@ -2,7 +2,19 @@
 //  QuickDoseView.swift
 //  LevelEleven
 //
-//  Quick dose logging screen.
+//  Version: 1.0  |  2026-03-11
+//
+//  Schneller Dose-Logger für das aktive Profil.
+//  Phase 1: Substanzliste mit Suchfeld und Favoriten-Sektion.
+//  Phase 2: Dosis-Formular mit Route-Picker (Segmented), Menge-Slider,
+//           Light/Common/Strong-Schnellwahl und personalisierten Infos.
+//  logDose() ruft AppState.logDose() auf und schließt den Sheet.
+//
+//  HINWEIS: Wird über MoreView → "Quick Dose" aufgerufen.
+//  Für Gruppen-Dosing: GroupDoseView in BallerModeView.swift.
+//
+//  Author: Silja & Xaver
+//  Created: 2026-01-04
 //
 
 import SwiftUI
