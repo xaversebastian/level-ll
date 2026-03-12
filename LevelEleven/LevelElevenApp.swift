@@ -11,15 +11,26 @@ import SwiftUI
 struct LevelElevenApp: App {
     @State private var appState = AppState()
     @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .environment(appState)
-                .fullScreenCover(isPresented: $showOnboarding) {
-                    OnboardingView()
-                        .environment(appState)
+            ZStack {
+                MainTabView()
+                    .environment(appState)
+                    .fullScreenCover(isPresented: $showOnboarding) {
+                        OnboardingView()
+                            .environment(appState)
+                    }
+
+                if showSplash {
+                    SplashView {
+                        showSplash = false
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
+            }
         }
     }
 }
