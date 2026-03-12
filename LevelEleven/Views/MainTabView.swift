@@ -96,23 +96,27 @@ struct MoreView: View {
                         QuickDoseView()
                     } label: {
                         Label("Quick Dose", systemImage: "bolt.fill")
+                            .foregroundStyle(Color.accent)
                     }
 
                     NavigationLink {
                         SubstanceInfoView()
                     } label: {
                         Label("Substance Info", systemImage: "book.fill")
+                            .foregroundStyle(.blue)
                     }
 
                     NavigationLink {
                         TimelineView()
                     } label: {
                         Label("Timeline", systemImage: "chart.xyaxis.line")
+                            .foregroundStyle(.teal)
                     }
 
                     if let url = buildExportURL() {
                         ShareLink(item: url) {
                             Label("Export Dose History", systemImage: "square.and.arrow.up")
+                                .foregroundStyle(.orange)
                         }
                     }
                 }

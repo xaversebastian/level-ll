@@ -203,6 +203,7 @@ struct HomeView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
 
     private func warningsCard(_ profile: Profile) -> some View {
@@ -304,6 +305,7 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(.secondary.opacity(0.12), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
 
     private func activeSubstancesCard(_ profile: Profile) -> some View {
@@ -331,29 +333,45 @@ struct HomeView: View {
                 }
                 .padding(.vertical, 8)
             } else {
-                ForEach(active) { dose in
-                    if let substance = Substances.byId[dose.substanceId] {
-                        compactDoseRow(dose: dose, substance: substance)
+                VStack(spacing: 0) {
+                    ForEach(Array(active.enumerated()), id: \.element.id) { idx, dose in
+                        if let substance = Substances.byId[dose.substanceId] {
+                            if idx > 0 {
+                                Divider().padding(.leading, 18)
+                            }
+                            compactDoseRow(dose: dose, substance: substance)
+                        }
                     }
                 }
             }
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.secondary.opacity(0.1), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
 
     private func compactDoseRow(dose: Dose, substance: Substance) -> some View {
         let minutesAgo = dose.minutesAgo(from: currentTime)
         let progress = min(minutesAgo / substance.durationMinutes, 1.0)
         let remaining = max(0, substance.durationMinutes - minutesAgo)
+        let color = Color(hex: substance.category.color)
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 10) {
             Circle()
-                .fill(Color(hex: substance.category.color))
+                .fill(color)
                 .frame(width: 8, height: 8)
 
-            Text(substance.shortName)
-                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(substance.shortName)
+                    .font(.subheadline)
+                Text("\(formatDoseAmount(dose.amount, substance: substance)) · \(dose.route.displayName)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
@@ -362,23 +380,48 @@ struct HomeView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(.secondary.opacity(0.15))
                     Capsule()
-                        .fill(Color(hex: substance.category.color))
+                        .fill(color)
                         .frame(width: geo.size.width * (1 - progress))
                 }
             }
-            .frame(width: 60, height: 6)
+            .frame(width: 80, height: 6)
 
             Text("\(Int(remaining))m")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .trailing)
+                .frame(width: 36, alignment: .trailing)
+
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    appState.deleteDose(dose.id)
+                }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.secondary.opacity(0.4))
+            }
+            .buttonStyle(.plain)
         }
+        .padding(.vertical, 4)
         .contextMenu {
             Button(role: .destructive) {
-                appState.deleteDose(dose.id)
+                withAnimation(.easeOut(duration: 0.2)) {
+                    appState.deleteDose(dose.id)
+                }
             } label: {
                 Label("Delete Dose", systemImage: "trash")
             }
+        }
+    }
+
+    private func formatDoseAmount(_ amount: Double, substance: Substance) -> String {
+        let unit = substance.unit.symbol
+        if amount < 1 {
+            return String(format: "%.2f%@", amount, unit)
+        } else if amount == floor(amount) {
+            return String(format: "%.0f%@", amount, unit)
+        } else {
+            return String(format: "%.1f%@", amount, unit)
         }
     }
 
@@ -486,42 +529,52 @@ struct HomeView: View {
         }()
         let soberColor: Color = minutesToSober == nil ? .green : (minutesToSober! > 120 ? .primary : .orange)
 
-        return HStack(spacing: 0) {
-            VStack(spacing: 4) {
-                Text(String(format: "%.1f", level))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(color)
-                Text("Level")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+        return Button {
+            showTimeline = true
+        } label: {
+            HStack(spacing: 0) {
+                VStack(spacing: 4) {
+                    Text(String(format: "%.1f", level))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(color)
+                    Text("Level")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider().frame(height: 40)
+
+                VStack(spacing: 4) {
+                    Text("\(active.count)")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                    Text("Active")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider().frame(height: 40)
+
+                VStack(spacing: 4) {
+                    Text(soberText)
+                        .font(.system(size: minutesToSober == nil ? 28 : 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(soberColor)
+                    Text(active.isEmpty ? "Sober" : strongestPhase)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
-
-            Divider().frame(height: 40)
-
-            VStack(spacing: 4) {
-                Text("\(active.count)")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                Text("Active")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-
-            Divider().frame(height: 40)
-
-            VStack(spacing: 4) {
-                Text(soberText)
-                    .font(.system(size: minutesToSober == nil ? 28 : 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(soberColor)
-                Text(active.isEmpty ? "Sober" : strongestPhase)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.plain)
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.secondary.opacity(0.1), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
 
     private var noProfileView: some View {
