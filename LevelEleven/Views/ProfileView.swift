@@ -52,14 +52,19 @@ struct ProfileView: View {
         Button {
             appState.setActiveProfile(profile)
         } label: {
-            HStack {
-                Text(profile.avatarEmoji)
-                    .font(.title)
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(profile.isActive ? Color.accent.opacity(0.12) : Color.secondary.opacity(0.08))
+                        .frame(width: 46, height: 46)
+                    Text(profile.avatarEmoji)
+                        .font(.title2)
+                }
 
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
                         .font(.headline)
-                    Text("\(profile.age) years, \(Int(profile.weightKg)) kg")
+                    Text("\(profile.age) years · \(Int(profile.weightKg)) kg")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -69,15 +74,14 @@ struct ProfileView: View {
                 if profile.isActive {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.accent)
+                        .font(.title3)
                 }
             }
-            .padding(.vertical, 2)
-            .padding(.horizontal, profile.isActive ? 8 : 0)
+            .padding(.vertical, 4)
+            .padding(.horizontal, profile.isActive ? 10 : 0)
             .background(
-                profile.isActive
-                    ? Color.accent.opacity(0.08)
-                    : Color.clear,
-                in: RoundedRectangle(cornerRadius: 10)
+                profile.isActive ? Color.accent.opacity(0.06) : Color.clear,
+                in: RoundedRectangle(cornerRadius: DS.chipRadius)
             )
         }
         .foregroundStyle(.primary)
