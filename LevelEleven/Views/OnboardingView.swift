@@ -19,7 +19,7 @@ struct OnboardingView: View {
         OnboardingPage(
             icon: "waveform.path.ecg",
             iconColor: .levelCopper,
-            title: "Level Eleven",
+            title: "level ll",
             subtitle: "Track your intoxication in real time.\nStay aware. Stay safe.",
             detail: nil
         ),

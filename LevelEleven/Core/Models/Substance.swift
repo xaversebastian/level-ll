@@ -290,7 +290,7 @@ struct Substances {
         Substance(
             id: "3mmc",
             name: "3-MMC",
-            shortName: "3-MMC",
+            shortName: "Metaphedrone",
             category: .stimulant,
             routes: [.oral, .nasal],
             onsetMinutes: 20,
