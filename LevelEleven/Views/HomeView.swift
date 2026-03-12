@@ -2,7 +2,7 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-12
+//  Version: 1.2  |  2026-03-12
 //
 //  Hauptscreen mit Level-Gauge-Hero, Profil-Picker, Warnungs-Card, aktive-Substanzen-Card
 //  und Live-Status-Card (Level / Active / Phase).
@@ -213,17 +213,22 @@ struct HomeView: View {
             guard let snoozeUntil = snoozedWarnings[warning.title] else { return true }
             return currentTime > snoozeUntil
         }
+        let hasActiveDoses = !active.isEmpty
+        let calm = appState.calmMode && hasActiveDoses
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Warnings", systemImage: "exclamationmark.shield")
+                Label(calm ? "Keep in Mind" : "Warnings",
+                      systemImage: calm ? "info.circle" : "exclamationmark.shield")
                     .font(.subheadline.bold())
                 Spacer()
-                Text("\(warnings.count)")
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.secondary.opacity(0.15), in: Capsule())
+                if warnings.count > 0 {
+                    Text("\(warnings.count)")
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.secondary.opacity(0.15), in: Capsule())
+                }
             }
 
             if let topWarning = warnings.first {
@@ -232,9 +237,23 @@ struct HomeView: View {
                         showWarnings = true
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: topWarning.severity.icon)
+                            // Calm mode: soften non-danger warnings
+                            let displayColor: Color = {
+                                if calm && topWarning.severity < .danger {
+                                    return Color(hex: "7B9BB5")
+                                }
+                                return topWarning.severity.color
+                            }()
+                            let displayIcon: String = {
+                                if calm && topWarning.severity < .danger {
+                                    return "info.circle.fill"
+                                }
+                                return topWarning.severity.icon
+                            }()
+
+                            Image(systemName: displayIcon)
                                 .font(.title3)
-                                .foregroundStyle(topWarning.severity.color)
+                                .foregroundStyle(displayColor)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(topWarning.title)
@@ -272,7 +291,7 @@ struct HomeView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("No interaction warnings")
+                    Text(calm ? "All good" : "No interaction warnings")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

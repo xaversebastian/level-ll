@@ -2,7 +2,7 @@
 //  BallerModeView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-12
+//  Version: 1.2  |  2026-03-12
 //
 //  Live-Gruppenscreen für aktive Baller-Mode-Sessions.
 //  Zeigt Teilnehmer-Cards mit Level-Balken, Live-Statistiken (Swift Charts),
@@ -176,53 +176,69 @@ struct BallerModeView: View {
     // MARK: - Active Session
 
     private func activeSessionView(_ session: BallerSession) -> some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                sessionHeader(session)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    sessionHeader(session)
 
-                // Active Participants
-                ForEach(session.participantIds, id: \.self) { profileId in
-                    if let profile = appState.profiles.first(where: { $0.id == profileId }) {
-                        participantCard(profile, session: session)
-                    }
-                }
-
-                // Removed Participants (can be re-added)
-                if !session.removedParticipantIds.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Left")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, 4)
-
-                        ForEach(session.removedParticipantIds, id: \.self) { profileId in
-                            if let profile = appState.profiles.first(where: { $0.id == profileId }) {
-                                removedParticipantRow(profile)
-                            }
+                    // Active Participants
+                    ForEach(session.participantIds, id: \.self) { profileId in
+                        if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                            participantCard(profile, session: session)
                         }
                     }
-                    .padding(.top, 8)
-                }
 
-                // MARK: - Live Statistics Section
-                liveStatsSection(session)
+                    // Removed Participants (can be re-added)
+                    if !session.removedParticipantIds.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Left")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 4)
 
-                // Add Participant Button
-                Button {
-                    showAddParticipant = true
-                } label: {
-                    HStack {
-                        Image(systemName: "person.badge.plus")
-                        Text("Add Participant")
+                            ForEach(session.removedParticipantIds, id: \.self) { profileId in
+                                if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                                    removedParticipantRow(profile)
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
                     }
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                }
-                .foregroundStyle(Color.accent)
 
-                // Add Dose Button
+                    // MARK: - Live Statistics Section
+                    liveStatsSection(session)
+
+                    // Add Participant Button
+                    Button {
+                        showAddParticipant = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "person.badge.plus")
+                            Text("Add Participant")
+                        }
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .foregroundStyle(Color.accent)
+
+                    // Spacer for sticky FAB
+                    Color.clear.frame(height: 80)
+                }
+                .padding(16)
+            }
+
+            // Sticky FAB – always visible
+            VStack(spacing: 0) {
+                LinearGradient(
+                    colors: [.clear, Color(.systemBackground).opacity(0.95)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 32)
+                .allowsHitTesting(false)
+
                 Button {
                     showAddDose = true
                 } label: {
@@ -233,10 +249,10 @@ struct BallerModeView: View {
                         .background(Color.accent, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
                 }
-                .padding(.top, 8)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .background(Color(.systemBackground).opacity(0.95))
             }
-            .padding(16)
-            .padding(.bottom, 80)
         }
     }
 
@@ -762,6 +778,7 @@ struct GroupDoseView: View {
     @State private var selectedRoute: DoseRoute = .oral
     @State private var selectedProfilesForDose: Set<String> = []
     @State private var doseAmounts: [String: Double] = [:]
+    @State private var showNasalGuide = false
 
     var participants: [Profile] {
         participantIds.compactMap { id in
@@ -796,6 +813,22 @@ struct GroupDoseView: View {
             .onAppear {
                 // Pre-select all participants
                 selectedProfilesForDose = Set(participantIds)
+            }
+            .fullScreenCover(isPresented: $showNasalGuide) {
+                if let substance = selectedSubstance {
+                    let nasalDoses: [(profile: Profile, amount: Double)] = selectedProfilesForDose.compactMap { profileId in
+                        guard let profile = appState.profiles.first(where: { $0.id == profileId }) else { return nil }
+                        let rec = IntoxEngine.recommendDose(substance: substance, route: selectedRoute, profile: profile)
+                        let amount = doseAmounts[profileId] ?? rec.recommendedDose
+                        return (profile: profile, amount: amount)
+                    }
+                    NasalLineGuideView(substance: substance, doses: nasalDoses) {
+                        showNasalGuide = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            performLogDoses()
+                        }
+                    }
+                }
             }
         }
     }
@@ -1048,6 +1081,15 @@ struct GroupDoseView: View {
     }
 
     private func logDoses() {
+        // Show nasal guide first if route is nasal
+        if selectedRoute == .nasal {
+            showNasalGuide = true
+            return
+        }
+        performLogDoses()
+    }
+
+    private func performLogDoses() {
         guard let substance = selectedSubstance else { return }
 
         for profileId in selectedProfilesForDose {

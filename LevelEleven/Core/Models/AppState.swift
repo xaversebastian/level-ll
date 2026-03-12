@@ -2,7 +2,7 @@
 //  AppState.swift
 //  LevelEleven
 //
-//  Version: 1.2  |  2026-03-12
+//  Version: 1.3  |  2026-03-12
 //
 //  Zentraler App-State als @Observable-Klasse (iOS 17+).
 //  Verwaltet Profile, Doses, aktive Session und sessionHistory.
@@ -31,6 +31,10 @@ final class AppState {
     var activeSession: BallerSession?
     var sessionHistory: [BallerSession] = []
     var liveActivityEnabled: Bool = true
+
+    var calmMode: Bool = false {
+        didSet { UserDefaults.standard.set(calmMode, forKey: "calmMode") }
+    }
 
     // MARK: - Computation Cache (TTL = 10s – aligns with HomeView timer tick)
 
@@ -88,6 +92,7 @@ final class AppState {
         loadSessionHistory()
         loadActiveSession()
         loadLiveActivityEnabled()
+        calmMode = UserDefaults.standard.bool(forKey: "calmMode")
     }
 
     // MARK: - HomeView Convenience API
@@ -629,6 +634,21 @@ final class AppState {
     }
 
     func levelColor(for level: Double) -> Color {
+        levelColor(for: level, calmMode: calmMode)
+    }
+
+    func levelColor(for level: Double, calmMode: Bool) -> Color {
+        if calmMode {
+            switch Int(level.rounded()) {
+            case 0: return .gray
+            case 1...2: return .green
+            case 3...4: return .yellow
+            case 5...6: return .orange
+            case 7...8: return Color(hex: "C47A5A")   // muted terracotta
+            case 9...11: return Color(hex: "9B4D6E")  // muted mauve
+            default: return .gray
+            }
+        }
         switch Int(level.rounded()) {
         case 0: return .gray
         case 1...2: return .green
