@@ -747,7 +747,7 @@ struct SessionSetupView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
-                        .background(selectedProfileIds.isEmpty ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                        .background(selectedProfileIds.isEmpty ? Color.gray.gradient : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
                         .shadow(color: Color.accent.opacity(selectedProfileIds.isEmpty ? 0 : 0.2), radius: 8, y: 3)
                 }
@@ -1002,7 +1002,7 @@ struct GroupDoseView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
-                    .background(selectedProfilesForDose.isEmpty ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                    .background(selectedProfilesForDose.isEmpty ? Color.gray.gradient : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
                     .foregroundStyle(.white)
                     .shadow(color: Color.accent.opacity(selectedProfilesForDose.isEmpty ? 0 : 0.2), radius: 8, y: 3)
             }
@@ -1406,7 +1406,7 @@ struct QuickDoseForProfileView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
-                    .background(amount <= 0 ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                    .background(amount <= 0 ? Color.gray.gradient : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
                     .foregroundStyle(.white)
                     .shadow(color: Color.accent.opacity(amount <= 0 ? 0 : 0.2), radius: 8, y: 3)
             }
