@@ -12,10 +12,6 @@
 //
 //  HINWEIS: calculatePeakLevel() und calculateLevelTimeline() iterieren in 5-/10-Minuten-
 //  Schritten über die Session-Dauer – bei sehr langen Sessions kann das CPU-intensiv sein.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 import Charts

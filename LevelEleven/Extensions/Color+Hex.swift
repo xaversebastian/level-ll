@@ -8,10 +8,6 @@
 //  Unterstützt 3-stellige (#RGB → #RRGGBB), 6-stellige (#RRGGBB)
 //  und 8-stellige (#AARRGGBB) Hex-Strings. Führendes # wird ignoriert.
 //  Wird von Theme.swift und Views für substanzspezifische Farben genutzt.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

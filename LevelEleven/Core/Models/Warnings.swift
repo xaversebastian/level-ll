@@ -15,10 +15,6 @@
 //
 //  HINWEIS: Beim Hinzufügen neuer Substanzen auch Interaktionen hier ergänzen.
 //  Warnungen sind nach Severity absteigend sortiert (danger zuerst).
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

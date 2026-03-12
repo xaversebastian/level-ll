@@ -2,7 +2,7 @@
 //  QuickDoseView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-11
+//  Version: 1.2  |  2026-03-12
 //
 //  Schneller Dose-Logger für das aktive Profil.
 //  Phase 1: Substanzliste mit Suchfeld und Favoriten-Sektion.
@@ -14,10 +14,6 @@
 //
 //  HINWEIS: Wird über MoreView → "Quick Dose" aufgerufen.
 //  Für Gruppen-Dosing: GroupDoseView in BallerModeView.swift.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

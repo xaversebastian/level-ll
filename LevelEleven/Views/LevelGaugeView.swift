@@ -12,10 +12,6 @@
 //
 //  HINWEIS: Tick-Marks (12 Striche bei 0–11) zeigen aktive Stufen farbig,
 //  inaktive grau. Bei Level 0 bleibt der Ring leer (kein Trim).
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

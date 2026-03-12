@@ -2,7 +2,7 @@
 //  AppState.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-11
+//  Version: 1.2  |  2026-03-12
 //
 //  Zentraler App-State als @Observable-Klasse (iOS 17+).
 //  Verwaltet Profile, Doses, aktive Session und sessionHistory.
@@ -13,11 +13,6 @@
 //  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
 //  UserDefaults-Keys sind als private StorageKey-Enum definiert.
 //  currentLevel() und levelColor() können direkt aus Views aufgerufen werden.
-//
-//  Author: Silja & Xaver / ChatGPT 5 – K3/4
-//  Created: 2026-02-23
-//
-// neuer Kommentar
 
 import Foundation
 import SwiftUI

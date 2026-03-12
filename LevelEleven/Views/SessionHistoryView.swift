@@ -2,7 +2,7 @@
 //  SessionHistoryView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-12
 //
 //  Liste aller abgeschlossenen Baller-Mode-Sessions aus AppState.sessionHistory.
 //  Tipp → öffnet SessionDetailView als Sheet.
@@ -11,10 +11,6 @@
 //  Leerer Zustand zeigt Placeholder-Illustration.
 //
 //  HINWEIS: Wird als Sheet aus BallerModeView geöffnet.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 
