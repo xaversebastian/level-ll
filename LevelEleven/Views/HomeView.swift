@@ -311,7 +311,7 @@ struct HomeView: View {
             } else {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.levelGreen)
+                        .foregroundStyle(Color.levelGreen)
                     Text(calm ? "All good" : "No interaction warnings")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -345,7 +345,7 @@ struct HomeView: View {
             if active.isEmpty {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.levelGreen)
+                        .foregroundStyle(Color.levelGreen)
                     Text("Nothing active")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
