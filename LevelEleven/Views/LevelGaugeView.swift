@@ -5,7 +5,7 @@
 //  Version: 1.0  |  2026-03-11
 //
 //  Animiertes kreisförmiges Level-Gauge mit Liquid-Glass-Ästhetik.
-//  Größe: 280 pt, Ring-Breite: 28 pt. Zeigt Level 0–11 als Kreisbogen
+//  Größe: 220 pt, Ring-Breite: 22 pt. Zeigt Level 0–11 als Kreisbogen
 //  mit Angular-Gradient und äußerem Glow-Effekt.
 //  Spring-Animation beim Erscheinen und bei Level-Änderungen.
 //  LevelGaugeMiniView (40 pt) für kompakte Darstellungen in Gruppen-Views.
@@ -22,8 +22,8 @@ struct LevelGaugeView: View {
     
     @State private var animatedLevel: Double = 0
     
-    private let size: CGFloat = 280
-    private let ringWidth: CGFloat = 28
+    private let size: CGFloat = 220
+    private let ringWidth: CGFloat = 22
     
     var body: some View {
         ZStack {
@@ -78,7 +78,7 @@ struct LevelGaugeView: View {
             // Center content
             VStack(spacing: 2) {
                 Text(String(format: "%.1f", animatedLevel))
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
                     .foregroundStyle(color)
                     .contentTransition(.numericText())
                     .shadow(color: color.opacity(0.3), radius: 4, x: 0, y: 2)

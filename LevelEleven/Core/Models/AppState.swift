@@ -734,21 +734,32 @@ final class AppState {
             let levels = session.participantIds.compactMap { profileId -> BallerActivityAttributes.ParticipantLevel? in
                 guard let profile = profiles.first(where: { $0.id == profileId }) else { return nil }
                 let level = currentLevel(for: profile)
+                let mins = minutesUntilBaseline(for: profile)
                 return BallerActivityAttributes.ParticipantLevel(
                     name: profile.name,
                     emoji: profile.avatarEmoji,
-                    level: level
+                    level: level,
+                    minutesToSober: mins.map { Int($0) }
                 )
             }
 
             let highestLevel = levels.map { $0.level }.max() ?? 0
             let totalDoses = sessionDoses(for: session).count
+            let warningCount = session.participantIds.reduce(0) { count, profileId in
+                guard let profile = profiles.first(where: { $0.id == profileId }) else { return count }
+                let active = activeDoses(for: profileId)
+                let all = recentDoses(for: profileId, hours: 8)
+                let n = WarningSystem.checkInteractions(activeDoses: active, allDoses: all, profile: profile)
+                    .filter { $0.severity >= .warning }.count
+                return count + n
+            }
 
             let state = BallerActivityAttributes.ContentState(
                 participantLevels: levels,
                 totalDoses: totalDoses,
                 highestLevel: highestLevel,
-                participantCount: session.participantIds.count
+                participantCount: session.participantIds.count,
+                warningCount: warningCount
             )
 
             print("[LiveActivity] Requesting with \(levels.count) participants, \(totalDoses) doses")
@@ -785,21 +796,32 @@ final class AppState {
             let levels = session.participantIds.compactMap { profileId -> BallerActivityAttributes.ParticipantLevel? in
                 guard let profile = profiles.first(where: { $0.id == profileId }) else { return nil }
                 let level = currentLevel(for: profile)
+                let mins = minutesUntilBaseline(for: profile)
                 return BallerActivityAttributes.ParticipantLevel(
                     name: profile.name,
                     emoji: profile.avatarEmoji,
-                    level: level
+                    level: level,
+                    minutesToSober: mins.map { Int($0) }
                 )
             }
 
             let highestLevel = levels.map { $0.level }.max() ?? 0
             let totalDoses = sessionDoses(for: session).count
+            let warningCount = session.participantIds.reduce(0) { count, profileId in
+                guard let profile = profiles.first(where: { $0.id == profileId }) else { return count }
+                let active = activeDoses(for: profileId)
+                let all = recentDoses(for: profileId, hours: 8)
+                let n = WarningSystem.checkInteractions(activeDoses: active, allDoses: all, profile: profile)
+                    .filter { $0.severity >= .warning }.count
+                return count + n
+            }
 
             let state = BallerActivityAttributes.ContentState(
                 participantLevels: levels,
                 totalDoses: totalDoses,
                 highestLevel: highestLevel,
-                participantCount: session.participantIds.count
+                participantCount: session.participantIds.count,
+                warningCount: warningCount
             )
 
             Task {

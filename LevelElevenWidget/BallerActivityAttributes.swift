@@ -24,14 +24,18 @@ struct BallerActivityAttributes: ActivityAttributes {
         var totalDoses: Int
         var highestLevel: Double
         var participantCount: Int
+        /// Anzahl aktiver Warnungen (severity >= warning) über alle Teilnehmer
+        var warningCount: Int
     }
-    
+
     struct ParticipantLevel: Codable, Hashable {
         let name: String
         let emoji: String
         let level: Double
+        /// Minuten bis nüchtern (nil = bereits nüchtern)
+        let minutesToSober: Int?
     }
-    
+
     let sessionName: String
     let startDate: Date
 }
