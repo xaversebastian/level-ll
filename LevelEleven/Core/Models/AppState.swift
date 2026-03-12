@@ -2,7 +2,7 @@
 //  AppState.swift
 //  LevelEleven
 //
-//  Version: 1.4  |  2026-03-12
+//  Version: 1.5  |  2026-03-12
 //
 //  Zentraler App-State als @Observable-Klasse (iOS 17+).
 //  Verwaltet Profile, Doses, aktive Session und sessionHistory.
@@ -10,11 +10,12 @@
 //  Views greifen per @Environment(AppState.self) darauf zu – kein EnvironmentObject nötig.
 //  Kapselt außerdem Live-Activity-Start/-Stop/-Update für Baller Mode.
 //
-//  Updates v1.4:
+//  Updates v1.5:
 //  - Fixed force unwrapping in sessionDoses function (endedAt)
 //  - Added thread-safe cache operations with concurrent dispatch queue
 //  - Optimized minutesUntilBaseline with adaptive step sizing + binary search
 //  - Cache reads use sync, writes use barrier flags for thread safety
+//  - Marked cache properties with @ObservationIgnored to fix black screen crash
 //
 //  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
 //  UserDefaults-Keys sind als private StorageKey-Enum definiert.
@@ -49,10 +50,10 @@ final class AppState {
         let value: T
         let computedAt: Date
     }
-    private var levelCache:      [String: CacheEntry<Double>] = [:]
-    private var activeDosesCache:[String: CacheEntry<[Dose]>] = [:]
+    @ObservationIgnored private var levelCache:      [String: CacheEntry<Double>] = [:]
+    @ObservationIgnored private var activeDosesCache:[String: CacheEntry<[Dose]>] = [:]
     private let cacheTTL: TimeInterval = 10
-    private let cacheQueue = DispatchQueue(label: "com.leveleleven.cache", attributes: .concurrent)
+    @ObservationIgnored private let cacheQueue = DispatchQueue(label: "com.leveleleven.cache", attributes: .concurrent)
 
     private func invalidateCache() {
         cacheQueue.async(flags: .barrier) {
