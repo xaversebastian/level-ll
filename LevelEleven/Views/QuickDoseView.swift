@@ -2,7 +2,7 @@
 //  QuickDoseView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-11
+//  Version: 1.2  |  2026-03-12
 //
 //  Schneller Dose-Logger für das aktive Profil.
 //  Phase 1: Substanzliste mit Suchfeld und Favoriten-Sektion.
