@@ -216,46 +216,98 @@ struct QuickDoseView: View {
                 .pickerStyle(.segmented)
             }
 
-            Section("Amount") {
-                VStack(spacing: 16) {
-                    HStack {
-                        Text(String(format: "%.1f", amount))
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                        Text(substance.unit.symbol)
-                            .font(.title2).foregroundStyle(.secondary)
-                    }
-
-                    Slider(value: $amount, in: 0...substance.strongDose * 2, step: doseStep(for: substance))
-
-                    HStack {
-                        doseButton("Light", dose: substance.lightDose)
-                        doseButton("Common", dose: substance.commonDose)
-                        doseButton("Strong", dose: substance.strongDose)
-                    }
-
-                    // Inline disclaimer – pure substance note
-                    Text("Amounts refer to pure active substance weight")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .padding(.vertical, 8)
-            }
-
             if let profile = appState.activeProfile {
+                let lastDoseDate = appState.recentDoses(for: profile.id, hours: 24)
+                    .first { $0.substanceId == substance.id }?.timestamp
+                let rec = IntoxEngine.recommendDose(
+                    substance: substance,
+                    route: selectedRoute,
+                    profile: profile,
+                    currentLevel: appState.currentLevel(for: profile),
+                    lastDoseDate: lastDoseDate
+                )
+
+                Section("Amount") {
+                    VStack(spacing: 16) {
+                        HStack {
+                            Text(String(format: "%.1f", amount))
+                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                            Text(substance.unit.symbol)
+                                .font(.title2).foregroundStyle(.secondary)
+                        }
+
+                        Slider(value: $amount, in: 0...substance.strongDose * 2, step: doseStep(for: substance))
+
+                        HStack {
+                            doseButton("Light", dose: rec.adjustedLight, label: "\(Int(rec.adjustedLight.rounded()))")
+                            doseButton("Common", dose: rec.adjustedCommon, label: "\(Int(rec.adjustedCommon.rounded()))")
+                            doseButton("Strong", dose: rec.adjustedStrong, label: "\(Int(rec.adjustedStrong.rounded()))")
+                        }
+
+                        Text("Amounts refer to pure active substance weight")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .padding(.vertical, 8)
+                }
+
                 Section("Personalized Info") {
-                    let tolerance = profile.tolerance(for: substance.id)
                     HStack {
-                        Text("Tolerance")
+                        Text("Suggested")
                         Spacer()
-                        Text("Level \(tolerance)").foregroundStyle(.secondary)
+                        Text("\(Int(rec.suggestedDose.rounded())) \(substance.unit.symbol)")
+                            .foregroundStyle(Color.accent)
+                            .fontWeight(.semibold)
                     }
-                    let recommended = substance.commonDose * profile.toleranceFactor(for: substance.id)
-                    HStack {
-                        Text("Recommended")
-                        Spacer()
-                        Text("\(String(format: "%.0f", recommended)) \(substance.unit.symbol)").foregroundStyle(.secondary)
+
+                    if !rec.adjustmentFactors.isEmpty {
+                        DisclosureGroup("Factors (\(rec.adjustmentFactors.count))") {
+                            ForEach(rec.adjustmentFactors, id: \.self) { factor in
+                                Text("· \(factor)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .font(.subheadline)
                     }
+
+                    ForEach(rec.warnings, id: \.self) { warning in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                                .padding(.top, 2)
+                            Text(warning)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+            } else {
+                Section("Amount") {
+                    VStack(spacing: 16) {
+                        HStack {
+                            Text(String(format: "%.1f", amount))
+                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                            Text(substance.unit.symbol)
+                                .font(.title2).foregroundStyle(.secondary)
+                        }
+
+                        Slider(value: $amount, in: 0...substance.strongDose * 2, step: doseStep(for: substance))
+
+                        HStack {
+                            doseButton("Light", dose: substance.lightDose, label: "\(Int(substance.lightDose))")
+                            doseButton("Common", dose: substance.commonDose, label: "\(Int(substance.commonDose))")
+                            doseButton("Strong", dose: substance.strongDose, label: "\(Int(substance.strongDose))")
+                        }
+
+                        Text("Amounts refer to pure active substance weight")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .padding(.vertical, 8)
                 }
             }
 
@@ -368,11 +420,11 @@ struct QuickDoseView: View {
 
     // MARK: - Helpers
 
-    private func doseButton(_ label: String, dose: Double) -> some View {
+    private func doseButton(_ title: String, dose: Double, label: String) -> some View {
         Button { amount = dose } label: {
-            VStack {
-                Text(String(format: "%.0f", dose)).font(.headline)
-                Text(label).font(.caption)
+            VStack(spacing: 2) {
+                Text(label).font(.headline)
+                Text(title).font(.caption)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
