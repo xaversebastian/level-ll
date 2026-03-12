@@ -1,24 +1,8 @@
-//
-//  BallerModeView.swift
-//  LevelEleven
-//
-//  Version: 1.3  |  2026-03-12
-//
-//  Live-Gruppenscreen für aktive Baller-Mode-Sessions.
-//  Zeigt Teilnehmer-Cards mit Level-Balken, Live-Statistiken (Swift Charts),
-//  Gruppen-Durchschnitt und Peak-Level je Teilnehmer.
-//  Timer aktualisiert alle 30 Sekunden. "End"-Button beendet die Session.
-//  Enthält auch: SessionSetupView (Neue Session), GroupDoseView (Gruppen-Dose-Logger),
-//  AddParticipantView (Teilnehmer nachholen).
-//
-//  Updates v1.4:
-//  - Fixed timer lifecycle with proper AnyCancellable management
-//  - Fixed memory leaks in QuickDoseForProfileView with cancellable work items
-//  - Fixed weak self compiler errors (structs don't support weak references)
-//  - Removed [weak self] from DispatchWorkItem closures
-//
-//  HINWEIS: Alle Sub-Views (Setup, GroupDose, AddParticipant) sind in dieser Datei definiert.
-//  calculateLiveLevelTimeline() iteriert in 10-Minuten-Schritten – bei langen Sessions ggf. optimieren.
+// BallerModeView.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Post-session feedback sheet (shown after ending, deferrable)
+// - Tolerance auto-adjustment wired through endSession()
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI
@@ -37,6 +21,8 @@ struct BallerModeView: View {
     @State private var showQuickDoseForParticipant = false
     @State private var currentTime = Date()
     @State private var timerCancellable: AnyCancellable?
+    @State private var feedbackSessionId: String?
+    @State private var showFeedback = false
 
     var body: some View {
         NavigationStack {
@@ -80,11 +66,22 @@ struct BallerModeView: View {
             }
             .confirmationDialog("End Session?", isPresented: $showEndConfirm, titleVisibility: .visible) {
                 Button("End & Save", role: .destructive) {
-                    appState.endSession()
+                    if let sessionId = appState.endSession() {
+                        feedbackSessionId = sessionId
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showFeedback = true
+                        }
+                    }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("The session will be archived and you can review it later.")
+            }
+            .sheet(isPresented: $showFeedback) {
+                if let sessionId = feedbackSessionId {
+                    SessionFeedbackView(sessionId: sessionId)
+                        .environment(appState)
+                }
             }
             .onAppear {
                 timerCancellable = Timer.publish(every: 30, on: .main, in: .common)

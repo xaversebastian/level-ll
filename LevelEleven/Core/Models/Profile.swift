@@ -1,17 +1,7 @@
-//
-//  Profile.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  Nutzerprofil für pharmakokinetische Berechnungen und Dosisempfehlungen.
-//  Enthält Name, Emoji-Avatar, Alter, Gewicht (kg), biologisches Geschlecht (BiologicalSex)
-//  sowie substanzspezifische Toleranzen (Tolerance-Struct, Level 0–11).
-//  metabolismFactor kombiniert Geschlecht, Neurodivergenz und Alter zu einem Multiplikator.
-//  toleranceFactor(for:) liefert den Verstärkungsfaktor einer Substanz für dieses Profil.
-//
-//  HINWEIS: Toleranz-Level 0–11 entsprechen der lEVEl-Skala; factor wird in AppState.calculateIntensity() genutzt.
-//  Gewicht wird auf 30–300 kg und Alter auf 13–99 Jahre geclampt.
+// Profile.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Added proLevel (1-5) internal experience rating from onboarding assessment
+// - Stripped legacy comments, added structured header
 //
 
 import Foundation
@@ -38,7 +28,6 @@ struct Tolerance: Codable, Hashable, Identifiable {
     var id: String { substanceId }
     let substanceId: String
     var level: Int
-    /// Letzter Konsumierdatum – nil = unbekannt (kein Decay)
     var lastUsedDate: Date?
 
     init(substanceId: String, level: Int, lastUsedDate: Date? = nil) {
@@ -47,13 +36,7 @@ struct Tolerance: Codable, Hashable, Identifiable {
         self.lastUsedDate = lastUsedDate
     }
 
-    /// Effektiver Toleranzlevel nach Abstinenz-Decay.
-    /// Decay-Kurve (Abstinenz in Tagen → verlorene Level):
-    ///   0–6 Tage:  kein Abbau
-    ///   7–13 Tage: -1 Level
-    ///   14–27 Tage: -2 Level
-    ///   28–55 Tage: -50 % (halber Peak)
-    ///   56+ Tage:   vollständig zurück auf 0
+    // Decay: 0-6d=0, 7-13d=-1, 14-27d=-2, 28-55d=-50%, 56d+=reset
     var effectiveLevel: Int {
         guard let lastUsed = lastUsedDate else { return level }
         let days = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 0
@@ -92,9 +75,9 @@ struct Profile: Identifiable, Codable, Hashable {
     var weightKg: Double
     var sex: BiologicalSex
     var isNeurodivergent: Bool
-    /// Nimmt der Nutzer SSRIs (selektive Serotonin-Wiederaufnahmehemmer)?
-    /// Erhöht das Risiko eines Serotonin-Syndroms bei Kombination mit MDMA/LSD.
     var takeSSRI: Bool
+    /// Internal experience rating (1=beginner … 5=very experienced). Set during onboarding.
+    var proLevel: Int
     var tolerances: [Tolerance]
     var favorites: [String]
     var personalLimit: Int
@@ -109,6 +92,7 @@ struct Profile: Identifiable, Codable, Hashable {
         sex: BiologicalSex = .male,
         isNeurodivergent: Bool = false,
         takeSSRI: Bool = false,
+        proLevel: Int = 3,
         tolerances: [Tolerance] = [],
         favorites: [String] = [],
         personalLimit: Int = 7
@@ -123,6 +107,7 @@ struct Profile: Identifiable, Codable, Hashable {
         self.sex = sex
         self.isNeurodivergent = isNeurodivergent
         self.takeSSRI = takeSSRI
+        self.proLevel = max(1, min(5, proLevel))
         self.tolerances = tolerances
         self.favorites = favorites
         self.personalLimit = max(1, min(11, personalLimit))
@@ -133,12 +118,22 @@ struct Profile: Identifiable, Codable, Hashable {
     }
 
     func tolerance(for category: SubstanceCategory) -> Int {
-        // Find highest effective tolerance for any substance in this category
         let categorySubstances = Substances.all.filter { $0.category == category }
         let levels = categorySubstances.compactMap { substance -> Int? in
             tolerances.first { $0.substanceId == substance.id }?.effectiveLevel
         }
         return levels.max() ?? 5
+    }
+
+    var proLevelLabel: String {
+        switch proLevel {
+        case 1: return "Beginner"
+        case 2: return "Casual"
+        case 3: return "Intermediate"
+        case 4: return "Experienced"
+        case 5: return "Very Experienced"
+        default: return "Unknown"
+        }
     }
 
     func toleranceFactor(for substanceId: String) -> Double {

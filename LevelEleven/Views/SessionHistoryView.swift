@@ -1,16 +1,8 @@
-//
-//  SessionHistoryView.swift
-//  LevelEleven
-//
-//  Version: 1.1  |  2026-03-12
-//
-//  Liste aller abgeschlossenen Baller-Mode-Sessions aus AppState.sessionHistory.
-//  Tipp → öffnet SessionDetailView als Sheet.
-//  Swipe links → Löschen (destructive).
-//  Swipe rechts → Session fortsetzen (ruft AppState.resumeSession auf).
-//  Leerer Zustand zeigt Placeholder-Illustration.
-//
-//  HINWEIS: Wird als Sheet aus BallerModeView geöffnet.
+// SessionHistoryView.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Feedback badge on sessions (filled/empty)
+// - "Add Feedback" context menu action for sessions without feedback
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI
@@ -19,6 +11,8 @@ struct SessionHistoryView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSession: BallerSession?
+    @State private var feedbackSessionId: String?
+    @State private var showFeedback = false
     @State private var searchText = ""
 
     var filteredHistory: [BallerSession] {
@@ -60,6 +54,12 @@ struct SessionHistoryView: View {
                 SessionDetailView(session: session)
                     .environment(appState)
             }
+            .sheet(isPresented: $showFeedback) {
+                if let sessionId = feedbackSessionId {
+                    SessionFeedbackView(sessionId: sessionId)
+                        .environment(appState)
+                }
+            }
         }
     }
 
@@ -78,7 +78,7 @@ struct SessionHistoryView: View {
         .padding(.top, 22)
         .padding(.bottom, 8)
     }
-    
+
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.arrow.circlepath")
@@ -94,7 +94,7 @@ struct SessionHistoryView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
-    
+
     private func sessionRow(_ session: BallerSession) -> some View {
         Button {
             selectedSession = session
@@ -104,11 +104,18 @@ struct SessionHistoryView: View {
                     .font(.body)
                     .foregroundStyle(Color.accent)
                     .frame(width: 22)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(session.name)
-                        .font(.subheadline.bold())
-                    
+                    HStack(spacing: 6) {
+                        Text(session.name)
+                            .font(.subheadline.bold())
+                        if session.hasFeedback {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.orange)
+                        }
+                    }
+
                     HStack(spacing: 8) {
                         Label(session.dateFormatted, systemImage: "calendar")
                         Label(session.durationFormatted, systemImage: "clock")
@@ -116,13 +123,13 @@ struct SessionHistoryView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 Text("\(session.allParticipantIds.count)")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.accent)
-                
+
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -134,6 +141,14 @@ struct SessionHistoryView: View {
         .buttonStyle(.plain)
         .pressFeedback()
         .contextMenu {
+            if !session.hasFeedback {
+                Button {
+                    feedbackSessionId = session.id
+                    showFeedback = true
+                } label: {
+                    Label("Add Feedback", systemImage: "star.bubble")
+                }
+            }
             Button {
                 appState.resumeSession(session)
                 dismiss()

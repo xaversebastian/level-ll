@@ -1,19 +1,7 @@
-//
-//  HomeView.swift
-//  LevelEleven
-//
-//  Version: 4.1  |  2026-03-12
-//
-//  Komplett neu: 11-Segment-Hero (kein Ring-Gauge), flat content sections
-//  ohne Card-Chrome, safeAreaInset für Log-Dose-Button.
-//
-//  Updates v4.1:
-//  - Added pressFeedback modifier for tactile response on rows
-//  - Standardized all padding to DS.screenPadding (16pt)
-//  - Enhanced section headers with colored accent bars
-//  - Added content transition animations (slide/scale/opacity)
-//  - Fixed 44pt minimum touch targets for accessibility
-//  - Added smooth segment indicator animations
+// HomeView.swift — LevelEleven
+// v5.0 | 2026-03-12 17:18
+// - 11-segment hero, flat content sections, safeAreaInset log button
+// - Stripped legacy comments, added structured header
 //
 import SwiftUI
 import Combine

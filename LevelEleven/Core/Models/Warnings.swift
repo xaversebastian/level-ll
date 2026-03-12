@@ -1,20 +1,7 @@
-//
-//  Warnings.swift
-//  LevelEleven
-//
-//  Version: 1.1  |  2026-03-11
-//
-//  Warnsystem für Substanz-Interaktionen und Level-basierte Risiken.
-//  WarningSeverity-Enum (info, caution, warning, danger) ist Comparable und
-//  liefert Farbe + SF-Symbol je Stufe.
-//
-//  checkInteractions() prüft:
-//  - Klassische Kombinations-Risiken (GHB+Alkohol, Opioid+Depressant, …)
-//  - Temporale Checks: GHB-Rebound, Kokain→MDMA-Timing, SSRI-Interaktionen
-//  - Neue: Stimulants+Alkohol als .warning (Herzrisiko), Entzugs-Krampfrisiko
-//
-//  HINWEIS: Beim Hinzufügen neuer Substanzen auch Interaktionen hier ergänzen.
-//  Warnungen sind nach Severity absteigend sortiert (danger zuerst).
+// Warnings.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Interaction and level-based warning system with severity tiers
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

@@ -1,20 +1,9 @@
-//
-//  ProfileView.swift
-//  LevelEleven
-//
-//  Version: 3.0  |  2026-03-12
-//
-//  Profilverwaltung: Liste aller Profile mit Swipe-to-Delete und Edit.
-//  Tipp auf ein Profil setzt es als aktives Profil. Plus-Button öffnet ProfileEditorView.
-//  ProfileEditorView (in dieser Datei) erlaubt Erstellen und Bearbeiten:
-//  Name, Emoji-Avatar (Grid-Picker), Alter/Gewicht/Geschlecht, ADHS-Flag,
-//  persönliches Limit (1–11) und Toleranzwerte je Substanz (Stepper 0–11).
-//
-//  Updates v3.0:
-//  - Flat rows on warm cream background matching HomeView
-//  - Removed card chrome and shadows
-//  - Consistent section headers with accent bars
-//  - DS.screenPadding everywhere
+// ProfileView.swift — LevelEleven
+// v4.0 | 2026-03-12 17:18
+// - Direct edit button on profile rows (no longer context-menu only)
+// - Shows proLevel badge on each profile
+// - ProfileEditorView supports proLevel editing
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI
@@ -75,41 +64,61 @@ struct ProfileView: View {
     }
     
     private func profileRow(_ profile: Profile) -> some View {
-        Button {
-            appState.setActiveProfile(profile)
-        } label: {
-            HStack(spacing: 14) {
-                // Left accent line for active profile
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(profile.isActive ? Color.accent : Color.clear)
-                    .frame(width: 3, height: 40)
-                
-                Text(profile.avatarEmoji)
-                    .font(.title2)
+        HStack(spacing: 14) {
+            // Left accent line for active profile
+            RoundedRectangle(cornerRadius: 2)
+                .fill(profile.isActive ? Color.accent : Color.clear)
+                .frame(width: 3, height: 40)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(profile.name)
-                        .font(.subheadline.bold())
-                    Text("\(profile.age) years · \(Int(profile.weightKg)) kg")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            Button {
+                appState.setActiveProfile(profile)
+            } label: {
+                HStack(spacing: 14) {
+                    Text(profile.avatarEmoji)
+                        .font(.title2)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(profile.name)
+                                .font(.subheadline.bold())
+                            Text(profile.proLevelLabel)
+                                .font(.system(size: 9, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.accent.opacity(0.12), in: Capsule())
+                                .foregroundStyle(Color.accent)
+                        }
+                        Text("\(profile.age) years · \(Int(profile.weightKg)) kg")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if profile.isActive {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Color.accent)
+                            .font(.title3)
+                    }
                 }
-
-                Spacer()
-
-                if profile.isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.accent)
-                        .font(.title3)
-                }
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, DS.screenPadding)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
+            .foregroundStyle(.primary)
+            .buttonStyle(.plain)
+            .pressFeedback()
+
+            // Direct edit button
+            Button {
+                editingProfile = profile
+            } label: {
+                Image(systemName: "pencil.circle")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
         }
-        .foregroundStyle(.primary)
-        .buttonStyle(.plain)
-        .pressFeedback()
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
         .contextMenu {
             Button {
                 editingProfile = profile
@@ -161,6 +170,7 @@ struct ProfileEditorView: View {
     @State private var sex: BiologicalSex = .male
     @State private var isNeurodivergent = false
     @State private var takeSSRI = false
+    @State private var proLevel = 3
     @State private var personalLimit = 7
     @State private var tolerances: [String: Int] = [:]
     /// Originale Toleranz-Objekte mit lastUsedDate – wird beim Speichern preserviert
@@ -207,6 +217,7 @@ struct ProfileEditorView: View {
                 VStack(spacing: 0) {
                     basicInfoSection
                     physiologySection
+                    experienceSection
                     tolerancesSection
                 }
                 .padding(.bottom, 20)
@@ -434,6 +445,44 @@ struct ProfileEditorView: View {
         }
     }
     
+    private var experienceSection: some View {
+        VStack(spacing: 0) {
+            editorSectionHeader("Experience Level", color: Color.accent)
+
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Pro Level")
+                        .font(.subheadline)
+                    Spacer()
+                    Text(proLevelLabel)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.accent)
+                }
+                Slider(value: Binding(
+                    get: { Double(proLevel) },
+                    set: { proLevel = Int($0) }
+                ), in: 1...5, step: 1)
+                .tint(Color.accent)
+                Text("Affects default safety prompts and recommendations")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+        }
+    }
+
+    private var proLevelLabel: String {
+        switch proLevel {
+        case 1: return "Beginner"
+        case 2: return "Casual"
+        case 3: return "Intermediate"
+        case 4: return "Experienced"
+        case 5: return "Very Experienced"
+        default: return "Unknown"
+        }
+    }
+
     private var tolerancesSection: some View {
         VStack(spacing: 0) {
             editorSectionHeader("Tolerances", color: Color.accent)
@@ -503,6 +552,7 @@ struct ProfileEditorView: View {
         isNeurodivergent = p.isNeurodivergent
         takeSSRI = p.takeSSRI
         personalLimit = p.personalLimit
+        proLevel = p.proLevel
         existingTolerances = p.tolerances
         for t in p.tolerances {
             tolerances[t.substanceId] = t.level
@@ -525,6 +575,7 @@ struct ProfileEditorView: View {
             updated.sex = sex
             updated.isNeurodivergent = isNeurodivergent
             updated.takeSSRI = takeSSRI
+            updated.proLevel = proLevel
             updated.personalLimit = personalLimit
             updated.tolerances = toleranceArray
             appState.updateProfile(updated)
@@ -537,6 +588,7 @@ struct ProfileEditorView: View {
                 sex: sex,
                 isNeurodivergent: isNeurodivergent,
                 takeSSRI: takeSSRI,
+                proLevel: proLevel,
                 tolerances: toleranceArray,
                 personalLimit: personalLimit
             )

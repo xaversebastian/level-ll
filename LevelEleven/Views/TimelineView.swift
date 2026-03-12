@@ -1,17 +1,7 @@
-//
-//  TimelineView.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  Level-über-Zeit-Chart für das aktive Profil (Swift Charts).
-//  Zeigt Vergangenheit + Zukunft (Prognose) in den Zeitfenstern 3h/6h/12h/24h.
-//  AreaMark + LineMark kombiniert für Flächen-Look mit Linie.
-//  Zeigt aktive Substanzen-Liste und Nüchternheits-Schätzung darunter.
-//  TimeRange-Enum konfiguriert Past- und Future-Minuten pro Fenster.
-//
-//  HINWEIS: generateTimelineData() sampelt alle 5 Minuten – bei breiterem Fenster
-//  ggf. Schritt erhöhen. Wird aus HomeView-Sheet und MoreView-NavigationLink aufgerufen.
+// TimelineView.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Level-over-time chart with selectable time ranges and active substances
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

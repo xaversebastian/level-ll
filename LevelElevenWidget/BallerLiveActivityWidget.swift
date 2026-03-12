@@ -1,15 +1,7 @@
-//
-//  BallerLiveActivityWidget.swift
-//  LevelElevenWidget
-//
-//  Version: 2.0  |  2026-03-12
-//
-//  Safety Monitor – zeigt für jeden Teilnehmer Level + Zeit bis nüchtern.
-//  Lock Screen: Session-Header, Teilnehmer-Zeilen mit Level-Bar + Sober-Zeit,
-//               Warning-Badge und Doses-Zähler unten.
-//  Dynamic Island expanded: Leading = Name/Timer, Trailing = Peak + Warning-Badge,
-//               Bottom = kompakte Teilnehmer-Zeilen.
-//  Compact/Minimal: höchstes Level + optionaler Warning-Punkt.
+// BallerLiveActivityWidget.swift — LevelElevenWidget
+// v3.0 | 2026-03-12 17:18
+// - Lock Screen + Dynamic Island live activity for Baller Mode sessions
+// - Stripped legacy comments, added structured header
 //
 
 #if canImport(ActivityKit) && canImport(WidgetKit)

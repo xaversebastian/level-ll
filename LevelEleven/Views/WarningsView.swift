@@ -1,16 +1,7 @@
-//
-//  WarningsView.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  Warnungs-Anzeige für das aktive Profil.
-//  WarningsView zeigt alle aktiven Interaktions- und Level-Warnungen als Cards,
-//  farbcodiert nach WarningSeverity (info/caution/warning/danger).
-//  WarningsBannerView ist eine kompakte 1-Zeilen-Variante für eingebettete Nutzung.
-//
-//  HINWEIS: Beide Views erfordern AppState über @Environment.
-//  Wird in HomeView als Sheet und als eingebettete Card genutzt.
+// WarningsView.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Interaction and level warnings with severity colors, plus compact banner variant
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

@@ -1,17 +1,7 @@
-//
-//  EmergencyView.swift
-//  LevelEleven
-//
-//  Version: 3.0  |  2026-03-12
-//
-//  Segmented Picker oben wechselt mit withAnimation zwischen den Modi.
-//  "Help someone" behält GCS-Rechner und Overdose-Checkliste.
-//
-//  Updates v3.0:
-//  - Flat rows on warm cream background matching HomeView
-//  - Removed card chrome and shadows
-//  - Consistent section headers with accent bars
-//  - DS.screenPadding everywhere
+// EmergencyView.swift — LevelEleven
+// v4.0 | 2026-03-12 17:18
+// - Segmented picker for self/other modes, GCS calculator, overdose checklist
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

@@ -1,17 +1,7 @@
-//
-//  BallerActivityAttributes.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  ActivityKit-Typen für die Baller-Mode-Live-Activity (iOS 16.2+).
-//  BallerActivityAttributes: statische Attribute (sessionName, startDate).
-//  ContentState: dynamisch aktualisierbare Werte (participantLevels, totalDoses,
-//  highestLevel, participantCount). ParticipantLevel: Name, Emoji, Level je Person.
-//
-//  SETUP: Widget Extension Target erstellen, NSSupportsLiveActivities = YES in beiden
-//  Info.plist-Dateien (App + Widget) setzen.
-//  Diese Datei muss BEIDEN Targets (App + Widget) zugeordnet sein.
+// BallerActivityAttributes.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - ActivityKit types for Baller Mode live activity (iOS 16.2+)
+// - Stripped legacy comments, added structured header
 //
 
 #if canImport(ActivityKit)

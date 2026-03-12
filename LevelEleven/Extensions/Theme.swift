@@ -1,21 +1,7 @@
-//
-//  Theme.swift
-//  LevelEleven
-//
-//  Version: 2.1  |  2026-03-12
-//
-//  Komplett neues Design System — warm, geerdet, elegant.
-//  Inspiration: warme Creme-Töne, Kupfer-Akzent, dunkles Espresso-Hero.
-//
-//  App-Hintergrund: warmes Creme-Weiß (#FAF8F4)
-//  Hero-Sektion:    tiefes warmes Espresso (#1C1208)
-//  Primary Accent:  Kupfer (#C4622A) – ersetzt kaltes Indigo
-//  Cards:           reines Weiß auf warmem Grund
-//
-//  Updates v2.1:
-//  - Increased shadow opacity from 5% to 10% for better depth
-//  - Added pressFeedback view modifier for tactile button response
-//  - Shadow radius increased from 10 to 12 for softer shadows
+// Theme.swift — LevelEleven
+// v3.0 | 2026-03-12 17:18
+// - Warm copper/espresso design system with DS tokens and pressFeedback modifier
+// - Stripped legacy comments, added structured header
 //
 import SwiftUI
 

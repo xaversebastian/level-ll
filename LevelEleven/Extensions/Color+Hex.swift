@@ -1,13 +1,7 @@
-//
-//  Color+Hex.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  SwiftUI-Color-Extension für Hex-String-Initialisierung.
-//  Unterstützt 3-stellige (#RGB → #RRGGBB), 6-stellige (#RRGGBB)
-//  und 8-stellige (#AARRGGBB) Hex-Strings. Führendes # wird ignoriert.
-//  Wird von Theme.swift und Views für substanzspezifische Farben genutzt.
+// Color+Hex.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Color extension for hex string init (3/6/8-digit formats)
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

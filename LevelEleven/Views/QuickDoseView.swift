@@ -1,17 +1,7 @@
-//
-//  QuickDoseView.swift
-//  LevelEleven
-//
-//  Version: 2.1  |  2026-03-12
-//
-//  Schneller Dose-Logger für das aktive Profil.
-//  Phase 1: Substanzliste mit Suchfeld und Favoriten.
-//  Phase 2: Neue Dosiseingabe — große Zahl, Stepper-Buttons,
-//           Route-Pills, Preset-Row mit personalisierten Werten.
-//
-//  Updates v2.2:
-//  - Fixed weak self compiler errors (QuickDoseView is a struct, not class)
-//  - Removed [weak self] from DispatchWorkItem closures
+// QuickDoseView.swift — LevelEleven
+// v3.0 | 2026-03-12 17:18
+// - Quick dose logger with substance list, large entry, route pills, presets
+// - Stripped legacy comments, added structured header
 //
 import SwiftUI
 

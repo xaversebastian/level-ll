@@ -1,16 +1,7 @@
-//
-//  NasalLineGuideView.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-12
-//
-//  Fullscreen visual guide for nasal dosing – shows proportional line widths
-//  per participant so mg values translate into a concrete spatial reference.
-//  Displayed as fullScreenCover before logging a nasal dose (QuickDoseView)
-//  or before group logging in BallerModeView.
-//
-//  Linienbreite: lineWidth = min((amount / substance.commonDose) * 180, 300)
-//  Referenzlinie: 180pt = commonDose (typisch ~50mg für Kokain)
+// NasalLineGuideView.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Fullscreen visual guide for nasal dosing with proportional line widths
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI

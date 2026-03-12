@@ -1,12 +1,7 @@
-//
-//  LevelTimelineService.swift
-//  LevelEleven
-//
-//  Version: 1.0  |  2026-03-11
-//
-//  Gemeinsamer Service für Level-Timeline-Berechnung.
-//  Vorher dupliziert in BallerModeView (LiveProfileLevelData / calculateLiveLevelTimeline)
-//  und SessionDetailView (ProfileLevelData / calculateLevelTimeline).
+// LevelTimelineService.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Shared service for level timeline computation (used by BallerMode + SessionDetail)
+// - Stripped legacy comments, added structured header
 //
 
 import Foundation

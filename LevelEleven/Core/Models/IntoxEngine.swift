@@ -1,25 +1,16 @@
+// IntoxEngine.swift — LevelEleven
+// v3.0 | 2026-03-12 17:18
+// - Pharmacokinetic dose recommendation engine with tolerance/SSRI/level awareness
+// - Stripped legacy comments, added structured header
 //
-//  IntoxEngine.swift
-//  LevelEleven
-//
-//  Version: 2.0  |  2026-03-12
-//
-//  Pharmakokinetiksystem für individuelle Dosisempfehlungen.
-//  Verwendet substanzspezifische Toleranz, non-lineare Toleranz-Multiplikatoren,
-//  aktuellen Intoxikationslevel, Zeit seit letzter Dosis und SSRI-Interaktion
-//  für realistischere Empfehlungen. Gibt personalisierte Light/Common/Strong-Werte
-//  zurück, nicht nur eine einzelne Dosis.
-//
-//  HINWEIS: Für klinische oder forensische Zwecke NICHT geeignet – vereinfachtes Modell.
-//  Die eigentliche Level-Berechnung (currentLevel, calculateIntensity) liegt in AppState.
 
 import Foundation
 
 struct DoseRecommendation {
-    let suggestedDose: Double      // primäre konservative Empfehlung
-    let adjustedLight: Double      // personalisierte Light-Dosis
-    let adjustedCommon: Double     // personalisierte Common-Dosis
-    let adjustedStrong: Double     // personalisierte Strong-Dosis
+    let suggestedDose: Double      // primary conservative recommendation
+    let adjustedLight: Double      // personalized light dose
+    let adjustedCommon: Double     // personalized common dose
+    let adjustedStrong: Double     // personalized strong dose
     let adjustmentFactors: [String]
     let warnings: [String]
 }
@@ -28,12 +19,12 @@ enum IntoxEngine {
 
     // MARK: - Tolerance Dose Multiplier (non-linear, realistic)
 
-    /// Wie viel mehr Substanz bei diesem Toleranzlevel nötig ist, um den gleichen Effekt zu erzielen.
-    /// Level 0 = naiv → konservativ 0.50×. Level 11 = sehr hohe Toleranz → max 2.2×.
-    /// Flachere, sicherere Kurve: oberes Ende drastisch reduziert.
+    /// Multiplier for how much more substance is needed at a given tolerance level.
+    /// Level 0 = naive → conservative 0.50×. Level 11 = very high tolerance → max 2.2×.
+    /// Flatter, safer curve: upper end drastically reduced.
     static func toleranceDoseMultiplier(for level: Int) -> Double {
         switch level {
-        case 0:  return 0.50   // keine Toleranz: stark konservativ
+        case 0:  return 0.50   // no tolerance: strongly conservative
         case 1:  return 0.65
         case 2:  return 0.80
         case 3:  return 0.95
@@ -44,7 +35,7 @@ enum IntoxEngine {
         case 8:  return 1.70
         case 9:  return 1.85
         case 10: return 2.00
-        case 11: return 2.20   // maximale Toleranz: max 2.2×, nicht 5.5×
+        case 11: return 2.20   // max tolerance: capped at 2.2×
         default: return 1.00
         }
     }
@@ -178,7 +169,7 @@ enum IntoxEngine {
         }
 
         // --- 9. Hard clamps ---
-        // Max = strongDose × toleranceMult, Strong darf nicht über den Clamp hinausgehen
+        // Max = strongDose × toleranceMult, strong must not exceed clamp
         let maxAllowed = substance.strongDose * max(1.0, toleranceMult)
         adjLight  = max(0.1, min(adjLight,  maxAllowed))
         adjCommon = max(0.1, min(adjCommon, maxAllowed))

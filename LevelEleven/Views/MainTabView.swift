@@ -1,20 +1,13 @@
-//
-//  MainTabView.swift
-//  LevelEleven
-//
-//  Version: 2.0  |  2026-03-12
-//
-//  Updates v2.0:
-//  - MoreView redesigned to match HomeView design patterns
-//  - Standardized section headers with accent bars
-//  - Card-style sections with shadows and DS tokens
-//  - Added pressFeedback to interactive elements
+// MainTabView.swift — LevelEleven
+// v3.0 | 2026-03-12 17:18
+// - AppState now injected from LevelElevenApp (no longer created locally)
+// - Stripped legacy comments, added structured header
 //
 
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var appState = AppState()
+    @Environment(AppState.self) private var appState
     @State private var selectedTab = 0
 
     var body: some View {
@@ -52,7 +45,6 @@ struct MainTabView: View {
                 }
         }
         .tint(Color.accent)
-        .environment(appState)
     }
 }
 
@@ -797,4 +789,5 @@ struct DisclaimerView: View {
 
 #Preview {
     MainTabView()
+        .environment(AppState())
 }

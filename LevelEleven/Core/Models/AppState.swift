@@ -1,25 +1,9 @@
-//
-//  AppState.swift
-//  LevelEleven
-//
-//  Version: 1.5  |  2026-03-12
-//
-//  Zentraler App-State als @Observable-Klasse (iOS 17+).
-//  Verwaltet Profile, Doses, aktive Session und sessionHistory.
-//  Persistenz über UserDefaults + JSON (alle Typen sind Codable).
-//  Views greifen per @Environment(AppState.self) darauf zu – kein EnvironmentObject nötig.
-//  Kapselt außerdem Live-Activity-Start/-Stop/-Update für Baller Mode.
-//
-//  Updates v1.5:
-//  - Fixed force unwrapping in sessionDoses function (endedAt)
-//  - Added thread-safe cache operations with concurrent dispatch queue
-//  - Optimized minutesUntilBaseline with adaptive step sizing + binary search
-//  - Cache reads use sync, writes use barrier flags for thread safety
-//  - Marked cache properties with @ObservationIgnored to fix black screen crash
-//
-//  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
-//  UserDefaults-Keys sind als private StorageKey-Enum definiert.
-//  currentLevel() und levelColor() können direkt aus Views aufgerufen werden.
+// AppState.swift — LevelEleven
+// v2.0 | 2026-03-12 17:18
+// - Auto-adjust tolerances for all participants when session ends
+// - Post-session feedback flow (deferrable via pendingFeedbackSessionId)
+// - Onboarding-aware init (hasCompletedOnboarding check)
+// - Stripped legacy comments, added structured header
 //
 
 import Foundation
@@ -44,7 +28,10 @@ final class AppState {
         didSet { UserDefaults.standard.set(calmMode, forKey: "calmMode") }
     }
 
-    // MARK: - Computation Cache (TTL = 10s – aligns with HomeView timer tick)
+    /// Session ID whose feedback was deferred — prompt again later
+    var pendingFeedbackSessionId: String?
+
+    // MARK: - Computation Cache
 
     private struct CacheEntry<T> {
         let value: T
@@ -72,26 +59,22 @@ final class AppState {
         static let profiles = "profiles"
         static let doses = "doses"
         static let activeProfileId = "activeProfileId"
-
         static let sessionHistory = "sessionHistory"
         static let activeSession = "activeSession"
         static let liveActivityEnabled = "liveActivityEnabled"
+        static let pendingFeedbackSessionId = "pendingFeedbackSessionId"
     }
 
     // MARK: - Init
 
     init() {
-        // Load persisted state first (so defaults don't overwrite persisted data).
         loadCoreState()
 
-        // If nothing persisted yet, create defaults once.
         if profiles.isEmpty {
             setupDefaultProfiles()
             saveCoreState()
         } else {
-            // Ensure activeProfileId points to an existing profile.
             if let activeId = activeProfileId, profiles.contains(where: { $0.id == activeId }) {
-                // ok
             } else {
                 activeProfileId = profiles.first?.id
             }
@@ -99,11 +82,11 @@ final class AppState {
         }
 
         migrateAvatarEmojis()
-
         loadSessionHistory()
         loadActiveSession()
         loadLiveActivityEnabled()
         calmMode = UserDefaults.standard.bool(forKey: "calmMode")
+        pendingFeedbackSessionId = UserDefaults.standard.string(forKey: StorageKey.pendingFeedbackSessionId)
     }
 
     // MARK: - HomeView Convenience API
@@ -114,7 +97,6 @@ final class AppState {
     }
 
     func lastDose(for profileId: String, at date: Date = Date()) -> Dose? {
-        // Most recent dose for this profile up to 'date'
         doses
             .filter { $0.profileId == profileId && $0.timestamp <= date }
             .max(by: { $0.timestamp < $1.timestamp })
@@ -124,22 +106,8 @@ final class AppState {
         guard let d = lastDose(for: profileId, at: now) else {
             return LastDoseSummary(substance: "—", elapsed: "—")
         }
-
-        let substanceName: String = {
-            // Try common fields, fall back safely.
-            if let s = Substances.byId[d.substanceId] {
-                // Prefer shortName if available in your codebase, else name, else id.
-                // (We avoid assuming the exact model; these compile only if property exists.)
-                // We'll do the safest: use id-derived fallback when anything is uncertain.
-                // Since we can't reflect at runtime in Swift, use the fields we KNOW appear in HomeView:
-                // HomeView uses `Substances.byId[dose.substanceId]` and then `substance.shortName`.
-                return s.shortName
-            }
-            return d.substanceId
-        }()
-
+        let substanceName = Substances.byId[d.substanceId]?.shortName ?? d.substanceId
         let elapsedString = formatElapsed(since: d.timestamp, now: now)
-
         return LastDoseSummary(substance: substanceName, elapsed: elapsedString)
     }
 
@@ -246,14 +214,78 @@ final class AppState {
         startLiveActivity()
     }
 
-    func endSession() {
-        guard var session = activeSession else { return }
+    /// Ends the active session, bumps tolerances for substances used, and stores the session.
+    /// Returns the ended session ID for feedback prompting.
+    @discardableResult
+    func endSession() -> String? {
+        guard var session = activeSession else { return nil }
         session.end()
+
+        // Auto-adjust tolerances for all participants based on consumed substances
+        adjustTolerancesAfterSession(session)
+
         sessionHistory.insert(session, at: 0)
         saveSessionHistory()
+
+        let sessionId = session.id
         activeSession = nil
         saveActiveSession()
         endLiveActivity()
+
+        // Mark for deferred feedback
+        pendingFeedbackSessionId = sessionId
+        UserDefaults.standard.set(sessionId, forKey: StorageKey.pendingFeedbackSessionId)
+
+        return sessionId
+    }
+
+    // MARK: - Tolerance Auto-Adjustment
+
+    private func adjustTolerancesAfterSession(_ session: BallerSession) {
+        let sDoses = sessionDoses(for: session)
+        guard !sDoses.isEmpty else { return }
+
+        for participant in session.participants {
+            guard let pIdx = profiles.firstIndex(where: { $0.id == participant.profileId }) else { continue }
+            let participantDoses = sDoses.filter { $0.profileId == participant.profileId }
+            let substancesUsed = Set(participantDoses.map { $0.substanceId })
+
+            for substanceId in substancesUsed {
+                let totalAmount = participantDoses.filter { $0.substanceId == substanceId }.reduce(0.0) { $0 + $1.amount }
+                guard let substance = Substances.byId[substanceId] else { continue }
+
+                // Bump = 1 level per commonDose consumed, capped at +2 per session
+                let bump = min(2, max(1, Int((totalAmount / substance.commonDose).rounded())))
+
+                if let tIdx = profiles[pIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
+                    profiles[pIdx].tolerances[tIdx].level = min(11, profiles[pIdx].tolerances[tIdx].level + bump)
+                    profiles[pIdx].tolerances[tIdx].lastUsedDate = Date()
+                } else {
+                    profiles[pIdx].tolerances.append(
+                        Tolerance(substanceId: substanceId, level: bump, lastUsedDate: Date())
+                    )
+                }
+            }
+        }
+        saveProfiles()
+    }
+
+    // MARK: - Session Feedback
+
+    func submitFeedback(_ feedback: SessionFeedback, for sessionId: String) {
+        if let idx = sessionHistory.firstIndex(where: { $0.id == sessionId }) {
+            sessionHistory[idx].feedback = feedback
+            saveSessionHistory()
+        }
+        if pendingFeedbackSessionId == sessionId {
+            pendingFeedbackSessionId = nil
+            UserDefaults.standard.removeObject(forKey: StorageKey.pendingFeedbackSessionId)
+        }
+    }
+
+    func dismissPendingFeedback() {
+        pendingFeedbackSessionId = nil
+        UserDefaults.standard.removeObject(forKey: StorageKey.pendingFeedbackSessionId)
     }
 
     func resumeSession(_ session: BallerSession) {
@@ -351,15 +383,12 @@ final class AppState {
 
     // MARK: - Emoji Migration
 
-    /// Fixes avatarEmojis that don't render on all iOS versions.
-    /// Some standalone person emojis (🧑, 👩 without skin tone) render as [?] on certain devices.
     private func migrateAvatarEmojis() {
-        // Known problematic emojis → safe replacements
         let emojiReplacements: [String: String] = [
-            "\u{1F9D1}": "😎",   // 🧑 (Person, no skin tone) → 😎
-            "\u{1F469}": "🥰",   // 👩 (Woman, no skin tone) → 🥰
-            "\u{1F468}": "😎",   // 👨 (Man, no skin tone) → 😎
-            "\u{1FAF1}": "🤝",   // 🫱 (newer gesture) → 🤝
+            "\u{1F9D1}": "😎",
+            "\u{1F469}": "🥰",
+            "\u{1F468}": "😎",
+            "\u{1FAF1}": "🤝",
         ]
 
         var needsSave = false
@@ -368,7 +397,6 @@ final class AppState {
                 profiles[i].avatarEmoji = replacement
                 needsSave = true
             }
-            // Also fix empty or whitespace-only emojis
             if profiles[i].avatarEmoji.trimmingCharacters(in: .whitespaces).isEmpty {
                 profiles[i].avatarEmoji = "😎"
                 needsSave = true
