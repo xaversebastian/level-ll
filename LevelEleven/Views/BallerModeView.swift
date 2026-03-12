@@ -11,10 +11,11 @@
 //  Enthält auch: SessionSetupView (Neue Session), GroupDoseView (Gruppen-Dose-Logger),
 //  AddParticipantView (Teilnehmer nachholen).
 //
-//  Updates v1.3:
+//  Updates v1.4:
 //  - Fixed timer lifecycle with proper AnyCancellable management
 //  - Fixed memory leaks in QuickDoseForProfileView with cancellable work items
-//  - Added pressFeedback to dose confirmation dismissal
+//  - Fixed weak self compiler errors (structs don't support weak references)
+//  - Removed [weak self] from DispatchWorkItem closures
 //
 //  HINWEIS: Alle Sub-Views (Setup, GroupDose, AddParticipant) sind in dieser Datei definiert.
 //  calculateLiveLevelTimeline() iteriert in 10-Minuten-Schritten – bei langen Sessions ggf. optimieren.
@@ -1313,12 +1314,12 @@ struct QuickDoseForProfileView: View {
         dismissWorkItem?.cancel()
         
         // Create new work item for delayed dismissal
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self = self, self.showConfirmation else { return }
+        let workItem = DispatchWorkItem {
+            guard self.showConfirmation else { return }
             self.showConfirmation = false
             
-            let secondWorkItem = DispatchWorkItem { [weak self] in
-                self?.dismiss()
+            let secondWorkItem = DispatchWorkItem {
+                self.dismiss()
             }
             self.dismissWorkItem = secondWorkItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: secondWorkItem)

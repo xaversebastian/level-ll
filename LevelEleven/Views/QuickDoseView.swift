@@ -9,11 +9,9 @@
 //  Phase 2: Neue Dosiseingabe — große Zahl, Stepper-Buttons,
 //           Route-Pills, Preset-Row mit personalisierten Werten.
 //
-//  Updates v2.1:
-//  - Added pressFeedback modifier for tactile button response
-//  - Standardized padding to use DS.screenPadding tokens
-//  - Added max dose validation (3x strong dose safety limit)
-//  - Fixed memory leaks with cancellable DispatchWorkItem
+//  Updates v2.2:
+//  - Fixed weak self compiler errors (QuickDoseView is a struct, not class)
+//  - Removed [weak self] from DispatchWorkItem closures
 //
 import SwiftUI
 
@@ -508,12 +506,12 @@ struct QuickDoseView: View {
         dismissWorkItem?.cancel()
         
         // Create new work item for delayed dismissal
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self = self, self.showConfirmation else { return }
+        let workItem = DispatchWorkItem {
+            guard self.showConfirmation else { return }
             self.showConfirmation = false
             
-            let secondWorkItem = DispatchWorkItem { [weak self] in
-                self?.dismiss()
+            let secondWorkItem = DispatchWorkItem {
+                self.dismiss()
             }
             self.dismissWorkItem = secondWorkItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: secondWorkItem)
@@ -599,8 +597,8 @@ struct QuickDoseView: View {
             showConfirmation = false
             dismissWorkItem?.cancel()
             
-            let workItem = DispatchWorkItem { [weak self] in
-                self?.dismiss()
+            let workItem = DispatchWorkItem {
+                self.dismiss()
             }
             dismissWorkItem = workItem
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: workItem)
