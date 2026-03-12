@@ -497,7 +497,7 @@ struct ProfileEditorView: View {
             ForEach(Array(Substances.all.enumerated()), id: \.element.id) { idx, substance in
                 if idx > 0 { Divider().padding(.leading, 54) }
 
-                let peakLevel = tolerances[substance.id] ?? 5
+                let peakLevel = tolerances[substance.id] ?? 3
                 let existing = existingTolerances.first { $0.substanceId == substance.id }
                 let effectiveLevel = existing.map { t -> Int in
                     // Use current edited level as base for decay calculation
@@ -530,7 +530,7 @@ struct ProfileEditorView: View {
                     Stepper(
                         "\(peakLevel)",
                         value: Binding(
-                            get: { tolerances[substance.id] ?? 5 },
+                            get: { tolerances[substance.id] ?? 3 },
                             set: { tolerances[substance.id] = $0 }
                         ),
                         in: 0...11

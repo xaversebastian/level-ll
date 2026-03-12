@@ -20,22 +20,21 @@ enum IntoxEngine {
     // MARK: - Tolerance Dose Multiplier (non-linear, realistic)
 
     /// Multiplier for how much more substance is needed at a given tolerance level.
-    /// Level 0 = naive → conservative 0.50×. Level 11 = very high tolerance → max 2.2×.
-    /// Flatter, safer curve: upper end drastically reduced.
+    /// Level 3 = neutral (1.0×). Below 3 = conservative. Above 3 = increased.
     static func toleranceDoseMultiplier(for level: Int) -> Double {
         switch level {
         case 0:  return 0.50   // no tolerance: strongly conservative
         case 1:  return 0.65
         case 2:  return 0.80
-        case 3:  return 0.95
+        case 3:  return 1.00   // neutral — default for new profiles
         case 4:  return 1.10
-        case 5:  return 1.25
-        case 6:  return 1.40
-        case 7:  return 1.55
-        case 8:  return 1.70
-        case 9:  return 1.85
+        case 5:  return 1.20
+        case 6:  return 1.35
+        case 7:  return 1.50
+        case 8:  return 1.65
+        case 9:  return 1.80
         case 10: return 2.00
-        case 11: return 2.20   // max tolerance: capped at 2.2×
+        case 11: return 2.30   // max tolerance: capped at 2.3×
         default: return 1.00
         }
     }
@@ -53,6 +52,18 @@ enum IntoxEngine {
         currentLevel: Double = 0,
         lastDoseDate: Date? = nil
     ) -> DoseRecommendation {
+
+        // Manual-dose-only substances (e.g. GHB/GBL) are excluded from recommendations
+        if substance.manualDoseOnly {
+            return DoseRecommendation(
+                suggestedDose: 0,
+                adjustedLight: 0,
+                adjustedCommon: 0,
+                adjustedStrong: 0,
+                adjustmentFactors: ["Manual tracking only — no dose recommendation"],
+                warnings: ["This substance requires precise self-dosing. The app does not calculate doses for \(substance.shortName)."]
+            )
+        }
 
         var factors: [String] = []
         var warnings: [String] = []

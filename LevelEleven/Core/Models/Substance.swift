@@ -96,8 +96,12 @@ struct Substance: Identifiable, Codable, Hashable {
     let description: String
     let risks: [String]
     let saferUse: [String]
+    /// When true, IntoxEngine will not produce dose recommendations (manual tracking only)
+    var manualDoseOnly: Bool = false
+    /// Optional drug-checking guidance (websites, pill testing info)
+    var drugCheckingInfo: String? = nil
 
-    // Route-spezifische Pharmakokinetik – nil bedeutet: globalen Wert + Route-Multiplikator nutzen
+    // Route-specific pharmacokinetics — nil means: use global value + route multiplier
     var onsetByRoute:    [DoseRoute: Double]? = nil
     var peakByRoute:     [DoseRoute: Double]? = nil
     var durationByRoute: [DoseRoute: Double]? = nil
@@ -185,7 +189,32 @@ struct Substances {
             strongDose: 60,
             description: "Synthetic stimulant. Increases dopamine and norepinephrine. Long duration, strongly stimulating.",
             risks: ["Sleep deprivation", "Dehydration", "Overheating", "Psychosis with prolonged use", "Cardiovascular strain", "Appetite suppression"],
-            saferUse: ["Oral is gentler than nasal", "Remember to eat and drink", "Plan sleep breaks", "Use saline nasal spray if snorting"]
+            saferUse: ["Oral is gentler than nasal", "Remember to eat and drink", "Plan sleep breaks", "Use saline nasal spray if snorting"],
+            drugCheckingInfo: "Street amphetamine purity varies enormously (5–70%). Always test before use.\n\n• drugsdata.org — Lab-tested results\n• saferparty.ch — Swiss drug checking\n• miraculix-lab.de — Reagent test kits"
+        ),
+
+        // METHAMPHETAMINE
+        Substance(
+            id: "methamphetamine",
+            name: "Methamphetamine",
+            shortName: "Meth",
+            category: .stimulant,
+            routes: [.nasal, .smoked, .oral, .iv],
+            onsetMinutes: 5,
+            peakMinutes: 60,
+            durationMinutes: 720,
+            halfLifeMinutes: 720,
+            unit: .mg,
+            lightDose: 5,
+            commonDose: 15,
+            strongDose: 30,
+            description: "Extremely potent synthetic stimulant. Much longer duration and higher addiction potential than amphetamine. Produces intense euphoria and energy followed by severe crash.",
+            risks: ["Extremely high addiction potential", "Severe cardiovascular strain", "Psychosis (especially with sleep deprivation)", "Neurotoxicity", "Dental damage ('meth mouth')", "Severe comedown/crash", "Hyperthermia"],
+            saferUse: ["Avoid IV and smoked routes (highest addiction risk)", "Force yourself to eat and drink", "Set strict time limits", "Sleep is critical — do not binge", "Have someone check on you", "Start with the lowest possible dose"],
+            drugCheckingInfo: "Street methamphetamine can contain fentanyl or other dangerous adulterants. Always test.\n\n• drugsdata.org — Lab-tested results\n• fentanyl test strips are essential\n• saferparty.ch — Swiss drug checking",
+            onsetByRoute:    [.nasal: 5, .smoked: 1, .iv: 1, .oral: 30],
+            peakByRoute:     [.nasal: 60, .smoked: 30, .iv: 15, .oral: 120],
+            durationByRoute: [.nasal: 720, .smoked: 480, .iv: 480, .oral: 960]
         ),
         
         // MDMA
@@ -205,7 +234,8 @@ struct Substances {
             strongDose: 150,
             description: "Entactogen that releases serotonin. Produces empathy, euphoria, and connectedness. Popular party drug.",
             risks: ["Serotonin syndrome with other serotonergics", "Hyperthermia", "Hyponatremia (drinking too much water)", "Neurotoxicity", "Comedown/hangover"],
-            saferUse: ["Max 1.5mg/kg body weight", "At least 3 months between uses", "Do not redose", "Electrolytes, not just water", "Stay cool"]
+            saferUse: ["Max 1.5mg/kg body weight", "At least 3 months between uses", "Do not redose", "Electrolytes, not just water", "Stay cool", "Always test your pills/powder before use"],
+            drugCheckingInfo: "Ecstasy pills vary wildly in MDMA content (50–300mg+). Always check your pills at a drug checking service before use.\n\n• drugsdata.org — Lab-tested pill results worldwide\n• pillreports.net — Community pill reports\n• DIMS (NL) — Dutch drug checking service\n• Saferparty.ch (CH) — Swiss drug checking\n• miraculix-lab.de — Reagent test kits\n\nUse reagent test kits (Marquis, Mecke, Simon's) to verify MDMA at home. A full lab test is always better."
         ),
         
         // KETAMINE
@@ -236,7 +266,7 @@ struct Substances {
         Substance(
             id: "ghb",
             name: "GHB",
-            shortName: "G",
+            shortName: "GHB",
             category: .depressant,
             routes: [.oral],
             onsetMinutes: 15,
@@ -244,12 +274,36 @@ struct Substances {
             durationMinutes: 120,
             halfLifeMinutes: 30,
             unit: .ml,
-            lightDose: 0.1,
-            commonDose: 0.2,
-            strongDose: 0.3,
-            description: "GABAergic depressant. Relaxing, disinhibiting, and euphoric. Very narrow therapeutic window.",
-            risks: ["Respiratory depression", "NEVER mix with alcohol", "Loss of consciousness", "G-lock", "Physical dependence", "Withdrawal can be fatal"],
-            saferUse: ["Dose precisely (use a pipette)", "At least 2 hours between doses", "NO alcohol", "Sober supervisor present", "Set a timer"]
+            lightDose: 0.5,
+            commonDose: 1.0,
+            strongDose: 1.5,
+            description: "GABAergic depressant (gamma-hydroxybutyrate). Relaxing, disinhibiting, euphoric. Extremely narrow margin between recreational and dangerous dose. Concentration varies between batches — always dose conservatively with unknown sources.",
+            risks: ["Respiratory depression / G-lock", "NEVER mix with alcohol or other depressants", "Loss of consciousness", "Rapid physical dependence", "Withdrawal can be life-threatening (seizures)", "Dose-response varies by concentration"],
+            saferUse: ["Always use a pipette or syringe for precise measurement", "MINIMUM 2 hours between doses — set a timer", "NO alcohol, NO benzos, NO opioids", "Always have a sober supervisor", "Know your source's concentration", "Start with a very small test dose from new batches"],
+            manualDoseOnly: true,
+            drugCheckingInfo: "GHB concentration varies drastically between batches (typically 0.5–1.5g/ml). There is no safe way to estimate dose without knowing the concentration. Always start with a tiny test dose from any new source. Drug checking services can measure GHB concentration — use them.\n\n• saferparty.ch — Swiss drug checking (GHB concentration testing)\n• drugsdata.org — Lab results database"
+        ),
+
+        // GBL
+        Substance(
+            id: "gbl",
+            name: "GBL",
+            shortName: "GBL",
+            category: .depressant,
+            routes: [.oral],
+            onsetMinutes: 10,
+            peakMinutes: 40,
+            durationMinutes: 105,
+            halfLifeMinutes: 25,
+            unit: .ml,
+            lightDose: 0.3,
+            commonDose: 0.7,
+            strongDose: 1.2,
+            description: "GHB prodrug (gamma-butyrolactone). Converted to GHB in the body. Faster onset and more potent per ml than GHB. Same risks apply — extremely narrow safety margin. Industrial solvent that is caustic undiluted.",
+            risks: ["All GHB risks apply — respiratory depression, G-lock, death", "NEVER mix with alcohol or other depressants", "More potent per ml than GHB — easier to overdose", "Caustic to mouth/throat if undiluted", "Rapid physical dependence", "Withdrawal can be life-threatening"],
+            saferUse: ["Always dilute before consuming", "Use a pipette or syringe — precision is critical", "MINIMUM 2 hours between doses — set a timer", "NO alcohol, NO benzos, NO opioids", "GBL is roughly 1.5× more potent than GHB per ml", "Always have a sober supervisor", "Start with far less than you think you need"],
+            manualDoseOnly: true,
+            drugCheckingInfo: "GBL is a prodrug converted to GHB in the body. It is roughly 1.5× more potent than GHB per ml. Purity varies. Drug checking services can test concentration.\n\n• saferparty.ch — Swiss drug checking\n• drugsdata.org — Lab results database"
         ),
         
         // CANNABIS
@@ -296,11 +350,11 @@ struct Substances {
             saferUse: ["Pre-weigh your dose", "Lock away remaining supply", "Set a time limit", "Stay hydrated"]
         ),
         
-        // 4-MMC (Mephedrone)
+        // MEPHEDRONE (4-MMC)
         Substance(
             id: "4mmc",
-            name: "4-MMC",
-            shortName: "Mephedrone",
+            name: "Mephedrone (4-MMC)",
+            shortName: "4-MMC",
             category: .stimulant,
             routes: [.oral, .nasal],
             onsetMinutes: 15,
@@ -311,9 +365,10 @@ struct Substances {
             lightDose: 30,
             commonDose: 50,
             strongDose: 70,
-            description: "Synthetic cathinone, also known as 'meow'. Strongly stimulating and euphoric. Short duration.",
-            risks: ["Very high addiction potential", "Vasoconstriction", "Overheating", "Bruxism (jaw clenching)", "Nasal damage"],
-            saferUse: ["Strict dosing", "Do not redose", "Take breaks", "Monitor heart"]
+            description: "Synthetic cathinone, also known as 'meow meow'. Strongly stimulating and euphoric with entactogenic qualities. Short duration leads to compulsive redosing.",
+            risks: ["Very high addiction potential", "Vasoconstriction", "Overheating", "Bruxism (jaw clenching)", "Nasal damage", "Compulsive redosing"],
+            saferUse: ["Strict dosing — pre-weigh and lock away supply", "Do not redose", "Take breaks", "Monitor heart rate"],
+            drugCheckingInfo: "Mephedrone is frequently adulterated or sold as other cathinones. Test before use.\n\n• drugsdata.org — Lab-tested results\n• saferparty.ch — Swiss drug checking"
         ),
         
         // LSD

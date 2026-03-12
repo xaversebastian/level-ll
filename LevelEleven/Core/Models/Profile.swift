@@ -55,13 +55,19 @@ struct Tolerance: Codable, Hashable, Identifiable {
 
     private func factorFor(_ lvl: Int) -> Double {
         switch lvl {
-        case 0: return 0.5
-        case 1...3: return 0.6 + Double(lvl) * 0.1
-        case 4...6: return 0.9 + Double(lvl - 4) * 0.15
-        case 7...9: return 1.3 + Double(lvl - 7) * 0.25
-        case 10: return 2.0
-        case 11: return 2.5
-        default: return 1.0
+        case 0:  return 0.50
+        case 1:  return 0.65
+        case 2:  return 0.80
+        case 3:  return 1.00   // neutral — default for new profiles
+        case 4:  return 1.10
+        case 5:  return 1.20
+        case 6:  return 1.35
+        case 7:  return 1.50
+        case 8:  return 1.65
+        case 9:  return 1.80
+        case 10: return 2.00
+        case 11: return 2.30
+        default: return 1.00
         }
     }
 }
@@ -114,7 +120,7 @@ struct Profile: Identifiable, Codable, Hashable {
     }
     
     func tolerance(for substanceId: String) -> Int {
-        tolerances.first { $0.substanceId == substanceId }?.effectiveLevel ?? 5
+        tolerances.first { $0.substanceId == substanceId }?.effectiveLevel ?? 3
     }
 
     func tolerance(for category: SubstanceCategory) -> Int {
@@ -122,7 +128,7 @@ struct Profile: Identifiable, Codable, Hashable {
         let levels = categorySubstances.compactMap { substance -> Int? in
             tolerances.first { $0.substanceId == substance.id }?.effectiveLevel
         }
-        return levels.max() ?? 5
+        return levels.max() ?? 3
     }
 
     var proLevelLabel: String {

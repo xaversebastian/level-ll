@@ -47,12 +47,12 @@ struct WarningSystem {
 
     // MARK: - Interaction Checks
 
-    /// Prüft Interaktionen basierend auf aktiven Dosen + Dosishistorie + Profil.
+    /// Checks interactions based on active doses + dose history + profile.
     /// - Parameters:
-    ///   - activeDoses: Dosen die aktuell noch im aktiven Fenster liegen.
-    ///   - allDoses:    Gesamte Dosishistorie des Profils (für temporale Checks).
-    ///   - profile:     Nutzerprofil (SSRI-Status, persönliches Limit, etc.)
-    ///   - now:         Referenz-Zeitpunkt (default: Date())
+    ///   - activeDoses: Doses currently in the active window.
+    ///   - allDoses:    Full dose history for the profile (for temporal checks).
+    ///   - profile:     User profile (SSRI status, personal limit, etc.)
+    ///   - now:         Reference time (default: Date())
     static func checkInteractions(
         activeDoses: [Dose],
         allDoses: [Dose],
@@ -62,9 +62,9 @@ struct WarningSystem {
         var warnings: [Warning] = []
         let activeIds = Set(activeDoses.map { $0.substanceId })
 
-        // ── DANGER: Atemwegslähmung – Opioide + Depressiva ─────────────────────
+        // ── DANGER: Respiratory depression – Opioids + Depressants ─────────────
         let opioids     = Set(["morphine"])
-        let depressants = Set(["alcohol", "ghb", "alprazolam"])
+        let depressants = Set(["alcohol", "ghb", "gbl", "alprazolam"])
         if !opioids.isDisjoint(with: activeIds) && !depressants.isDisjoint(with: activeIds) {
             warnings.append(Warning(
                 severity: .danger,
@@ -74,17 +74,28 @@ struct WarningSystem {
             ))
         }
 
-        // ── DANGER: GHB + Alkohol ────────────────────────────────────────────────
-        if activeIds.contains("ghb") && activeIds.contains("alcohol") {
+        // ── DANGER: GHB/GBL + Alcohol ──────────────────────────────────────────────────────────
+        let gSubstances = Set(["ghb", "gbl"])
+        if !gSubstances.isDisjoint(with: activeIds) && activeIds.contains("alcohol") {
             warnings.append(Warning(
                 severity: .danger,
-                title: "Dangerous Combination",
-                message: "GHB and alcohol is one of the most dangerous drug combinations.",
-                advice: "Never mix G with alcohol. This can cause coma or death."
+                title: "Lethal Combination",
+                message: "GHB/GBL and alcohol is one of the most dangerous drug combinations. This kills.",
+                advice: "NEVER mix G with alcohol. This combination causes respiratory arrest, coma, and death."
             ))
         }
 
-        // ── DANGER: SSRI + Serotonergika ────────────────────────────────────────
+        // ── DANGER: GHB + GBL together ────────────────────────────────────────────────────────
+        if activeIds.contains("ghb") && activeIds.contains("gbl") {
+            warnings.append(Warning(
+                severity: .danger,
+                title: "GHB + GBL Active",
+                message: "Both GHB and GBL are active. GBL converts to GHB in the body — this stacks dangerously.",
+                advice: "Do NOT take more of either. Monitor breathing. Have someone watch you."
+            ))
+        }
+
+        // ── DANGER: SSRI + Serotonergics ─────────────────────────────────────────
         if profile.takeSSRI {
             let serotonergics = Set(["mdma", "lsd", "psilocybin"])
             if !serotonergics.isDisjoint(with: activeIds) {
@@ -97,7 +108,7 @@ struct WarningSystem {
             }
         }
 
-        // ── WARNING: Serotonin-Syndrom – mehrere Serotonergika ─────────────────
+        // ── WARNING: Serotonin syndrome – multiple serotonergics ────────────────
         let serotonergics = Set(["mdma", "lsd", "psilocybin"])
         if activeIds.intersection(serotonergics).count >= 2 {
             warnings.append(Warning(
@@ -109,7 +120,7 @@ struct WarningSystem {
         }
 
         // ── WARNING: Stimulant Stacking ─────────────────────────────────────────
-        let stimulants = Set(["cocaine", "amphetamine", "3mmc", "4mmc", "mdma"])
+        let stimulants = Set(["cocaine", "amphetamine", "methamphetamine", "3mmc", "4mmc", "mdma"])
         if activeIds.intersection(stimulants).count >= 2 {
             warnings.append(Warning(
                 severity: .warning,
@@ -119,8 +130,7 @@ struct WarningSystem {
             ))
         }
 
-        // ── WARNING: Stimulants + Alkohol – Herzrisiko ──────────────────────────
-        // Upgrade von .caution → .warning: Alkohol maskiert Überkonsumption + Herzbelastung
+        // ── WARNING: Stimulants + Alcohol – cardiac risk ────────────────────────
         if !stimulants.isDisjoint(with: activeIds) && activeIds.contains("alcohol") {
             warnings.append(Warning(
                 severity: .warning,
@@ -130,7 +140,7 @@ struct WarningSystem {
             ))
         }
 
-        // ── WARNING: Ketamin + Depressiva ───────────────────────────────────────
+        // ── WARNING: Ketamine + Depressants ──────────────────────────────────────
         if activeIds.contains("ketamine") && !depressants.isDisjoint(with: activeIds) {
             warnings.append(Warning(
                 severity: .warning,
@@ -140,20 +150,35 @@ struct WarningSystem {
             ))
         }
 
-        // ── TEMPORALE CHECKS ────────────────────────────────────────────────────
+        // ── TEMPORAL CHECKS ─────────────────────────────────────────────────────
 
-        // GHB Rebound: GHB in letzten 4h gewesen, aber jetzt nicht mehr aktiv
-        let recentGHB = allDoses.filter { $0.substanceId == "ghb" && $0.minutesAgo(from: now) < 240 }
-        if !recentGHB.isEmpty && !activeIds.contains("ghb") {
+        // GHB/GBL Early Redose Warning: any G dose in last 2h → DANGER
+        let recentG = allDoses.filter { (($0.substanceId == "ghb") || ($0.substanceId == "gbl")) && $0.minutesAgo(from: now) < 120 }
+        let gNowActive = !gSubstances.isDisjoint(with: activeIds)
+        if !recentG.isEmpty && gNowActive {
+            let lastGMinutes = recentG.map { $0.minutesAgo(from: now) }.min() ?? 0
+            if lastGMinutes < 90 {
+                warnings.append(Warning(
+                    severity: .danger,
+                    title: "DO NOT REDOSE G",
+                    message: "Last GHB/GBL dose was only \(Int(lastGMinutes)) minutes ago. Redosing within 2 hours is extremely dangerous and the most common cause of G-lock.",
+                    advice: "WAIT at least 2 full hours from your last dose. Set a timer. The urge to redose is deceptive — effects may still be building."
+                ))
+            }
+        }
+
+        // GHB/GBL Rebound: G taken in last 4h but no longer active
+        let recentGRebound = allDoses.filter { (($0.substanceId == "ghb") || ($0.substanceId == "gbl")) && $0.minutesAgo(from: now) < 240 }
+        if !recentGRebound.isEmpty && !gNowActive {
             warnings.append(Warning(
-                severity: .warning,
-                title: "GHB Rebound Risk",
-                message: "GHB was taken within the last 4 hours and is now wearing off. Rebound effects possible.",
-                advice: "Do NOT redose. Rebound can cause anxiety and distress. Wait it out."
+                severity: .danger,
+                title: "GHB/GBL Rebound Risk",
+                message: "GHB/GBL was taken within the last 4 hours and is now wearing off. Rebound effects are common and dangerous.",
+                advice: "Do NOT redose during the rebound period. Rebound can cause severe anxiety, insomnia, tremors. If you feel unwell, seek help."
             ))
         }
 
-        // Kokain → MDMA Timing: Kokain in letzten 6h + MDMA aktiv
+        // Cocaine → MDMA Timing
         let recentCocaine = allDoses.filter { $0.substanceId == "cocaine" && $0.minutesAgo(from: now) < 360 }
         if activeIds.contains("mdma") && !recentCocaine.isEmpty {
             let minAgo = recentCocaine.map { $0.minutesAgo(from: now) }.min() ?? 0
@@ -174,7 +199,7 @@ struct WarningSystem {
             }
         }
 
-        // Krampfanfallrisiko: Stimulanzien aktiv + Alkohol kürzlich (aber jetzt nicht mehr aktiv)
+        // Seizure risk: stimulants active + alcohol recently worn off
         let recentAlcohol = allDoses.filter { $0.substanceId == "alcohol" && $0.minutesAgo(from: now) < 480 }
         let alcoholNowActive = activeIds.contains("alcohol")
         if !stimulants.isDisjoint(with: activeIds) && !recentAlcohol.isEmpty && !alcoholNowActive {
