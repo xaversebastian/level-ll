@@ -2,7 +2,7 @@
 //  EmergencyView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-12
+//  Version: 2.0  |  2026-03-12
 //
 //  Notfall-Tab – Split in zwei Modi:
 //  • "I need help" – sanft, Grounding-Übungen, kein roter Screen
@@ -10,6 +10,12 @@
 //
 //  Segmented Picker oben wechselt mit withAnimation zwischen den Modi.
 //  "Help someone" behält GCS-Rechner und Overdose-Checkliste.
+//
+//  Updates v2.0:
+//  - Redesigned to match HomeView design patterns
+//  - Standardized padding with DS.screenPadding
+//  - Added pressFeedback to interactive elements
+//  - Consistent section header styling
 //
 //  HINWEIS: localEmergencyNumber() nutzt Locale.current.region – funktioniert offline.
 //  Der Notruf-Link öffnet die Telefon-App (tel:-URL-Schema).
@@ -42,7 +48,7 @@ struct EmergencyView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Mode picker
                     Picker("Mode", selection: $mode.animation(.easeInOut)) {
                         ForEach(EmergencyMode.allCases, id: \.self) { m in
@@ -50,7 +56,8 @@ struct EmergencyView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.top, 8)
 
                     if mode == .self_ {
                         selfHelpContent
@@ -58,8 +65,9 @@ struct EmergencyView: View {
                         helpOtherContent
                     }
                 }
-                .padding()
+                .padding(.vertical, 8)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Emergency")
             .sheet(isPresented: $showGCSInfo) { gcsInfoSheet }
         }
@@ -86,24 +94,26 @@ struct EmergencyView: View {
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color.levelCalm.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.levelCalm.opacity(0.08), in: RoundedRectangle(cornerRadius: DS.cardRadius))
+            .padding(.horizontal, DS.screenPadding)
 
             // Breathing exercise
             breathingSection
+                .padding(.horizontal, DS.screenPadding)
 
             // Grounding exercises
             groundingSection
+                .padding(.horizontal, DS.screenPadding)
 
             // Soft contact / emergency (less prominent)
             softEmergencySection
+                .padding(.horizontal, DS.screenPadding)
         }
     }
 
     private var breathingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Breathing Exercise", systemImage: "wind")
-                .font(.headline)
-                .foregroundStyle(Color.levelCopper)
+            sectionHeader("Breathing Exercise", color: Color.levelCopper)
 
             VStack(spacing: 10) {
                 breathingStep(number: "4", label: "Breathe in slowly", color: Color.levelCalm)
@@ -116,7 +126,8 @@ struct EmergencyView: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func breathingStep(number: String, label: String, color: Color) -> some View {
@@ -142,9 +153,7 @@ struct EmergencyView: View {
 
     private var groundingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Grounding – 5-4-3-2-1", systemImage: "hand.raised.fill")
-                .font(.headline)
-                .foregroundStyle(Color.levelCopper)
+            sectionHeader("Grounding – 5-4-3-2-1", color: Color.levelCopper)
 
             groundingItem(count: "5", sense: "things you can see")
             groundingItem(count: "4", sense: "things you can touch")
@@ -158,7 +167,8 @@ struct EmergencyView: View {
                 .padding(.top, 4)
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func groundingItem(count: String, sense: String) -> some View {
@@ -175,9 +185,7 @@ struct EmergencyView: View {
 
     private var softEmergencySection: some View {
         VStack(spacing: 12) {
-            Text("If you need more support")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            sectionHeader("Support Options", color: .secondary)
 
             // Call a friend
             Button {
@@ -191,6 +199,8 @@ struct EmergencyView: View {
                     .background(Color.levelCalm.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
                     .foregroundStyle(Color.levelCalm)
             }
+            .buttonStyle(.plain)
+            .pressFeedback()
 
             // Emergency (less prominent in self mode)
             Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
@@ -201,9 +211,11 @@ struct EmergencyView: View {
                     .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     .foregroundStyle(.secondary)
             }
+            .pressFeedback()
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     // MARK: - "Help someone" (Clinical / Direct)
@@ -211,9 +223,13 @@ struct EmergencyView: View {
     private var helpOtherContent: some View {
         VStack(spacing: 16) {
             emergencyCallSection
+                .padding(.horizontal, DS.screenPadding)
             gcsSection
+                .padding(.horizontal, DS.screenPadding)
             checklistSection
+                .padding(.horizontal, DS.screenPadding)
             tipsSection
+                .padding(.horizontal, DS.screenPadding)
         }
     }
 
@@ -237,9 +253,11 @@ struct EmergencyView: View {
                 .padding()
                 .background(.red, in: RoundedRectangle(cornerRadius: 12))
             }
+            .pressFeedback()
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private var gcsSection: some View {
@@ -255,6 +273,7 @@ struct EmergencyView: View {
                     Image(systemName: "info.circle")
                         .foregroundStyle(.secondary)
                 }
+                .pressFeedback()
             }
 
             gcsComponent(title: "Eye Opening", score: $eyeScore,
@@ -283,7 +302,8 @@ struct EmergencyView: View {
             }
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func gcsComponent(title: String, score: Binding<Int>, options: [(Int, String)]) -> some View {
@@ -307,6 +327,8 @@ struct EmergencyView: View {
                                         in: RoundedRectangle(cornerRadius: 8))
                             .foregroundStyle(score.wrappedValue == option.0 ? .white : .primary)
                         }
+                        .buttonStyle(.plain)
+                        .pressFeedback()
                     }
                 }
             }
@@ -351,19 +373,13 @@ struct EmergencyView: View {
                     Text("Normal Response").font(.subheadline.bold()).foregroundStyle(.green)
                 }
                 Text("GCS 13-15: Person is responsive. Continue monitoring.")
-                    .font(.caption).foregroundStyle(.secondary)
             }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(gcsColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    private var gcsInfoSheet: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("The Glasgow Coma Scale (GCS) is a standard method for assessing consciousness used by emergency services worldwide.")
+            Text("GCS ≤ 8: Unconsciousness – recovery position, monitor breathing.")
+                .font(.caption).foregroundStyle(.secondary)
+        } else if gcsTotal <= 12 {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                Text("Close Monitoring Required").font(.subheadline.bold()).foregroundStyle(.orange)
                         .font(.subheadline)
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Score Meaning").font(.headline)
@@ -405,8 +421,7 @@ struct EmergencyView: View {
 
     private var checklistSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Overdose Checklist", systemImage: "checklist")
-                .font(.headline)
+            sectionHeader("Overdose Checklist", color: .orange)
             checklistItem("Check responsiveness", icon: "hand.raised.fill")
             checklistItem("Call \(localEmergencyNumber) emergency", icon: "phone.fill")
             checklistItem("Recovery position (on their side)", icon: "person.fill")
@@ -415,7 +430,8 @@ struct EmergencyView: View {
             checklistItem("Inform emergency services what was taken", icon: "info.circle.fill")
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func checklistItem(_ text: String, icon: String) -> some View {
@@ -429,8 +445,7 @@ struct EmergencyView: View {
 
     private var tipsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Harm Reduction Tips", systemImage: "leaf.fill")
-                .font(.headline)
+            sectionHeader("Harm Reduction Tips", color: Color.levelCalm)
             tipItem("Stay hydrated, but don't overdrink")
             tipItem("Don't mix depressants (alcohol, opioids, GHB)")
             tipItem("Start low with new substances")
@@ -439,7 +454,8 @@ struct EmergencyView: View {
             tipItem("Never use alone")
         }
         .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func tipItem(_ text: String) -> some View {

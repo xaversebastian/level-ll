@@ -2,13 +2,20 @@
 //  ProfileView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 2.0  |  2026-03-12
 //
 //  Profilverwaltung: Liste aller Profile mit Swipe-to-Delete und Edit.
 //  Tipp auf ein Profil setzt es als aktives Profil. Plus-Button öffnet ProfileEditorView.
 //  ProfileEditorView (in dieser Datei) erlaubt Erstellen und Bearbeiten:
 //  Name, Emoji-Avatar (Grid-Picker), Alter/Gewicht/Geschlecht, ADHS-Flag,
 //  persönliches Limit (1–11) und Toleranzwerte je Substanz (Stepper 0–11).
+//
+//  Updates v2.0:
+//  - Redesigned to match HomeView design patterns
+//  - Added section headers with accent bars
+//  - Standardized padding with DS tokens
+//  - Added pressFeedback for tactile response
+//  - Left accent line on profile rows for visual hierarchy
 //
 //  HINWEIS: Löschen eines Profils entfernt auch alle zugehörigen Doses (AppState.deleteProfile).
 //
@@ -22,20 +29,48 @@ struct ProfileView: View {
     
     var body: some View {
         NavigationStack {
-            List {
-                Section("Profiles") {
-                    ForEach(appState.profiles) { profile in
-                        profileRow(profile)
-                    }
-                    .onDelete(perform: deleteProfiles)
+            ScrollView {
+                VStack(spacing: 0) {
+                    sectionHeader("Profiles")
                     
-                    Button {
-                        showAddProfile = true
-                    } label: {
-                        Label("Add Profile", systemImage: "plus")
+                    VStack(spacing: 0) {
+                        ForEach(Array(appState.profiles.enumerated()), id: \.element.id) { idx, profile in
+                            if idx > 0 { thinDivider }
+                            profileRow(profile)
+                        }
+                        
+                        Button {
+                            showAddProfile = true
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Color.accent)
+                                    .frame(width: 46, height: 46)
+                                
+                                Text("Add Profile")
+                                    .font(.headline)
+                                    .foregroundStyle(Color.accent)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, DS.screenPadding)
+                            .padding(.vertical, 12)
+                            .background(Color.appBackground)
+                        }
+                        .buttonStyle(.plain)
+                        .pressFeedback()
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: DS.cardRadius)
+                            .fill(Color.appBackground)
+                            .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+                    )
+                    .padding(.horizontal, DS.screenPadding)
                 }
+                .padding(.top, 8)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Profiles")
             .sheet(isPresented: $showAddProfile) {
                 ProfileEditorView(profile: nil)
@@ -53,6 +88,11 @@ struct ProfileView: View {
             appState.setActiveProfile(profile)
         } label: {
             HStack(spacing: 14) {
+                // Left accent line for active profile
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(profile.isActive ? Color.accent : Color.clear)
+                    .frame(width: 3, height: 40)
+                
                 ZStack {
                     Circle()
                         .fill(profile.isActive ? Color.accent.opacity(0.12) : Color.secondary.opacity(0.08))
@@ -63,7 +103,7 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
-                        .font(.headline)
+                        .font(.subheadline.bold())
                     Text("\(profile.age) years · \(Int(profile.weightKg)) kg")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -77,14 +117,14 @@ struct ProfileView: View {
                         .font(.title3)
                 }
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, profile.isActive ? 10 : 0)
-            .background(
-                profile.isActive ? Color.accent.opacity(0.06) : Color.clear,
-                in: RoundedRectangle(cornerRadius: DS.chipRadius)
-            )
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+            .background(Color.appBackground)
+            .contentShape(Rectangle())
         }
         .foregroundStyle(.primary)
+        .buttonStyle(.plain)
+        .pressFeedback()
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 appState.deleteProfile(profile.id)
@@ -101,12 +141,28 @@ struct ProfileView: View {
         }
     }
     
-    private func deleteProfiles(at offsets: IndexSet) {
-        for index in offsets {
-            appState.deleteProfile(appState.profiles[index].id)
-        }
+    private var thinDivider: some View {
+        Divider()
+            .padding(.leading, 66)
     }
-}
+
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
 
 struct ProfileEditorView: View {
     @Environment(AppState.self) private var appState

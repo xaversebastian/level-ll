@@ -2,12 +2,18 @@
 //  MainTabView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-12
+//  Version: 2.0  |  2026-03-12
 //
 //  Root-View der App. Beinhaltet die Tab-Bar (Home, Profiles, [Baller+], Emergency, More)
 //  und erstellt AppState als @State – das ist die einzige Stelle, wo AppState instanziiert wird.
 //  Der mittlere Tab-Button ist ein FAB (Floating Action Button) für den Baller-Mode-Sheet.
 //  MoreView (Substanzinfo, Timeline, Settings) und SubstanceDetailView sind hier ebenfalls definiert.
+//
+//  Updates v2.0:
+//  - MoreView redesigned to match HomeView design patterns
+//  - Standardized section headers with accent bars
+//  - Card-style sections with shadows and DS tokens
+//  - Added pressFeedback to interactive elements
 //
 //  HINWEIS: AppState wird per .environment(appState) in alle Child-Views injiziert.
 //  Neue Top-Level-Tabs hier registrieren.
@@ -64,140 +70,376 @@ struct MoreView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                // Quick Actions
-                Section {
-                    NavigationLink {
-                        QuickDoseView()
-                    } label: {
-                        Label("Quick Dose", systemImage: "bolt.fill")
-                            .foregroundStyle(Color.accent)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Quick Actions
+                    sectionHeader("Quick Actions", color: Color.accent)
+                    quickActionsSection
+                    
+                    // Current Profile
+                    if let profile = appState.activeProfile {
+                        sectionHeader("Current Profile", color: Color.levelTeal)
+                        currentProfileSection(profile)
                     }
-
-                    NavigationLink {
-                        SubstanceInfoView()
-                    } label: {
-                        Label("Substance Info", systemImage: "book.fill")
-                            .foregroundStyle(.blue)
-                    }
-
-                    NavigationLink {
-                        TimelineView()
-                    } label: {
-                        Label("Timeline", systemImage: "chart.xyaxis.line")
-                            .foregroundStyle(.teal)
-                    }
-
-                    if let url = buildExportURL() {
-                        ShareLink(item: url) {
-                            Label("Export Dose History", systemImage: "square.and.arrow.up")
-                                .foregroundStyle(.orange)
-                        }
-                    }
+                    
+                    // Settings
+                    sectionHeader("Settings", color: .secondary)
+                    settingsSection
+                    
+                    // Legal
+                    sectionHeader("Legal", color: .secondary)
+                    legalSection
                 }
-                
-                // Current Profile
-                if let profile = appState.activeProfile {
-                    Section("Current Session") {
-                        HStack {
-                            Text(profile.avatarEmoji)
-                                .font(.title2)
-                            VStack(alignment: .leading) {
-                                Text(profile.name)
-                                    .font(.headline)
-                                let level = appState.currentLevel(for: profile)
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(appState.levelColor(for: level))
-                                        .frame(width: 8, height: 8)
-                                    Text("Level \(String(format: "%.1f", level))")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                        
-                        Button(role: .destructive) {
-                            appState.clearDoses(for: profile.id)
-                        } label: {
-                            Label("Clear All Doses", systemImage: "trash")
-                        }
-                    }
-                }
-                
-                Section("Settings") {
-                    HStack {
-                        Label("Lock Screen Activity", systemImage: "lock.display")
-                        Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { appState.liveActivityEnabled },
-                            set: { appState.setLiveActivityEnabled($0) }
-                        ))
-                        .labelsHidden()
-                    }
-
-                    Text("Show session info on the Lock Screen and Dynamic Island during active Baller Mode sessions.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Experience") {
-                    HStack {
-                        Label("Calm Mode", systemImage: "leaf.fill")
-                        Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { appState.calmMode },
-                            set: { appState.calmMode = $0 }
-                        ))
-                        .labelsHidden()
-                    }
-
-                    Text("Softens warning colors and language after dosing. Pre-consumption alerts remain direct. Helps reduce anxiety during use.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Legal") {
-                    NavigationLink("Disclaimer & Terms") {
-                        DisclaimerView()
-                    }
-                    HStack {
-                        Label("Version", systemImage: "info.circle")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
-                            .foregroundStyle(.secondary)
-                    }
-                    Link(destination: URL(string: "https://level11.app/privacy.html")!) {
-                        HStack {
-                            Label("Privacy Policy", systemImage: "lock.shield")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Link(destination: URL(string: "https://level11.app/support.html")!) {
-                        HStack {
-                            Label("Support", systemImage: "questionmark.circle")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Link(destination: URL(string: "https://level11.app")!) {
-                        HStack {
-                            Label("level11.app", systemImage: "globe")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
+                .padding(.vertical, 8)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("More")
         }
+    }
+    
+    // MARK: - Section Header
+    
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Quick Actions
+    
+    private var quickActionsSection: some View {
+        VStack(spacing: 0) {
+            NavigationLink {
+                QuickDoseView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "bolt.fill")
+                        .foregroundStyle(Color.accent)
+                        .frame(width: 28)
+                    Text("Quick Dose")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            
+            Divider().padding(.leading, 54)
+            
+            NavigationLink {
+                SubstanceInfoView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "book.fill")
+                        .foregroundStyle(.blue)
+                        .frame(width: 28)
+                    Text("Substance Info")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            
+            Divider().padding(.leading, 54)
+            
+            NavigationLink {
+                TimelineView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .foregroundStyle(.teal)
+                        .frame(width: 28)
+                    Text("Timeline")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            
+            if let url = buildExportURL() {
+                Divider().padding(.leading, 54)
+                
+                ShareLink(item: url) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.orange)
+                            .frame(width: 28)
+                        Text("Export Dose History")
+                            .font(.subheadline.bold())
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 12)
+                    .background(Color.appBackground)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DS.cardRadius)
+                .fill(Color.appBackground)
+                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        )
+        .padding(.horizontal, DS.screenPadding)
+    }
+    
+    // MARK: - Current Profile
+    
+    private func currentProfileSection(_ profile: Profile) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                Text(profile.avatarEmoji)
+                    .font(.title2)
+                    .frame(width: 46, height: 46)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.name)
+                        .font(.subheadline.bold())
+                    let level = appState.currentLevel(for: profile)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(appState.levelColor(for: level))
+                            .frame(width: 8, height: 8)
+                        Text("Level \(String(format: "%.1f", level))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(Color.appBackground)
+            
+            Divider().padding(.leading, 66)
+            
+            Button(role: .destructive) {
+                appState.clearDoses(for: profile.id)
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.red)
+                        .frame(width: 28)
+                    Text("Clear All Doses")
+                        .font(.subheadline.bold())
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DS.cardRadius)
+                .fill(Color.appBackground)
+                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        )
+        .padding(.horizontal, DS.screenPadding)
+    }
+    
+    // MARK: - Settings
+    
+    private var settingsSection: some View {
+        VStack(spacing: 0) {
+            // Lock Screen Activity
+            HStack(spacing: 14) {
+                Image(systemName: "lock.display")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lock Screen Activity")
+                        .font(.subheadline.bold())
+                    Text("Show on Lock Screen & Dynamic Island")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { appState.liveActivityEnabled },
+                    set: { appState.setLiveActivityEnabled($0) }
+                ))
+                .labelsHidden()
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(Color.appBackground)
+            
+            Divider().padding(.leading, 54)
+            
+            // Calm Mode
+            HStack(spacing: 14) {
+                Image(systemName: "leaf.fill")
+                    .foregroundStyle(Color.levelCalm)
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Calm Mode")
+                        .font(.subheadline.bold())
+                    Text("Softens warning colors after dosing")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { appState.calmMode },
+                    set: { appState.calmMode = $0 }
+                ))
+                .labelsHidden()
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(Color.appBackground)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DS.cardRadius)
+                .fill(Color.appBackground)
+                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        )
+        .padding(.horizontal, DS.screenPadding)
+    }
+    
+    // MARK: - Legal
+    
+    private var legalSection: some View {
+        VStack(spacing: 0) {
+            NavigationLink {
+                DisclaimerView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "doc.text.fill")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28)
+                    Text("Disclaimer & Terms")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            
+            Divider().padding(.leading, 54)
+            
+            HStack(spacing: 14) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28)
+                Text("Version")
+                    .font(.subheadline.bold())
+                Spacer()
+                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(Color.appBackground)
+            
+            Divider().padding(.leading, 54)
+            
+            Link(destination: URL(string: "https://level11.app/privacy.html")!) {
+                HStack(spacing: 14) {
+                    Image(systemName: "lock.shield")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28)
+                    Text("Privacy Policy")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+            
+            Divider().padding(.leading, 54)
+            
+            Link(destination: URL(string: "https://level11.app/support.html")!) {
+                HStack(spacing: 14) {
+                    Image(systemName: "questionmark.circle")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28)
+                    Text("Support")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+            
+            Divider().padding(.leading, 54)
+            
+            Link(destination: URL(string: "https://level11.app")!) {
+                HStack(spacing: 14) {
+                    Image(systemName: "globe")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28)
+                    Text("level11.app")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DS.cardRadius)
+                .fill(Color.appBackground)
+                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        )
+        .padding(.horizontal, DS.screenPadding)
     }
 
     private func buildExportURL() -> URL? {
