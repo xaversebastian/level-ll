@@ -40,6 +40,7 @@ struct QuickDoseView: View {
     @State private var showConfirmation = false
     @State private var confirmedSubstance: Substance?
     @State private var confirmedLevelDelta: Double = 0
+    @State private var lastLoggedDoseId: String?
 
     var filteredSubstances: [Substance] {
         if searchText.isEmpty { return Substances.all }
@@ -286,17 +287,20 @@ struct QuickDoseView: View {
 
     private func performLog(_ substance: Substance) {
         let levelBefore = appState.currentLevel()
-        appState.logDose(
+        let doseId = appState.logDose(
             substanceId: substance.id,
             route: selectedRoute,
             amount: amount,
             note: note.trimmingCharacters(in: .whitespaces).isEmpty ? nil : note
         )
         let levelAfter = appState.currentLevel()
+        lastLoggedDoseId = doseId
         confirmedSubstance = substance
         confirmedLevelDelta = levelAfter - levelBefore
         showConfirmation = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            guard showConfirmation else { return }
             showConfirmation = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
         }
@@ -328,6 +332,23 @@ struct QuickDoseView: View {
             }
 
             Spacer()
+
+            // Undo Button
+            Button {
+                if let id = lastLoggedDoseId {
+                    appState.deleteDose(id)
+                    lastLoggedDoseId = nil
+                }
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                showConfirmation = false
+            } label: {
+                Text("Undo")
+                    .font(.caption.bold())
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.red.opacity(0.1), in: Capsule())
+            }
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))

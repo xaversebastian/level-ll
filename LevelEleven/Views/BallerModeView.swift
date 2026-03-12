@@ -29,6 +29,9 @@ struct BallerModeView: View {
     @State private var showAddDose = false
     @State private var showHistory = false
     @State private var showAddParticipant = false
+    @State private var showEndConfirm = false
+    @State private var quickDoseForProfileId: String?
+    @State private var showQuickDoseForParticipant = false
     @State private var currentTime = Date()
 
     let timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
@@ -66,6 +69,20 @@ struct BallerModeView: View {
             .sheet(isPresented: $showAddParticipant) {
                 AddParticipantView()
                     .environment(appState)
+            }
+            .sheet(isPresented: $showQuickDoseForParticipant) {
+                if let profileId = quickDoseForProfileId {
+                    QuickDoseForProfileView(profileId: profileId)
+                        .environment(appState)
+                }
+            }
+            .confirmationDialog("End Session?", isPresented: $showEndConfirm, titleVisibility: .visible) {
+                Button("End & Save", role: .destructive) {
+                    appState.endSession()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The session will be archived and you can review it later.")
             }
             .onReceive(timer) { _ in
                 currentTime = Date()
@@ -395,7 +412,7 @@ struct BallerModeView: View {
             }
             Spacer()
             Button {
-                appState.endSession()
+                showEndConfirm = true
             } label: {
                 Text("End")
                     .font(.subheadline.bold())
@@ -482,6 +499,19 @@ struct BallerModeView: View {
         }
         .padding(16)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .contextMenu {
+            Button {
+                quickDoseForProfileId = profile.id
+                showQuickDoseForParticipant = true
+            } label: {
+                Label("Log Dose for \(profile.name)", systemImage: "pills.fill")
+            }
+            Button(role: .destructive) {
+                appState.removeSessionParticipant(profile.id)
+            } label: {
+                Label("Remove from Session", systemImage: "person.badge.minus")
+            }
+        }
     }
 
     private func removedParticipantRow(_ profile: Profile) -> some View {
@@ -1043,6 +1073,194 @@ struct GroupDoseView: View {
         }
 
         dismiss()
+    }
+}
+
+// MARK: - Quick Dose for specific Profile (from Participant Card context menu)
+
+struct QuickDoseForProfileView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    let profileId: String
+
+    @State private var selectedSubstance: Substance?
+    @State private var selectedRoute: DoseRoute = .oral
+    @State private var amount: Double = 0
+    @State private var searchText = ""
+    @State private var showConfirmation = false
+    @State private var confirmedSubstance: Substance?
+    @State private var lastLoggedDoseId: String?
+
+    var profile: Profile? { appState.profiles.first { $0.id == profileId } }
+
+    var filteredSubstances: [Substance] {
+        if searchText.isEmpty { return Substances.all }
+        return Substances.all.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            $0.shortName.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let substance = selectedSubstance {
+                    doseForm(substance)
+                } else {
+                    substanceList
+                }
+            }
+            .navigationTitle(profile.map { "Dose for \($0.name)" } ?? "Log Dose")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        if selectedSubstance != nil { selectedSubstance = nil }
+                        else { dismiss() }
+                    }
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if showConfirmation, let s = confirmedSubstance {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        Text("\(s.name) logged")
+                            .font(.subheadline.bold())
+                        Spacer()
+                        Button {
+                            if let id = lastLoggedDoseId { appState.deleteDose(id) }
+                            showConfirmation = false
+                        } label: {
+                            Text("Undo").font(.caption.bold()).foregroundStyle(.red)
+                                .padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(.red.opacity(0.1), in: Capsule())
+                        }
+                    }
+                    .padding(14)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(duration: 0.3), value: showConfirmation)
+        }
+    }
+
+    private var substanceList: some View {
+        List {
+            if let p = profile, !p.favorites.isEmpty {
+                Section("Favorites") {
+                    ForEach(p.favorites, id: \.self) { id in
+                        if let substance = Substances.byId[id] { substanceRow(substance) }
+                    }
+                }
+            }
+            Section("All Substances") {
+                ForEach(filteredSubstances) { substance in substanceRow(substance) }
+            }
+        }
+        .searchable(text: $searchText, prompt: "Search substances")
+    }
+
+    private func substanceRow(_ substance: Substance) -> some View {
+        Button {
+            selectedSubstance = substance
+            selectedRoute = substance.primaryRoute
+            amount = substance.commonDose
+        } label: {
+            HStack {
+                Image(systemName: substance.category.icon)
+                    .foregroundStyle(Color(hex: substance.category.color)).frame(width: 30)
+                VStack(alignment: .leading) {
+                    Text(substance.name).font(.body)
+                    Text(substance.category.rawValue.capitalized).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("\(String(format: "%.0f", substance.commonDose)) \(substance.unit.symbol)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .foregroundStyle(.primary)
+    }
+
+    private func doseForm(_ substance: Substance) -> some View {
+        Form {
+            Section {
+                HStack {
+                    Image(systemName: substance.category.icon)
+                        .font(.title).foregroundStyle(Color(hex: substance.category.color))
+                    VStack(alignment: .leading) {
+                        Text(substance.name).font(.title2.bold())
+                        Text(substance.category.rawValue.capitalized).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            Section("Route") {
+                Picker("Route", selection: $selectedRoute) {
+                    ForEach(substance.routes, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            }
+            Section("Amount") {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text(String(format: "%.1f", amount))
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                        Text(substance.unit.symbol).font(.title2).foregroundStyle(.secondary)
+                    }
+                    Slider(value: $amount, in: 0...substance.strongDose * 2,
+                           step: substance.unit == .mg ? (substance.commonDose < 10 ? 0.5 : 5) : 1)
+                    HStack {
+                        quickDoseButton("Light", dose: substance.lightDose)
+                        quickDoseButton("Common", dose: substance.commonDose)
+                        quickDoseButton("Strong", dose: substance.strongDose)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            Section {
+                Button { logDose(substance) } label: {
+                    HStack { Spacer(); Text("Log Dose").font(.headline); Spacer() }
+                }
+                .disabled(amount <= 0)
+            }
+        }
+    }
+
+    private func quickDoseButton(_ label: String, dose: Double) -> some View {
+        Button { amount = dose } label: {
+            VStack {
+                Text(String(format: "%.0f", dose)).font(.headline)
+                Text(label).font(.caption)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 8)
+            .background(amount == dose ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func logDose(_ substance: Substance) {
+        let dose = Dose(
+            profileId: profileId,
+            substanceId: substance.id,
+            route: selectedRoute,
+            amount: amount,
+            timestamp: Date()
+        )
+        appState.addDose(dose)
+        lastLoggedDoseId = dose.id
+        confirmedSubstance = substance
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        showConfirmation = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            guard showConfirmation else { return }
+            showConfirmation = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
+        }
     }
 }
 

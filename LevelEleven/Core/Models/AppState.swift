@@ -470,9 +470,10 @@ final class AppState {
         }
     }
 
-    func logDose(substanceId: String, route: DoseRoute, amount: Double, note: String? = nil) {
+    @discardableResult
+    func logDose(substanceId: String, route: DoseRoute, amount: Double, note: String? = nil) -> String {
         guard let profileId = activeProfileId,
-              let profileIdx = profiles.firstIndex(where: { $0.id == profileId }) else { return }
+              let profileIdx = profiles.firstIndex(where: { $0.id == profileId }) else { return "" }
         let dose = Dose(
             profileId: profileId,
             substanceId: substanceId,
@@ -491,6 +492,22 @@ final class AppState {
         invalidateCache()
         saveDoses()
         saveProfiles()
+
+        if activeSession != nil {
+            saveActiveSession()
+            updateLiveActivity()
+        }
+
+        return dose.id
+    }
+
+    func deleteDose(_ id: String) {
+        doses.removeAll { $0.id == id }
+        invalidateCache()
+        saveDoses()
+        if activeSession != nil {
+            updateLiveActivity()
+        }
     }
 
     func activeDoses(for profileId: String, at date: Date = Date()) -> [Dose] {
