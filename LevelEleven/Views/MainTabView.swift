@@ -188,12 +188,32 @@ struct MoreView: View {
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                             .foregroundStyle(.secondary)
                     }
-                    HStack {
-                        Label("Privacy", systemImage: "lock.shield")
-                        Spacer()
-                        Text("Local only")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Link(destination: URL(string: "https://level11.app/privacy.html")!) {
+                        HStack {
+                            Label("Privacy Policy", systemImage: "lock.shield")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://level11.app/support.html")!) {
+                        HStack {
+                            Label("Support", systemImage: "questionmark.circle")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://level11.app")!) {
+                        HStack {
+                            Label("level11.app", systemImage: "globe")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
