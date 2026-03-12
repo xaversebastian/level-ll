@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-12
 //
 //  Root-View der App. Beinhaltet die Tab-Bar (Home, Profiles, [Baller+], Emergency, More)
 //  und erstellt AppState als @State – das ist die einzige Stelle, wo AppState instanziiert wird.
@@ -160,20 +160,38 @@ struct MoreView: View {
                         ))
                         .labelsHidden()
                     }
-                    
+
                     Text("Show session info on the Lock Screen and Dynamic Island during active Baller Mode sessions.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
-                Section("About") {
+
+                Section("Experience") {
+                    HStack {
+                        Label("Calm Mode", systemImage: "leaf.fill")
+                        Spacer()
+                        Toggle("", isOn: Binding(
+                            get: { appState.calmMode },
+                            set: { appState.calmMode = $0 }
+                        ))
+                        .labelsHidden()
+                    }
+
+                    Text("Softens warning colors and language after dosing. Pre-consumption alerts remain direct. Helps reduce anxiety during use.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Legal") {
+                    NavigationLink("Disclaimer & Terms") {
+                        DisclaimerView()
+                    }
                     HStack {
                         Label("Version", systemImage: "info.circle")
                         Spacer()
-                        Text("2.0")
+                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                             .foregroundStyle(.secondary)
                     }
-                    
                     HStack {
                         Label("Privacy", systemImage: "lock.shield")
                         Spacer()
@@ -372,6 +390,38 @@ struct SubstanceDetailView: View {
             } header: {
                 Label("Safer Use", systemImage: "heart.text.square")
             }
+
+            if substance.id == "mdma" {
+                Section("Drug Checking") {
+                    Link(destination: URL(string: "https://checkdrugs.at")!) {
+                        HStack {
+                            Image(systemName: "flask.fill").foregroundStyle(.blue)
+                            Text("checkdrugs.at")
+                            Spacer()
+                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://eve-rave.ch")!) {
+                        HStack {
+                            Image(systemName: "flask.fill").foregroundStyle(.blue)
+                            Text("eve-rave.ch")
+                            Spacer()
+                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://energy-control.org")!) {
+                        HStack {
+                            Image(systemName: "flask.fill").foregroundStyle(.blue)
+                            Text("energy-control.org")
+                            Spacer()
+                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Get your MDMA tested before use. Street pills vary widely in purity and content.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .navigationTitle(substance.shortName)
         .navigationBarTitleDisplayMode(.inline)
@@ -403,6 +453,61 @@ struct SubstanceDetailView: View {
             return m > 0 ? "\(h)h \(m)min" : "\(h)h"
         }
         return "\(Int(minutes)) min"
+    }
+}
+
+// MARK: - Disclaimer View
+
+struct DisclaimerView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // EN
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("English", systemImage: "globe")
+                        .font(.headline)
+                        .foregroundStyle(Color.accent)
+
+                    Text("""
+                        This app is for harm reduction and educational purposes only. It does not constitute medical advice.
+
+                        All dosage amounts refer to pure active substance. Actual street substances are rarely pure – start lower than the displayed amounts.
+
+                        Possession and use of controlled substances may be illegal in your country. Always be aware of applicable laws.
+
+                        The developers accept no liability for harm resulting from use of this app. Use at your own risk.
+                        """)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+
+                // DE
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Deutsch", systemImage: "globe")
+                        .font(.headline)
+                        .foregroundStyle(Color.accent)
+
+                    Text("""
+                        Diese App dient ausschließlich zur Schadensminimierung (Harm Reduction) und zu Bildungszwecken. Sie ersetzt keine medizinische Beratung.
+
+                        Alle Mengenangaben beziehen sich auf reinen Wirkstoff. Tatsächliche Substanzen sind selten rein – starte mit kleineren Mengen als angegeben.
+
+                        Besitz und Konsum können in Ihrem Land strafbar sein. Informiere dich über die geltenden Gesetze.
+
+                        Die Entwickler übernehmen keine Haftung für Schäden durch die Nutzung dieser App. Nutzung auf eigenes Risiko.
+                        """)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .padding()
+        }
+        .navigationTitle("Disclaimer & Terms")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

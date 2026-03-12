@@ -2,7 +2,7 @@
 //  OnboardingView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-12
 //
 //  Erster-Start-Onboarding: 4 Screens in einem PageTabView.
 //  1. Welcome – App-Slogan
@@ -41,6 +41,17 @@ struct OnboardingView: View {
             title: "Profiles & Tolerance",
             subtitle: "Each profile stores weight, age, sex, ADHD status, and substance tolerances.",
             detail: "Dose recommendations are personalized per profile. Tolerances decay automatically with abstinence."
+        ),
+        OnboardingPage(
+            icon: "shield.fill",
+            iconColor: .orange,
+            title: "Important Information",
+            subtitle: "Please read before using this app.",
+            detail: """
+                EN: This app is for harm reduction and educational purposes only. It does not constitute medical advice. All dosage amounts refer to pure active substance – actual substances are rarely pure. Possession and use of controlled substances may be illegal in your country. The developers accept no liability for harm resulting from use of this app.
+
+                DE: Diese App dient ausschließlich zur Schadensminimierung und zu Bildungszwecken. Sie ersetzt keine medizinische Beratung. Alle Mengenangaben beziehen sich auf reinen Wirkstoff. Besitz und Konsum können strafbar sein. Die Entwickler übernehmen keine Haftung.
+                """
         ),
         OnboardingPage(
             icon: "checkmark.shield.fill",
