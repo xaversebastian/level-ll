@@ -242,12 +242,45 @@ struct WarningSystem {
             ))
         }
 
+        // ── PROLEVEL: Beginner educational warnings ───────────────────────────────
+        if profile.proLevel <= 2 {
+            if !activeIds.isEmpty {
+                warnings.append(Warning(
+                    severity: .info,
+                    title: "Stay Hydrated",
+                    message: "Drink water regularly but not excessively (~250ml/h).",
+                    advice: "Small sips every 15-20 minutes. Avoid alcohol as your only fluid."
+                ))
+            }
+            if !stimulants.isDisjoint(with: activeIds) {
+                warnings.append(Warning(
+                    severity: .info,
+                    title: "Stimulant Safety",
+                    message: "Stimulants mask tiredness and hunger. Your body still needs rest.",
+                    advice: "Take breaks, eat something light, monitor your heart rate."
+                ))
+            }
+            if activeIds.contains("ketamine") {
+                warnings.append(Warning(
+                    severity: .info,
+                    title: "K-Hole Awareness",
+                    message: "Higher doses of ketamine can cause intense dissociation (K-hole).",
+                    advice: "Start low, wait 15+ minutes. Sit or lie down in a safe place."
+                ))
+            }
+        }
+
+        // ── PROLEVEL: Experienced users — filter out info-level clutter ────────────
+        if profile.proLevel >= 4 {
+            return warnings.filter { $0.severity > .info }.sorted { $0.severity > $1.severity }
+        }
+
         return warnings.sorted { $0.severity > $1.severity }
     }
 
     // MARK: - Level Checks
 
-    static func checkLevel(level: Double, limit: Int) -> [Warning] {
+    static func checkLevel(level: Double, limit: Int, proLevel: Int = 3) -> [Warning] {
         var warnings: [Warning] = []
 
         if level >= Double(limit) {
@@ -259,16 +292,21 @@ struct WarningSystem {
             ))
         }
 
-        if level >= 8 {
+        // Beginners get earlier high-level warnings
+        let highThreshold: Double = proLevel <= 2 ? 6 : 8
+        if level >= highThreshold {
             warnings.append(Warning(
                 severity: .warning,
                 title: "High Intoxication",
-                message: "Your current level is quite high.",
+                message: proLevel <= 2
+                    ? "Your level is getting high. This is stronger than recommended for your experience."
+                    : "Your current level is quite high.",
                 advice: "Find a safe place. Stay with trusted friends. Hydrate."
             ))
         }
 
-        if level >= 10 {
+        let extremeThreshold: Double = proLevel <= 2 ? 8 : 10
+        if level >= extremeThreshold {
             warnings.append(Warning(
                 severity: .danger,
                 title: "Extreme Level",

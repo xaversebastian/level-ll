@@ -101,7 +101,7 @@ struct Profile: Identifiable, Codable, Hashable {
         proLevel: Int = 3,
         tolerances: [Tolerance] = [],
         favorites: [String] = [],
-        personalLimit: Int = 7
+        personalLimit: Int? = nil
     ) {
         self.id = id
         let trimmed = name.trimmingCharacters(in: .whitespaces)
@@ -116,9 +116,22 @@ struct Profile: Identifiable, Codable, Hashable {
         self.proLevel = max(1, min(5, proLevel))
         self.tolerances = tolerances
         self.favorites = favorites
-        self.personalLimit = max(1, min(11, personalLimit))
+        // Default personal limit scales with experience
+        let defaultLimit = Self.defaultPersonalLimit(for: proLevel)
+        self.personalLimit = max(1, min(11, personalLimit ?? defaultLimit))
     }
     
+    static func defaultPersonalLimit(for proLevel: Int) -> Int {
+        switch proLevel {
+        case 1:  return 5
+        case 2:  return 6
+        case 3:  return 7
+        case 4:  return 8
+        case 5:  return 9
+        default: return 7
+        }
+    }
+
     func tolerance(for substanceId: String) -> Int {
         tolerances.first { $0.substanceId == substanceId }?.effectiveLevel ?? 3
     }

@@ -57,7 +57,7 @@ struct WarningsView: View {
         var warnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile)
 
         let level = appState.currentLevel(for: profile)
-        warnings.append(contentsOf: WarningSystem.checkLevel(level: level, limit: profile.personalLimit))
+        warnings.append(contentsOf: WarningSystem.checkLevel(level: level, limit: profile.personalLimit, proLevel: profile.proLevel))
 
         return warnings.sorted { $0.severity > $1.severity }
     }
