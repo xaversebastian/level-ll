@@ -72,7 +72,7 @@ struct BallerLiveActivityWidget: Widget {
                     Text("\(context.state.participantCount)")
                         .font(.caption.bold())
                 }
-                .foregroundStyle(Color.levelViolet)
+                .foregroundStyle(Color.levelCopper)
             } compactTrailing: {
                 Text(String(format: "%.0f", context.state.highestLevel))
                     .font(.caption.bold())
@@ -146,7 +146,7 @@ struct BallerLiveActivityWidget: Widget {
             }
         }
         .padding(16)
-        .background(Color.levelDarkBlue.opacity(0.9))
+        .background(Color.heroBackground.opacity(0.9))
     }
     
     private func miniLevelBar(level: Double) -> some View {
