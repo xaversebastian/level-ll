@@ -12,6 +12,7 @@
 //
 //  HINWEIS: Alle Views sollen Color.accent / Color.accentHighlight statt
 //  Hardcoded-Farben verwenden, damit Theme-Änderungen zentral greifen.
+//
 
 import SwiftUI
 

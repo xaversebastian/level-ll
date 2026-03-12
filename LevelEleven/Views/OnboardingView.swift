@@ -9,6 +9,7 @@
 //  2. Wie es funktioniert – Level-Skala, aktive Dose-Konzept
 //  3. Dein Profil – kurze Intro zum Profil-Konzept
 //  4. Los geht's – setzt hasCompletedOnboarding = true
+//
 
 import SwiftUI
 

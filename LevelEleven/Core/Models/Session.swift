@@ -12,6 +12,7 @@
 //
 //  HINWEIS: Sessions werden in AppState.sessionHistory persistiert (Codable + UserDefaults).
 //  Doses sind NICHT Teil der Session-Struct – sie werden über AppState.sessionDoses() gefiltert.
+//
 
 import Foundation
 

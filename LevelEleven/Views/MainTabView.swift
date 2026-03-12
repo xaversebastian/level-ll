@@ -11,6 +11,7 @@
 //
 //  HINWEIS: AppState wird per .environment(appState) in alle Child-Views injiziert.
 //  Neue Top-Level-Tabs hier registrieren.
+//
 
 import SwiftUI
 
@@ -96,23 +97,27 @@ struct MoreView: View {
                         QuickDoseView()
                     } label: {
                         Label("Quick Dose", systemImage: "bolt.fill")
+                            .foregroundStyle(Color.accent)
                     }
 
                     NavigationLink {
                         SubstanceInfoView()
                     } label: {
                         Label("Substance Info", systemImage: "book.fill")
+                            .foregroundStyle(.blue)
                     }
 
                     NavigationLink {
                         TimelineView()
                     } label: {
                         Label("Timeline", systemImage: "chart.xyaxis.line")
+                            .foregroundStyle(.teal)
                     }
 
                     if let url = buildExportURL() {
                         ShareLink(item: url) {
                             Label("Export Dose History", systemImage: "square.and.arrow.up")
+                                .foregroundStyle(.orange)
                         }
                     }
                 }
@@ -188,12 +193,32 @@ struct MoreView: View {
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                             .foregroundStyle(.secondary)
                     }
-                    HStack {
-                        Label("Privacy", systemImage: "lock.shield")
-                        Spacer()
-                        Text("Local only")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Link(destination: URL(string: "https://level11.app/privacy.html")!) {
+                        HStack {
+                            Label("Privacy Policy", systemImage: "lock.shield")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://level11.app/support.html")!) {
+                        HStack {
+                            Label("Support", systemImage: "questionmark.circle")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://level11.app")!) {
+                        HStack {
+                            Label("level11.app", systemImage: "globe")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

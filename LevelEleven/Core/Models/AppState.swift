@@ -13,6 +13,7 @@
 //  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
 //  UserDefaults-Keys sind als private StorageKey-Enum definiert.
 //  currentLevel() und levelColor() können direkt aus Views aufgerufen werden.
+//
 
 import Foundation
 import SwiftUI

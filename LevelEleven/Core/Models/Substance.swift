@@ -12,6 +12,7 @@
 //
 //  HINWEIS: Neue Substanzen nur in Substances.all eintragen – kein Backend nötig.
 //  Daten basieren auf Literaturwerten (PsychonautWiki, TripSit); keine medizinische Garantie.
+//
 
 import Foundation
 

@@ -15,6 +15,7 @@
 //
 //  HINWEIS: Beim Hinzufügen neuer Substanzen auch Interaktionen hier ergänzen.
 //  Warnungen sind nach Severity absteigend sortiert (danger zuerst).
+//
 
 import SwiftUI
 

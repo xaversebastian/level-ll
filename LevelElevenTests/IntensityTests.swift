@@ -6,9 +6,6 @@
 //
 //  Unit tests for calculateIntensity(), activeDoses(), and route-specific pharmacokinetics.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-03-11
-//
 
 import Testing
 import Foundation

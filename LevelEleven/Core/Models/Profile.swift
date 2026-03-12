@@ -12,6 +12,7 @@
 //
 //  HINWEIS: Toleranz-Level 0–11 entsprechen der lEVEl-Skala; factor wird in AppState.calculateIntensity() genutzt.
 //  Gewicht wird auf 30–300 kg und Alter auf 13–99 Jahre geclampt.
+//
 
 import Foundation
 

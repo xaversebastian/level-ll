@@ -12,6 +12,7 @@
 //
 //  HINWEIS: generateTimelineData() sampelt alle 5 Minuten – bei breiterem Fenster
 //  ggf. Schritt erhöhen. Wird aus HomeView-Sheet und MoreView-NavigationLink aufgerufen.
+//
 
 import SwiftUI
 import Charts
