@@ -2,12 +2,11 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Version: 2.0  |  2026-03-12
+//  Version: 3.0  |  2026-03-12
 //
-//  Radikaler Umbau: dunkler Navy-Hero, floating „Log Dose" CTA, SOS-Chip,
-//  Sober-Time direkt im Hero. lastDoseCard und liveStatusCard entfernt (redundant).
-//  Warnings nur sichtbar wenn aktive Doses vorhanden.
-//  „Log Dose" öffnet BallerModeView bei aktiver Session, sonst QuickDoseView.
+//  Komplett neu gedacht: Kein Ring-Gauge mehr. Kompakter Hero mit großer
+//  Level-Zahl + horizontalem Fortschrittsbalken. Sticky Log-Dose-Button
+//  via safeAreaInset (kein Overlap mehr). Saubere Card-Struktur darunter.
 
 import SwiftUI
 import Combine
@@ -21,55 +20,30 @@ struct HomeView: View {
     @State private var showBallerMode = false
     @State private var showQuickDose = false
     @State private var showEmergency = false
-    // Snooze: [warningTitle: snoozeUntil]
     @State private var snoozedWarnings: [String: Date] = [:]
 
     let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            GeometryReader { geo in
-                ScrollView {
-                    if let profile = appState.activeProfile {
-                        mainContent(profile, topInset: geo.safeAreaInsets.top)
-                    } else {
-                        noProfileView
-                    }
-                }
-                .scrollContentBackground(.hidden)
-                .scrollIndicators(.hidden)
-            }
-            .ignoresSafeArea(edges: .top)
-            .background(Color.appBackground.ignoresSafeArea())
-
-            // Floating Log Dose CTA
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                if appState.activeSession != nil {
-                    showBallerMode = true
+        GeometryReader { geo in
+            ScrollView {
+                if let profile = appState.activeProfile {
+                    mainContent(profile, topInset: geo.safeAreaInsets.top)
                 } else {
-                    showQuickDose = true
+                    noProfileView
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: appState.activeSession != nil ? "person.3.fill" : "plus")
-                        .font(.body.bold())
-                    Text(appState.activeSession != nil ? "Open Session" : "Log Dose")
-                        .font(.headline)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
-                .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 16))
-                .foregroundStyle(.white)
-                .shadow(color: Color.accent.opacity(0.35), radius: 12, y: 6)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 104)
+            .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
+        }
+        .ignoresSafeArea(edges: .top)
+        .background(Color.appBackground.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            logDoseButton
         }
         .onReceive(timer) { _ in currentTime = Date() }
         .sheet(isPresented: $showQuickDose) {
-            QuickDoseView()
-                .environment(appState)
+            QuickDoseView().environment(appState)
         }
         .sheet(isPresented: $showEmergency) {
             EmergencyView()
@@ -92,9 +66,36 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showBallerMode) {
-            BallerModeView()
-                .environment(appState)
+            BallerModeView().environment(appState)
         }
+    }
+
+    // MARK: - Sticky Log Dose Button
+
+    private var logDoseButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if appState.activeSession != nil {
+                showBallerMode = true
+            } else {
+                showQuickDose = true
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: appState.activeSession != nil ? "person.3.fill" : "plus")
+                    .font(.body.bold())
+                Text(appState.activeSession != nil ? "Open Session" : "Log Dose")
+                    .font(.headline)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 15)
+            .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 16))
+            .foregroundStyle(.white)
+            .shadow(color: Color.accent.opacity(0.25), radius: 10, y: 3)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
     }
 
     // MARK: - Main Content
@@ -107,66 +108,56 @@ struct HomeView: View {
         return VStack(spacing: 0) {
             heroSection(profile: profile, level: level, color: color, topInset: topInset)
 
-            VStack(spacing: 12) {
-                // Warnings: only when doses are active
+            VStack(spacing: 10) {
                 if !activeDoses.isEmpty {
                     warningsCard(profile)
                 }
-
-                // Session overview
                 if appState.activeSession != nil {
                     sessionOverviewCard()
                 }
-
-                // Active substances
                 activeSubstancesCard(profile)
             }
             .padding(.horizontal, 16)
-            .padding(.top, -32)
-            .padding(.bottom, 200)
+            .padding(.top, -20)
+            .padding(.bottom, 20)
         }
     }
 
-    // MARK: - Hero Section (dark navy)
+    // MARK: - Hero Section
 
     private func heroSection(profile: Profile, level: Double, color: Color, topInset: CGFloat = 0) -> some View {
         let minutesToSober = appState.minutesUntilBaseline(for: profile, from: currentTime)
 
         let soberText: String = {
-            guard let min = minutesToSober, min > 0 else { return "✓ Sober" }
+            guard let min = minutesToSober, min > 0 else { return "Sober now" }
             let h = Int(min) / 60
             let m = Int(min) % 60
             return h > 0 ? "Sober in ~\(h)h \(m > 0 ? "\(m)m" : "")" : "Sober in ~\(m)m"
         }()
-        let soberColor: Color = minutesToSober == nil ? Color.levelGreen : (minutesToSober! > 120 ? .white.opacity(0.7) : Color.levelOrange)
+        let soberColor: Color = minutesToSober == nil
+            ? Color.levelGreen
+            : (minutesToSober! > 120 ? .white.opacity(0.55) : Color.levelOrange)
 
-        return VStack(spacing: 18) {
-            // Safe area padding
-            Color.clear.frame(height: topInset + 20)
+        return VStack(alignment: .leading, spacing: 0) {
 
-            // Header row: logo | SOS | profile pill
+            // ── Top bar ───────────────────────────────────────────
             HStack(spacing: 10) {
-                Image("level-logo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 52)
-                    .colorMultiply(.white)
+                Text("LEVEL")
+                    .font(.system(size: 11, weight: .black))
+                    .tracking(3)
+                    .foregroundStyle(.white.opacity(0.35))
 
                 Spacer()
 
-                // SOS emergency shortcut
-                Button {
-                    showEmergency = true
-                } label: {
+                Button { showEmergency = true } label: {
                     Text("SOS")
                         .font(.caption.bold())
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 5)
                         .background(.red.gradient, in: Capsule())
                 }
 
-                // Profile pill
                 Button {
                     if appState.profiles.count == 2,
                        let other = appState.profiles.first(where: { $0.id != appState.activeProfile?.id }) {
@@ -176,63 +167,96 @@ struct HomeView: View {
                         showProfilePicker = true
                     }
                 } label: {
-                    HStack(spacing: 8) {
-                        Text(profile.avatarEmoji)
-                            .font(.body)
+                    HStack(spacing: 6) {
+                        Text(safeEmoji(profile.avatarEmoji))
+                            .font(.system(size: 16))
                         Text(profile.name)
                             .font(.subheadline.bold())
                         Image(systemName: "chevron.down")
                             .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(.white.opacity(0.4))
                     }
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(.white.opacity(0.12), in: Capsule())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(.white.opacity(0.1), in: Capsule())
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.top, topInset + 16)
+            .padding(.bottom, 20)
 
-            // Level Gauge — tappable → timeline
-            Button {
-                showTimeline = true
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.12))
-                        .frame(width: 200, height: 200)
-                        .blur(radius: 24)
-                    LevelGaugeView(level: level, color: color)
+            // ── Level number + description ─────────────────────────
+            Button { showTimeline = true } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .lastTextBaseline, spacing: 6) {
+                        Text(String(format: "%.1f", level))
+                            .font(.system(size: 88, weight: .black, design: .rounded))
+                            .foregroundStyle(color)
+                            .contentTransition(.numericText())
+                            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: level)
+
+                        Text("/ 11")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.25))
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(appState.levelDescription(for: level))
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+
+                        Text(soberText)
+                            .font(.subheadline)
+                            .foregroundStyle(soberColor)
+                    }
                 }
             }
             .buttonStyle(.plain)
+            .padding(.horizontal, 24)
 
-            // Level description + sober time
-            VStack(spacing: 6) {
-                Text(appState.levelDescription(for: level))
-                    .font(.title2.bold())
-                    .foregroundStyle(color)
+            // ── Progress bar ───────────────────────────────────────
+            levelBar(progress: level / 11.0, color: color)
+                .padding(.horizontal, 24)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
 
-                Text(soberText)
-                    .font(.subheadline)
-                    .foregroundStyle(soberColor)
-            }
-
-            // Limit warning
+            // ── Limit warning ──────────────────────────────────────
             if level >= Double(profile.personalLimit) {
                 Label("Personal limit reached", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.bold())
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
                     .background(.red.gradient, in: Capsule())
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 48)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.heroBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .ignoresSafeArea(edges: .top)
+    }
+
+    private func levelBar(progress: Double, color: Color) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(.white.opacity(0.08))
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [color.opacity(0.6), color],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: geo.size.width * CGFloat(min(max(progress, 0), 1)))
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
+            }
+        }
+        .frame(height: 5)
     }
 
     // MARK: - Warnings Card
@@ -247,7 +271,7 @@ struct HomeView: View {
         }
         let calm = appState.calmMode
 
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label(calm ? "Keep in Mind" : "Warnings",
                       systemImage: calm ? "info.circle" : "exclamationmark.shield")
@@ -255,18 +279,17 @@ struct HomeView: View {
                 Spacer()
                 if warnings.count > 0 {
                     Text("\(warnings.count)")
-                        .font(.caption)
+                        .font(.caption2.bold())
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.secondary.opacity(0.15), in: Capsule())
+                        .padding(.vertical, 3)
+                        .background(Color.levelOrange.opacity(0.15), in: Capsule())
+                        .foregroundStyle(Color.levelOrange)
                 }
             }
 
             if let topWarning = warnings.first {
                 HStack(spacing: 12) {
-                    Button {
-                        showWarnings = true
-                    } label: {
+                    Button { showWarnings = true } label: {
                         HStack(spacing: 12) {
                             let displayColor: Color = calm && topWarning.severity < .danger
                                 ? Color.levelCalm : topWarning.severity.color
@@ -336,14 +359,15 @@ struct HomeView: View {
                     .font(.subheadline.bold())
                 Spacer()
                 Text("\(active.count)")
-                    .font(.caption)
+                    .font(.caption2.bold())
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.secondary.opacity(0.15), in: Capsule())
+                    .padding(.vertical, 3)
+                    .background(.secondary.opacity(0.12), in: Capsule())
+                    .foregroundStyle(.secondary)
             }
 
             if active.isEmpty {
-                HStack {
+                HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.levelGreen)
                     Text("Nothing active")
@@ -365,7 +389,7 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .background(.background, in: RoundedRectangle(cornerRadius: DS.cardRadius))
         .overlay(RoundedRectangle(cornerRadius: DS.cardRadius).strokeBorder(.primary.opacity(DS.borderOpacity), lineWidth: 1))
         .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
@@ -395,18 +419,19 @@ struct HomeView: View {
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.secondary.opacity(0.15))
+                    Capsule().fill(.secondary.opacity(0.12))
                     Capsule()
                         .fill(color)
                         .frame(width: geo.size.width * (1 - progress))
                 }
             }
-            .frame(width: 80, height: 6)
+            .frame(width: 72, height: 5)
 
             Text("\(Int(remaining))m")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 36, alignment: .trailing)
+                .monospacedDigit()
 
             Button {
                 withAnimation(.easeOut(duration: 0.2)) {
@@ -414,12 +439,12 @@ struct HomeView: View {
                 }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.secondary.opacity(0.4))
+                    .font(.system(size: 17))
+                    .foregroundStyle(.secondary.opacity(0.35))
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 5)
         .contextMenu {
             Button(role: .destructive) {
                 withAnimation(.easeOut(duration: 0.2)) {
@@ -447,43 +472,30 @@ struct HomeView: View {
     @ViewBuilder
     private func sessionOverviewCard() -> some View {
         if let session = appState.activeSession {
-            Button {
-                showBallerMode = true
-            } label: {
+            Button { showBallerMode = true } label: {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Label(session.name, systemImage: "person.3.fill")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(Color.accent)
-                        Spacer()
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Circle().fill(.green).frame(width: 6, height: 6)
                             Text("Live")
                                 .font(.caption2.bold())
                                 .foregroundStyle(.green)
                         }
+                        Text(session.name)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.accent)
+                        Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 10) {
                         ForEach(session.participantIds, id: \.self) { profileId in
                             if let p = appState.profiles.first(where: { $0.id == profileId }) {
                                 let lvl = appState.currentLevel(for: p, at: currentTime)
                                 let col = appState.levelColor(for: lvl)
-                                VStack(spacing: 4) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(col.opacity(0.15))
-                                            .frame(width: 36, height: 36)
-                                        Text(p.avatarEmoji)
-                                            .font(.body)
-                                    }
-                                    Text(String(format: "%.1f", lvl))
-                                        .font(.caption.bold())
-                                        .foregroundStyle(col)
-                                }
+                                participantChip(p, level: lvl, color: col)
                             }
                         }
                         Spacer()
@@ -493,12 +505,45 @@ struct HomeView: View {
                 .background(.background, in: RoundedRectangle(cornerRadius: DS.cardRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.cardRadius)
-                        .strokeBorder(Color.accent.opacity(0.3), lineWidth: 1)
+                        .strokeBorder(Color.accent.opacity(0.25), lineWidth: 1)
                 )
                 .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private func participantChip(_ profile: Profile, level: Double, color: Color) -> some View {
+        HStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.12))
+                    .frame(width: 32, height: 32)
+                Text(safeEmoji(profile.avatarEmoji))
+                    .font(.system(size: 16))
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(profile.name)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.primary)
+                Text(String(format: "%.1f", level))
+                    .font(.caption.bold())
+                    .foregroundStyle(color)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(color.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    // MARK: - Helpers
+
+    /// Returns a guaranteed-renderable emoji, falling back to "😊".
+    private func safeEmoji(_ emoji: String) -> String {
+        let known: Set<String> = ["\u{1F9D1}", "\u{1F469}", "\u{1F468}", "\u{1FAF1}"]
+        if emoji.isEmpty || known.contains(emoji) { return "😊" }
+        return emoji
     }
 
     // MARK: - No Profile View
@@ -543,7 +588,7 @@ struct HomeView: View {
                         showProfilePicker = false
                     } label: {
                         HStack {
-                            Text(profile.avatarEmoji).font(.title2)
+                            Text(safeEmoji(profile.avatarEmoji)).font(.title2)
                             Text(profile.name).font(.body)
                             Spacer()
                             if profile.id == appState.activeProfile?.id {
