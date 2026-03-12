@@ -87,13 +87,12 @@ struct NasalLineGuideView: View {
     // MARK: - Dose Line Row
 
     private func doseLineRow(profile: Profile, amount: Double) -> some View {
-        let lineWidth = lineWidth(for: amount)
         let isHigh = amount > substance.strongDose
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Text(profile.avatarEmoji)
-                    .font(.body)   // .title3 causes rendering issues on some iOS versions
+                    .font(.body)
                 Text(profile.name)
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)
@@ -103,20 +102,22 @@ struct NasalLineGuideView: View {
                     .foregroundStyle(isHigh ? .orange : .white.opacity(0.8))
             }
 
-            ZStack(alignment: .leading) {
-                // Track
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.white.opacity(0.1))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 10)
+            GeometryReader { geo in
+                let refFraction: Double = 0.45
+                let ratio = substance.commonDose > 0 ? amount / substance.commonDose : 1.0
+                let lineW = min(geo.size.width, geo.size.width * refFraction * ratio)
 
-                // Line
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(isHigh
-                          ? LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing)
-                          : LinearGradient(colors: [.white, .white.opacity(0.7)], startPoint: .leading, endPoint: .trailing))
-                    .frame(width: lineWidth, height: 10)
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.white.opacity(0.1))
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isHigh
+                              ? LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing)
+                              : LinearGradient(colors: [.white, .white.opacity(0.7)], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: max(4, lineW))
+                }
             }
+            .frame(height: 10)
 
             if isHigh {
                 Text("Above strong dose – consider splitting")
@@ -130,22 +131,24 @@ struct NasalLineGuideView: View {
 
     private var referenceLine: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.white.opacity(0.1))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 6)
+            GeometryReader { geo in
+                let refWidth = geo.size.width * 0.45
 
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.white.opacity(0.4))
-                    .frame(width: 180, height: 6)
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.white.opacity(0.1))
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.white.opacity(0.4))
+                        .frame(width: refWidth)
+                }
             }
+            .frame(height: 6)
 
             HStack {
                 Image(systemName: "arrow.left.and.right")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
-                Text("≈ 3cm on screen · common dose (\(Int(substance.commonDose.rounded())) \(substance.unit.symbol))")
+                Text("Common dose (\(Int(substance.commonDose.rounded())) \(substance.unit.symbol))")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
             }
@@ -168,12 +171,6 @@ struct NasalLineGuideView: View {
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    // MARK: - Helpers
-
-    private func lineWidth(for amount: Double) -> Double {
-        guard substance.commonDose > 0 else { return 40 }
-        return min((amount / substance.commonDose) * 180, 300)
-    }
 }
 
 #Preview {

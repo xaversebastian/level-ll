@@ -14,7 +14,7 @@ struct BallerActivityAttributes: ActivityAttributes {
         var totalDoses: Int
         var highestLevel: Double
         var participantCount: Int
-        /// Anzahl aktiver Warnungen (severity >= warning) über alle Teilnehmer
+        /// Number of active warnings (severity >= warning) across all participants
         var warningCount: Int
     }
 
@@ -22,7 +22,7 @@ struct BallerActivityAttributes: ActivityAttributes {
         let name: String
         let emoji: String
         let level: Double
-        /// Minuten bis nüchtern (nil = bereits nüchtern)
+        /// Minutes until sober (nil = already sober)
         let minutesToSober: Int?
     }
 

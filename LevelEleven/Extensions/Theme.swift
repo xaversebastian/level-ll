@@ -1,7 +1,8 @@
 // Theme.swift — LevelEleven
-// v3.0 | 2026-03-12 17:18
-// - Warm copper/espresso design system with DS tokens and pressFeedback modifier
-// - Stripped legacy comments, added structured header
+// v4.0 | 2026-03-12 23:54
+// - Adaptive light/dark mode using brand palette
+// - Light: cream background (#FAF8F4), dark hero (#1C1208)
+// - Dark: espresso background (#1C1208), elevated surfaces (#2A1F14)
 //
 import SwiftUI
 
@@ -9,44 +10,46 @@ import SwiftUI
 
 extension Color {
     // MARK: Backgrounds
-    /// Warmes Creme-Weiß – Haupt-App-Hintergrund
-    static let appBackground  = Color(hex: "FAF8F4")
-    /// Tiefes warmes Espresso – Hero-Sektion und Onboarding
-    static let heroBackground = Color(hex: "1C1208")
+    /// Main app background — cream in light, deep espresso in dark
+    static let appBackground  = Color.adaptive(light: "FAF8F4", dark: "1C1208")
+    /// Hero / elevated section — deep espresso in light, slightly lighter in dark
+    static let heroBackground = Color.adaptive(light: "1C1208", dark: "0E0904")
+    /// Card / surface background — white in light, warm dark brown in dark
+    static let cardBackground = Color.adaptive(light: "FFFFFF", dark: "2A1F14")
+    /// Subtle surface for grouped elements
+    static let surfaceSecondary = Color.adaptive(light: "F2EDE6", dark: "221811")
 
     // MARK: Brand / Accent
-    /// Warmes Kupfer – Primary Accent (ersetzt kaltes Indigo/Violett)
+    /// Warm copper — primary accent
     static let levelCopper    = Color(hex: "C4622A")
-    /// Weiches Bernstein – Secondary Accent
+    /// Soft amber — secondary accent
     static let levelAmber     = Color(hex: "D49060")
-    /// Warmes Taupe – Grounding / Calm-Kontext (ersetzt kaltes Blaugrau)
-    static let levelCalm      = Color(hex: "9E8B7C")
+    /// Warm taupe — grounding / calm context
+    static let levelCalm      = Color.adaptive(light: "9E8B7C", dark: "B8A99A")
 
-    // MARK: Substance Level Colors (pharmakologisch bedeutsam, erhalten)
-    /// Sage-Grün – Sober / Safe
+    // MARK: Substance Level Colors
+    /// Sage green — sober / safe
     static let levelGreen     = Color(hex: "4CAF72")
-    /// Dunkles Petrol – Stimulantien / Teal
+    /// Dark teal — stimulants
     static let levelTeal      = Color(hex: "2E9186")
-    /// Warmes Bernstein – Mittlere Dosen (Level 5–6)
+    /// Warm amber — medium doses (level 5–6)
     static let levelOrange    = Color(hex: "C4863C")
-    /// Dunkles Rosé – Opioid / Sedativa-Bereich
+    /// Dark rosé — opioid / sedative range
     static let levelMagenta   = Color(hex: "A83B56")
-    /// Terrakotta – Hohe Dosen (Level 7–8)
+    /// Terracotta — high doses (level 7–8)
     static let levelWarm      = Color(hex: "C47A5A")
-    /// Mauve/Pflaume – Sehr hohe Dosen (Level 9–11)
+    /// Mauve/plum — very high doses (level 9–11)
     static let levelMauve     = Color(hex: "8B4268")
 
     // MARK: Semantic Aliases
-    /// Primärer Akzent der App = Kupfer
+    /// Primary app accent = copper
     static let accent          = Color.levelCopper
-    /// Sekundärer Akzent = weiches Bernstein
+    /// Secondary accent = soft amber
     static let accentHighlight = Color.levelAmber
 }
 
 // MARK: - Design System Tokens
 
-/// Zentrale Design-Konstanten für Abstände, Eckenradien und Schatten.
-/// Nutzung: DS.cardRadius, DS.shadow, etc.
 enum DS {
     // Corner Radii
     static let cardRadius:  CGFloat = 16
@@ -58,8 +61,8 @@ enum DS {
     static let cardPadding:  CGFloat = 16
     static let screenPadding: CGFloat = 16
 
-    // Shadows
-    static let shadowColor  = Color.black.opacity(0.10)
+    // Shadows — adaptive: subtle in light, near-invisible in dark
+    static let shadowColor  = Color.adaptive(light: "000000", dark: "000000").opacity(0.10)
     static let shadowRadius: CGFloat = 12
     static let shadowY:      CGFloat = 4
 
