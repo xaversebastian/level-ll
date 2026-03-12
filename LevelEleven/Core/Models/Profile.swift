@@ -107,7 +107,7 @@ struct Profile: Identifiable, Codable, Hashable {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         self.name = trimmed.isEmpty ? "User" : trimmed
         self.isActive = isActive
-        self.avatarEmoji = avatarEmoji.isEmpty ? "😎" : avatarEmoji
+        self.avatarEmoji = Self.sanitizeEmoji(avatarEmoji)
         self.age = max(13, min(99, age))
         self.weightKg = max(30, min(300, weightKg))
         self.sex = sex
@@ -121,6 +121,41 @@ struct Profile: Identifiable, Codable, Hashable {
         self.personalLimit = max(1, min(11, personalLimit ?? defaultLimit))
     }
     
+    /// Emojis known to render as "?" on some iOS versions
+    private static let brokenEmojis: Set<String> = [
+        "\u{1F9D1}", "\u{1F469}", "\u{1F468}", "\u{1FAF1}",
+        "\u{1F9D1}\u{200D}\u{1F9B0}", "\u{1F9D1}\u{200D}\u{1F9B1}",
+        "\u{1F9D1}\u{200D}\u{1F9B3}", "\u{1F9D1}\u{200D}\u{1F9B2}"
+    ]
+
+    static func sanitizeEmoji(_ emoji: String) -> String {
+        if emoji.isEmpty || brokenEmojis.contains(emoji) { return "😎" }
+        // Check the string actually contains an emoji scalar
+        let hasEmoji = emoji.unicodeScalars.contains { scalar in
+            scalar.properties.isEmoji && scalar.value > 0x238C
+        }
+        return hasEmoji ? emoji : "😎"
+    }
+
+    // Custom decoder to sanitize avatarEmoji from stored data
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        isActive = try container.decode(Bool.self, forKey: .isActive)
+        let rawEmoji = try container.decode(String.self, forKey: .avatarEmoji)
+        avatarEmoji = Self.sanitizeEmoji(rawEmoji)
+        age = try container.decode(Int.self, forKey: .age)
+        weightKg = try container.decode(Double.self, forKey: .weightKg)
+        sex = try container.decode(BiologicalSex.self, forKey: .sex)
+        isNeurodivergent = try container.decode(Bool.self, forKey: .isNeurodivergent)
+        takeSSRI = try container.decode(Bool.self, forKey: .takeSSRI)
+        proLevel = try container.decodeIfPresent(Int.self, forKey: .proLevel) ?? 3
+        tolerances = try container.decode([Tolerance].self, forKey: .tolerances)
+        favorites = try container.decode([String].self, forKey: .favorites)
+        personalLimit = try container.decode(Int.self, forKey: .personalLimit)
+    }
+
     static func defaultPersonalLimit(for proLevel: Int) -> Int {
         switch proLevel {
         case 1:  return 5

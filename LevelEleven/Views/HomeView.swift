@@ -226,7 +226,7 @@ struct HomeView: View {
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(safeEmoji(profile.avatarEmoji)).font(.system(size: 16))
+                        Text(profile.avatarEmoji).font(.system(size: 16))
                         Text(profile.name).font(.subheadline.bold())
                         Image(systemName: "chevron.down").font(.caption2).foregroundStyle(.white.opacity(0.4))
                     }
@@ -510,11 +510,6 @@ struct HomeView: View {
         return String(format: "%.1f%@", amount, unit)
     }
 
-    private func safeEmoji(_ emoji: String) -> String {
-        let broken: Set<String> = ["\u{1F9D1}", "\u{1F469}", "\u{1F468}", "\u{1FAF1}"]
-        if emoji.isEmpty || broken.contains(emoji) { return "😊" }
-        return emoji
-    }
 
     // MARK: - No Profile
 
@@ -553,7 +548,7 @@ struct HomeView: View {
                         showProfilePicker = false
                     } label: {
                         HStack {
-                            Text(safeEmoji(profile.avatarEmoji)).font(.title2)
+                            Text(profile.avatarEmoji).font(.title2)
                             Text(profile.name).font(.body)
                             Spacer()
                             if profile.id == appState.activeProfile?.id {
