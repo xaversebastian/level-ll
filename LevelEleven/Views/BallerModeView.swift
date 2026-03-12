@@ -817,10 +817,10 @@ struct GroupDoseView: View {
             }
             .fullScreenCover(isPresented: $showNasalGuide) {
                 if let substance = selectedSubstance {
-                    let nasalDoses: [(profile: Profile, amount: Double)] = selectedProfilesForDose.compactMap { profileId in
+                    let nasalDoses: [(profile: Profile, amount: Double)] = selectedProfilesForDose.compactMap { profileId -> (profile: Profile, amount: Double)? in
                         guard let profile = appState.profiles.first(where: { $0.id == profileId }) else { return nil }
                         let rec = IntoxEngine.recommendDose(substance: substance, route: selectedRoute, profile: profile)
-                        let amount = doseAmounts[profileId] ?? rec.recommendedDose
+                        let amount = doseAmounts[profileId] ?? rec.suggestedDose
                         return (profile: profile, amount: amount)
                     }
                     NasalLineGuideView(substance: substance, doses: nasalDoses) {
@@ -958,7 +958,7 @@ struct GroupDoseView: View {
     private func recommendationCard(profile: Profile, substance: Substance) -> some View {
         let rec = IntoxEngine.recommendDose(substance: substance, route: selectedRoute, profile: profile)
         let isSelected = selectedProfilesForDose.contains(profile.id)
-        let currentAmount = doseAmounts[profile.id] ?? rec.recommendedDose
+        let currentAmount = doseAmounts[profile.id] ?? rec.suggestedDose
         let maxDose = substance.strongDose * 2
         let step = doseStep(for: substance)
 
@@ -1006,7 +1006,7 @@ struct GroupDoseView: View {
             VStack(spacing: 4) {
                 Slider(
                     value: Binding(
-                        get: { doseAmounts[profile.id] ?? rec.recommendedDose },
+                        get: { doseAmounts[profile.id] ?? rec.suggestedDose },
                         set: { doseAmounts[profile.id] = $0 }
                     ),
                     in: 0...maxDose,
@@ -1020,9 +1020,9 @@ struct GroupDoseView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button {
-                        doseAmounts[profile.id] = rec.recommendedDose
+                        doseAmounts[profile.id] = rec.suggestedDose
                     } label: {
-                        Text("Recommended: \(String(format: "%.1f", rec.recommendedDose))")
+                        Text("Recommended: \(String(format: "%.1f", rec.suggestedDose))")
                             .font(.caption2)
                             .foregroundStyle(Color.accent)
                     }
@@ -1065,7 +1065,7 @@ struct GroupDoseView: View {
         .padding(.horizontal)
         .onAppear {
             if doseAmounts[profile.id] == nil {
-                doseAmounts[profile.id] = rec.recommendedDose
+                doseAmounts[profile.id] = rec.suggestedDose
             }
         }
     }
@@ -1099,7 +1099,7 @@ struct GroupDoseView: View {
                 route: selectedRoute,
                 profile: appState.profiles.first { $0.id == profileId } ?? Profile(id: profileId, name: "Unknown")
             )
-            let amount = doseAmounts[profileId] ?? rec.recommendedDose
+            let amount = doseAmounts[profileId] ?? rec.suggestedDose
 
             let dose = Dose(
                 profileId: profileId,
