@@ -123,7 +123,7 @@ struct HomeView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, -32)
-            .padding(.bottom, 180)
+            .padding(.bottom, 200)
         }
     }
 
@@ -140,9 +140,9 @@ struct HomeView: View {
         }()
         let soberColor: Color = minutesToSober == nil ? Color.levelGreen : (minutesToSober! > 120 ? .white.opacity(0.7) : Color.levelOrange)
 
-        return VStack(spacing: 14) {
+        return VStack(spacing: 18) {
             // Safe area padding
-            Color.clear.frame(height: topInset + 8)
+            Color.clear.frame(height: topInset + 20)
 
             // Header row: logo | SOS | profile pill
             HStack(spacing: 10) {
