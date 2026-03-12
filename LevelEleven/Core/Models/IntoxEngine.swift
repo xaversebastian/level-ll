@@ -117,12 +117,12 @@ enum IntoxEngine {
             factors.append("\(route.displayName) route: ×\(String(format: "%.1f", routeFactor))")
         }
 
-        // --- 4. ADHD (stimulants only) ---
-        if profile.hasADHD && substance.category == .stimulant {
+        // --- 4. Neurodivergent (stimulants only) ---
+        if profile.isNeurodivergent && substance.category == .stimulant {
             adjLight  *= 1.2
             adjCommon *= 1.2
             adjStrong *= 1.2
-            factors.append("ADHD (stimulant): +20%")
+            factors.append("Neurodivergent (stimulant): +20%")
         }
 
         // --- 5. Biological sex ---

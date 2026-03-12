@@ -390,7 +390,7 @@ final class AppState {
             age: 31,
             weightKg: 83,
             sex: .male,
-            hasADHD: true,
+            isNeurodivergent: true,
             tolerances: [
                 Tolerance(substanceId: "cocaine", level: 11),
                 Tolerance(substanceId: "amphetamine", level: 8),

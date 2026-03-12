@@ -159,7 +159,7 @@ struct ProfileEditorView: View {
     @State private var age = 30
     @State private var weightKg = 70.0
     @State private var sex: BiologicalSex = .male
-    @State private var hasADHD = false
+    @State private var isNeurodivergent = false
     @State private var takeSSRI = false
     @State private var personalLimit = 7
     @State private var tolerances: [String: Int] = [:]
@@ -173,9 +173,9 @@ struct ProfileEditorView: View {
             "😎", "🥰", "😊", "🤓", "🥳", "😏",
             "🤠", "🥸", "😇", "🤩", "😌", "😈"
         ]),
-        ("People", [
-            "👨🏻", "👨🏼", "👨🏽", "👨🏾", "👨🏿", "😏",
-            "👩🏻", "👩🏼", "👩🏽", "👩🏾", "👩🏿", "💀"
+        ("Characters", [
+            "\u{1F480}", "\u{1F47B}", "\u{1F916}", "\u{1F47D}", "\u{1F479}", "\u{1F921}",
+            "\u{1F63A}", "\u{1F435}", "\u{1F98A}", "\u{1F43A}", "\u{1F431}", "\u{1F47E}"
         ]),
         ("Vibes", [
             "🔥", "💜", "⚡️", "🌈", "🍀", "🎯",
@@ -381,10 +381,15 @@ struct ProfileEditorView: View {
 
             Divider().padding(.leading, 54)
 
-            // ADHD
-            Toggle(isOn: $hasADHD) {
-                Text("Has ADHD")
-                    .font(.subheadline)
+            // Neurodivergent
+            Toggle(isOn: $isNeurodivergent) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Neurodivergent")
+                        .font(.subheadline)
+                    Text("ADHD, ASD, etc. — affects stimulant response")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .tint(Color.accent)
             .padding(.horizontal, DS.screenPadding)
@@ -495,7 +500,7 @@ struct ProfileEditorView: View {
         age = p.age
         weightKg = p.weightKg
         sex = p.sex
-        hasADHD = p.hasADHD
+        isNeurodivergent = p.isNeurodivergent
         takeSSRI = p.takeSSRI
         personalLimit = p.personalLimit
         existingTolerances = p.tolerances
@@ -518,7 +523,7 @@ struct ProfileEditorView: View {
             updated.age = age
             updated.weightKg = weightKg
             updated.sex = sex
-            updated.hasADHD = hasADHD
+            updated.isNeurodivergent = isNeurodivergent
             updated.takeSSRI = takeSSRI
             updated.personalLimit = personalLimit
             updated.tolerances = toleranceArray
@@ -530,7 +535,7 @@ struct ProfileEditorView: View {
                 age: age,
                 weightKg: weightKg,
                 sex: sex,
-                hasADHD: hasADHD,
+                isNeurodivergent: isNeurodivergent,
                 takeSSRI: takeSSRI,
                 tolerances: toleranceArray,
                 personalLimit: personalLimit

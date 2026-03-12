@@ -837,6 +837,16 @@ struct GroupDoseView: View {
     @State private var doseAmounts: [String: Double] = [:]
     @State private var showNasalGuide = false
 
+    // Redose alert
+    @State private var showRedoseAlert = false
+    @State private var redoseParticipantNames: [String] = []
+
+    // Confirmation overlay
+    @State private var showConfirmation = false
+    @State private var confirmedSubstance: Substance?
+    @State private var lastLoggedDoseIds: [String] = []
+    @State private var dismissWorkItem: DispatchWorkItem?
+
     var participants: [Profile] {
         participantIds.compactMap { id in
             appState.profiles.first { $0.id == id }
@@ -847,10 +857,8 @@ struct GroupDoseView: View {
         NavigationStack {
             Group {
                 if let substance = selectedSubstance {
-                    // Dose Configuration View
                     doseConfigView(substance)
                 } else {
-                    // Substance List (like SubstanceInfoView)
                     substanceListView
                 }
             }
@@ -858,9 +866,9 @@ struct GroupDoseView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(selectedSubstance != nil ? "Back" : "Cancel") {
                         if selectedSubstance != nil {
-                            selectedSubstance = nil
+                            withAnimation(.spring(duration: 0.25)) { selectedSubstance = nil }
                         } else {
                             dismiss()
                         }
@@ -868,8 +876,15 @@ struct GroupDoseView: View {
                 }
             }
             .onAppear {
-                // Pre-select all participants
                 selectedProfilesForDose = Set(participantIds)
+            }
+            .alert("Redose Warning", isPresented: $showRedoseAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Log anyway", role: .destructive) {
+                    if let s = selectedSubstance { continueAfterRedoseCheck(s) }
+                }
+            } message: {
+                Text("\(redoseParticipantNames.joined(separator: ", ")) recently took this substance — still within the onset window. Redosing now may cause unexpected intensity.")
             }
             .fullScreenCover(isPresented: $showNasalGuide) {
                 if let substance = selectedSubstance {
@@ -886,6 +901,18 @@ struct GroupDoseView: View {
                         }
                     }
                 }
+            }
+            .overlay(alignment: .bottom) {
+                if showConfirmation, let s = confirmedSubstance {
+                    groupConfirmationBanner(s)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
+            }
+            .animation(.spring(duration: 0.25), value: showConfirmation)
+            .onDisappear {
+                dismissWorkItem?.cancel()
             }
         }
     }
@@ -959,13 +986,20 @@ struct GroupDoseView: View {
     // MARK: - Dose Configuration View
 
     private func doseConfigView(_ substance: Substance) -> some View {
-        ScrollView {
+        let catColor = Color(hex: substance.category.color)
+
+        return ScrollView {
             VStack(spacing: 0) {
                 // Substance Header
                 HStack(spacing: 14) {
-                    Image(systemName: substance.category.icon)
-                        .font(.title2)
-                        .foregroundStyle(Color(hex: substance.category.color))
+                    ZStack {
+                        Circle()
+                            .fill(catColor.opacity(0.15))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: substance.category.icon)
+                            .font(.title3)
+                            .foregroundStyle(catColor)
+                    }
                     VStack(alignment: .leading) {
                         Text(substance.name)
                             .font(.title3.bold())
@@ -978,78 +1012,88 @@ struct GroupDoseView: View {
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 14)
 
-                // Route Picker
-                routeSection(substance)
+                // Route pills (matching QuickDoseView style)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(substance.routes, id: \.self) { route in
+                            Button { selectedRoute = route } label: {
+                                Text(route.displayName)
+                                    .font(.subheadline.bold())
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 9)
+                                    .background(
+                                        selectedRoute == route
+                                        ? catColor
+                                        : Color.secondary.opacity(0.1),
+                                        in: Capsule()
+                                    )
+                                    .foregroundStyle(selectedRoute == route ? .white : .primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                }
+                .padding(.vertical, 12)
 
-                // Recommendations
-                groupSectionHeader("Recommended Doses", color: Color.accent)
+                // Per-participant doses
+                groupSectionHeader("Doses", color: Color.accent)
 
                 ForEach(Array(participants.enumerated()), id: \.element.id) { idx, profile in
                     if idx > 0 { Divider().padding(.horizontal, DS.screenPadding) }
                     recommendationRow(profile: profile, substance: substance)
                 }
 
-                Color.clear.frame(height: 80)
+                Color.clear.frame(height: 100)
             }
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Button {
-                logDoses()
-            } label: {
+        .overlay(alignment: .bottom) {
+            if !showConfirmation {
+                stickyLogButton(for: substance)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    // MARK: - Sticky Log Button
+
+    private func stickyLogButton(for substance: Substance) -> some View {
+        Button { tappedLogDoses(substance) } label: {
+            HStack(spacing: 6) {
+                if selectedRoute == .nasal {
+                    Image(systemName: "eye.fill").font(.body)
+                }
                 Text("Log for \(selectedProfilesForDose.count) people")
                     .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 15)
-                    .background(selectedProfilesForDose.isEmpty ? Color.gray.gradient : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
-                    .foregroundStyle(.white)
-                    .shadow(color: Color.accent.opacity(selectedProfilesForDose.isEmpty ? 0 : 0.2), radius: 8, y: 3)
             }
-            .disabled(selectedProfilesForDose.isEmpty)
-            .padding(.horizontal, DS.screenPadding)
-            .padding(.vertical, 12)
-            .background(.regularMaterial)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                selectedProfilesForDose.isEmpty ? Color.secondary.opacity(0.25) : Color.accent,
+                in: RoundedRectangle(cornerRadius: DS.cardRadius)
+            )
+            .foregroundStyle(.white)
+            .shadow(color: selectedProfilesForDose.isEmpty ? .clear : Color.accent.opacity(0.25), radius: 8, y: 3)
         }
+        .disabled(selectedProfilesForDose.isEmpty)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
     }
 
-    private func routeSection(_ substance: Substance) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Route")
-                .font(.system(size: 12, weight: .bold))
-                .tracking(1.5)
-                .foregroundStyle(.secondary)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(substance.routes, id: \.self) { route in
-                        Button {
-                            selectedRoute = route
-                        } label: {
-                            Text(route.displayName)
-                                .font(.subheadline)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(selectedRoute == route ? Color.accent : .secondary.opacity(0.08), in: Capsule())
-                                .foregroundStyle(selectedRoute == route ? .white : .primary)
-                        }
-                        .pressFeedback()
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, DS.screenPadding)
-        .padding(.vertical, 12)
-    }
+    // MARK: - Recommendation Row
 
     private func recommendationRow(profile: Profile, substance: Substance) -> some View {
         let rec = IntoxEngine.recommendDose(substance: substance, route: selectedRoute, profile: profile)
         let isSelected = selectedProfilesForDose.contains(profile.id)
         let currentAmount = doseAmounts[profile.id] ?? rec.suggestedDose
-        let maxDose = substance.strongDose * 2
-        let step = doseStep(for: substance)
+        let catColor = Color(hex: substance.category.color)
+        let smallStep = max(0.5, substance.commonDose / 20.0)
+        let bigStep   = max(1.0, substance.commonDose / 10.0)
 
-        return VStack(spacing: 12) {
+        return VStack(spacing: 10) {
+            // Profile header row
             HStack(spacing: 12) {
                 Button {
                     if isSelected {
@@ -1079,66 +1123,55 @@ struct GroupDoseView: View {
 
                 Spacer()
 
+                // Large amount display
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text(String(format: "%.1f", currentAmount))
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.accent)
+                    Text(formatGroupAmount(currentAmount, substance: substance))
+                        .font(.system(size: 28, weight: .black, design: .rounded))
+                        .foregroundStyle(catColor)
                         .contentTransition(.numericText())
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentAmount)
                     Text(substance.unit.symbol)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            VStack(spacing: 4) {
-                Slider(
-                    value: Binding(
-                        get: { doseAmounts[profile.id] ?? rec.suggestedDose },
-                        set: { doseAmounts[profile.id] = $0 }
-                    ),
-                    in: 0...maxDose,
-                    step: step
-                )
-                .tint(Color.accent)
-
-                HStack {
-                    Text("0")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        doseAmounts[profile.id] = rec.suggestedDose
-                    } label: {
-                        Text("Rec: \(String(format: "%.1f", rec.suggestedDose))")
-                            .font(.caption2)
-                            .foregroundStyle(Color.accent)
-                    }
-                    .pressFeedback()
-                    Spacer()
-                    Text(String(format: "%.0f", maxDose))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+            // Stepper buttons (matching QuickDoseView)
+            HStack(spacing: 8) {
+                groupStepperButton("\u{2212}\(formatGroupIncrement(bigStep, substance: substance))", color: .secondary) {
+                    doseAmounts[profile.id] = max(0, currentAmount - bigStep)
+                }
+                groupStepperButton("\u{2212}\(formatGroupIncrement(smallStep, substance: substance))", color: .secondary) {
+                    doseAmounts[profile.id] = max(0, currentAmount - smallStep)
+                }
+                groupStepperButton("+\(formatGroupIncrement(smallStep, substance: substance))", color: catColor) {
+                    let maxAmount = substance.strongDose * 3.0
+                    doseAmounts[profile.id] = min(maxAmount, currentAmount + smallStep)
+                }
+                groupStepperButton("+\(formatGroupIncrement(bigStep, substance: substance))", color: catColor) {
+                    let maxAmount = substance.strongDose * 3.0
+                    doseAmounts[profile.id] = min(maxAmount, currentAmount + bigStep)
                 }
             }
 
-            if !rec.adjustmentFactors.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(rec.adjustmentFactors, id: \.self) { factor in
-                        Text(factor)
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.secondary.opacity(0.06), in: Capsule())
-                    }
-                    Spacer()
-                }
+            // Preset buttons (Light / Common / Strong)
+            let lightVal  = rec.adjustedLight
+            let commonVal = rec.adjustedCommon
+            let strongVal = rec.adjustedStrong
+
+            HStack(spacing: 8) {
+                groupPresetButton("Light", value: lightVal, unit: substance.unit.symbol, isActive: abs(currentAmount - lightVal) < max(0.1, lightVal * 0.05), color: Color.levelGreen, profileId: profile.id)
+                groupPresetButton("Common", value: commonVal, unit: substance.unit.symbol, isActive: abs(currentAmount - commonVal) < max(0.1, commonVal * 0.05), color: catColor, profileId: profile.id)
+                groupPresetButton("Strong", value: strongVal, unit: substance.unit.symbol, isActive: abs(currentAmount - strongVal) < max(0.1, strongVal * 0.05), color: Color.levelOrange, profileId: profile.id)
             }
 
+            // Warnings
             ForEach(rec.warnings, id: \.self) { warning in
-                HStack(spacing: 6) {
+                HStack(alignment: .top, spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                         .font(.caption)
+                        .padding(.top, 1)
                     Text(warning)
                         .font(.caption)
                         .foregroundStyle(.orange)
@@ -1148,6 +1181,7 @@ struct GroupDoseView: View {
         }
         .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 14)
+        .opacity(isSelected ? 1.0 : 0.45)
         .onAppear {
             if doseAmounts[profile.id] == nil {
                 doseAmounts[profile.id] = rec.suggestedDose
@@ -1155,19 +1189,79 @@ struct GroupDoseView: View {
         }
     }
 
-    private func doseStep(for substance: Substance) -> Double {
-        switch substance.unit {
-        case .mg: return substance.commonDose < 10 ? 0.5 : 5
-        case .ml: return 0.1
-        case .drinks: return 0.5
-        case .ug: return 5
-        case .puffs: return 1
-        case .g: return 0.5
+    // MARK: - Stepper & Preset Buttons
+
+    private func groupStepperButton(_ label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.subheadline.bold())
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(color == .secondary ? .primary : color)
         }
+        .buttonStyle(.plain)
+        .pressFeedback()
     }
 
-    private func logDoses() {
-        // Show nasal guide first if route is nasal
+    private func groupPresetButton(_ title: String, value: Double, unit: String, isActive: Bool, color: Color, profileId: String) -> some View {
+        Button { doseAmounts[profileId] = value } label: {
+            VStack(spacing: 3) {
+                Text(title)
+                    .font(.caption.bold())
+                    .foregroundStyle(isActive ? .white : .secondary)
+                Text("\(Int(value.rounded())) \(unit)")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(isActive ? .white : .primary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(isActive ? color : color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .pressFeedback()
+    }
+
+    // MARK: - Format Helpers
+
+    private func formatGroupAmount(_ value: Double, substance: Substance) -> String {
+        if value < 1 { return String(format: "%.2f", value) }
+        if value == floor(value) { return String(format: "%.0f", value) }
+        return String(format: "%.1f", value)
+    }
+
+    private func formatGroupIncrement(_ increment: Double, substance: Substance) -> String {
+        if increment < 1 { return String(format: "%.1f", increment) }
+        return String(format: "%.0f", increment)
+    }
+
+    // MARK: - Dose Flow (with redose check)
+
+    private func tappedLogDoses(_ substance: Substance) {
+        // Check for redose within onset window for each selected participant
+        let onsetHours = substance.onset(for: selectedRoute) / 60
+        var recentNames: [String] = []
+
+        for profileId in selectedProfilesForDose {
+            let recent = appState.recentDoses(for: profileId, hours: onsetHours)
+                .filter { $0.substanceId == substance.id }
+            if !recent.isEmpty {
+                if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                    recentNames.append(profile.name)
+                }
+            }
+        }
+
+        if !recentNames.isEmpty {
+            redoseParticipantNames = recentNames
+            showRedoseAlert = true
+            return
+        }
+
+        continueAfterRedoseCheck(substance)
+    }
+
+    private func continueAfterRedoseCheck(_ substance: Substance) {
         if selectedRoute == .nasal {
             showNasalGuide = true
             return
@@ -1177,6 +1271,8 @@ struct GroupDoseView: View {
 
     private func performLogDoses() {
         guard let substance = selectedSubstance else { return }
+
+        var loggedIds: [String] = []
 
         for profileId in selectedProfilesForDose {
             let rec = IntoxEngine.recommendDose(
@@ -1194,9 +1290,84 @@ struct GroupDoseView: View {
                 timestamp: Date()
             )
             appState.addDose(dose)
+            loggedIds.append(dose.id)
         }
 
-        dismiss()
+        lastLoggedDoseIds = loggedIds
+        confirmedSubstance = substance
+        showConfirmation = true
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+        // Auto-dismiss after delay
+        dismissWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            guard self.showConfirmation else { return }
+            self.showConfirmation = false
+            let secondWorkItem = DispatchWorkItem {
+                self.dismiss()
+            }
+            self.dismissWorkItem = secondWorkItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: secondWorkItem)
+        }
+        dismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: workItem)
+    }
+
+    // MARK: - Confirmation Banner
+
+    private func groupConfirmationBanner(_ substance: Substance) -> some View {
+        let catColor = Color(hex: substance.category.color)
+
+        return HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(catColor.opacity(0.2))
+                    .frame(width: 44, height: 44)
+                Image(systemName: substance.category.icon)
+                    .font(.title3)
+                    .foregroundStyle(catColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("\(substance.name) logged for \(lastLoggedDoseIds.count)")
+                        .font(.subheadline.bold())
+                }
+                Text("\(selectedProfilesForDose.count) participants · \(selectedRoute.displayName)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                for id in lastLoggedDoseIds {
+                    appState.deleteDose(id)
+                }
+                lastLoggedDoseIds = []
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                showConfirmation = false
+                dismissWorkItem?.cancel()
+            } label: {
+                Text("Undo")
+                    .font(.caption.bold())
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(.red.opacity(0.1), in: Capsule())
+            }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+        .onTapGesture {
+            showConfirmation = false
+            dismissWorkItem?.cancel()
+            let workItem = DispatchWorkItem {
+                self.dismiss()
+            }
+            dismissWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: workItem)
+        }
     }
 }
 

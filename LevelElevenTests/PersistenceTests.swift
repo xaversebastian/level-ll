@@ -77,7 +77,7 @@ struct PersistenceTests {
             age: 28,
             weightKg: 70,
             sex: .female,
-            hasADHD: false,
+            isNeurodivergent: false,
             takeSSRI: true,
             tolerances: [],
             personalLimit: 6

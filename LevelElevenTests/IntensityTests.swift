@@ -23,7 +23,7 @@ struct IntensityTests {
             age: 25,
             weightKg: 75,
             sex: .male,
-            hasADHD: false,
+            isNeurodivergent: false,
             takeSSRI: false,
             tolerances: [tolerance],
             personalLimit: 7

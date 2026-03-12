@@ -20,7 +20,7 @@ struct AppStateTests {
             age: 25,
             weightKg: 75,
             sex: .male,
-            hasADHD: false,
+            isNeurodivergent: false,
             takeSSRI: takeSSRI,
             tolerances: [],
             personalLimit: 7

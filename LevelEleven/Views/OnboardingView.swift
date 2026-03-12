@@ -34,7 +34,7 @@ struct OnboardingView: View {
             icon: "person.2.fill",
             iconColor: .levelOrange,
             title: "Profiles & Tolerance",
-            subtitle: "Each profile stores weight, age, sex, ADHD status, and substance tolerances.",
+            subtitle: "Each profile stores weight, age, sex, neurodivergent profile, and substance tolerances.",
             detail: "Dose recommendations are personalized per profile.\nTolerances decay automatically with abstinence."
         ),
         OnboardingPage(

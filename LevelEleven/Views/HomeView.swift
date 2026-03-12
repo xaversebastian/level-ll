@@ -241,7 +241,7 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal, DS.screenPadding)
-            .padding(.top, topInset + 16)
+            .padding(.top, max(topInset, 54) + 8)
             .padding(.bottom, 18)
 
             // Level number

@@ -7,7 +7,7 @@
 //  Nutzerprofil für pharmakokinetische Berechnungen und Dosisempfehlungen.
 //  Enthält Name, Emoji-Avatar, Alter, Gewicht (kg), biologisches Geschlecht (BiologicalSex)
 //  sowie substanzspezifische Toleranzen (Tolerance-Struct, Level 0–11).
-//  metabolismFactor kombiniert Geschlecht, ADHS-Status und Alter zu einem Multiplikator.
+//  metabolismFactor kombiniert Geschlecht, Neurodivergenz und Alter zu einem Multiplikator.
 //  toleranceFactor(for:) liefert den Verstärkungsfaktor einer Substanz für dieses Profil.
 //
 //  HINWEIS: Toleranz-Level 0–11 entsprechen der lEVEl-Skala; factor wird in AppState.calculateIntensity() genutzt.
@@ -91,7 +91,7 @@ struct Profile: Identifiable, Codable, Hashable {
     var age: Int
     var weightKg: Double
     var sex: BiologicalSex
-    var hasADHD: Bool
+    var isNeurodivergent: Bool
     /// Nimmt der Nutzer SSRIs (selektive Serotonin-Wiederaufnahmehemmer)?
     /// Erhöht das Risiko eines Serotonin-Syndroms bei Kombination mit MDMA/LSD.
     var takeSSRI: Bool
@@ -107,7 +107,7 @@ struct Profile: Identifiable, Codable, Hashable {
         age: Int = 30,
         weightKg: Double = 70,
         sex: BiologicalSex = .male,
-        hasADHD: Bool = false,
+        isNeurodivergent: Bool = false,
         takeSSRI: Bool = false,
         tolerances: [Tolerance] = [],
         favorites: [String] = [],
@@ -121,7 +121,7 @@ struct Profile: Identifiable, Codable, Hashable {
         self.age = max(13, min(99, age))
         self.weightKg = max(30, min(300, weightKg))
         self.sex = sex
-        self.hasADHD = hasADHD
+        self.isNeurodivergent = isNeurodivergent
         self.takeSSRI = takeSSRI
         self.tolerances = tolerances
         self.favorites = favorites
@@ -147,7 +147,7 @@ struct Profile: Identifiable, Codable, Hashable {
     
     var metabolismFactor: Double {
         var factor = sex.metabolismFactor
-        if hasADHD { factor *= 0.95 }
+        if isNeurodivergent { factor *= 0.95 }
         if age < 21 { factor *= 0.85 }
         else if age > 50 { factor *= 0.85 }
         return factor
