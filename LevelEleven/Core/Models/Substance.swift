@@ -197,7 +197,30 @@ struct Substances {
             risks: ["Sleep deprivation", "Dehydration", "Overheating", "Psychosis with prolonged use", "Cardiovascular strain", "Appetite suppression"],
             saferUse: ["Oral is gentler than nasal", "Remember to eat and drink", "Plan sleep breaks", "Use saline nasal spray if snorting"]
         ),
-        
+
+        // METHAMPHETAMINE
+        Substance(
+            id: "methamphetamine",
+            name: "Methamphetamine",
+            shortName: "Meth",
+            category: .stimulant,
+            routes: [.smoked, .nasal, .oral, .iv],
+            onsetMinutes: 5,
+            peakMinutes: 60,
+            durationMinutes: 720,
+            halfLifeMinutes: 720,
+            unit: .mg,
+            lightDose: 5,
+            commonDose: 15,
+            strongDose: 30,
+            description: "Potent synthetic stimulant. Much longer duration and stronger euphoria than amphetamine. Extremely high addiction potential.",
+            risks: ["Extreme addiction potential", "Neurotoxicity", "Cardiovascular damage", "Psychosis", "Severe sleep deprivation", "Dental damage (meth mouth)", "Hyperthermia"],
+            saferUse: ["Oral route is least harmful", "Start with very low doses", "Force yourself to eat and drink", "Set strict time limits", "Plan sleep — do not binge", "Have someone check on you"],
+            onsetByRoute:    [.smoked: 1, .iv: 1, .nasal: 5, .oral: 30],
+            peakByRoute:     [.smoked: 15, .iv: 10, .nasal: 30, .oral: 60],
+            durationByRoute: [.smoked: 480, .iv: 480, .nasal: 600, .oral: 720]
+        ),
+
         // MDMA
         Substance(
             id: "mdma",
@@ -246,7 +269,7 @@ struct Substances {
         Substance(
             id: "ghb",
             name: "GHB",
-            shortName: "G",
+            shortName: "GHB",
             category: .depressant,
             routes: [.oral],
             onsetMinutes: 15,
@@ -254,12 +277,32 @@ struct Substances {
             durationMinutes: 120,
             halfLifeMinutes: 30,
             unit: .ml,
-            lightDose: 0.1,
-            commonDose: 0.2,
-            strongDose: 0.3,
+            lightDose: 0.5,
+            commonDose: 1.0,
+            strongDose: 1.5,
             description: "GABAergic depressant. Relaxing, disinhibiting, and euphoric. Very narrow therapeutic window.",
             risks: ["Respiratory depression", "NEVER mix with alcohol", "Loss of consciousness", "G-lock", "Physical dependence", "Withdrawal can be fatal"],
             saferUse: ["Dose precisely (use a pipette)", "At least 2 hours between doses", "NO alcohol", "Sober supervisor present", "Set a timer"]
+        ),
+
+        // GBL
+        Substance(
+            id: "gbl",
+            name: "GBL",
+            shortName: "GBL",
+            category: .depressant,
+            routes: [.oral],
+            onsetMinutes: 10,
+            peakMinutes: 30,
+            durationMinutes: 90,
+            halfLifeMinutes: 30,
+            unit: .ml,
+            lightDose: 0.3,
+            commonDose: 0.7,
+            strongDose: 1.0,
+            description: "GHB prodrug. Converts to GHB in the body. Faster onset, shorter duration, stronger taste. Same risks as GHB.",
+            risks: ["Respiratory depression", "NEVER mix with alcohol", "Loss of consciousness", "G-lock", "Physical dependence", "Withdrawal can be fatal", "Caustic — can burn mouth/throat undiluted"],
+            saferUse: ["Always dilute before drinking", "Dose precisely (use a pipette)", "At least 2 hours between doses", "NO alcohol", "Sober supervisor present", "Set a timer"]
         ),
         
         // CANNABIS
