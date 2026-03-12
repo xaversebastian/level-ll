@@ -18,72 +18,43 @@ import SwiftUI
 struct MainTabView: View {
     @State private var appState = AppState()
     @State private var selectedTab = 0
-    @State private var showBallerMode = false
-    
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                HomeView()
-                    .tag(0)
-                    .tabItem {
-                        Label("Home", systemImage: "gauge.with.needle.fill")
-                    }
-                
-                ProfileView()
-                    .tag(1)
-                    .tabItem {
-                        Label("Profiles", systemImage: "person.2.fill")
-                    }
-                
-                Color.clear
-                    .tag(2)
-                    .tabItem { Label("", systemImage: "") }
-                
-                EmergencyView()
-                    .tag(3)
-                    .tabItem {
-                        Label("Emergency", systemImage: "cross.fill")
-                    }
-                    .badge(appState.hasDangerWarning ? "!" : nil)
-                
-                MoreView()
-                    .tag(4)
-                    .tabItem {
-                        Label("More", systemImage: "ellipsis")
-                    }
-            }
-            .tint(Color.accent)
-            
-            // Center FAB for Baller Mode
-            ballerModeButton
-        }
-        .environment(appState)
-        .sheet(isPresented: $showBallerMode) {
-            BallerModeView()
-                .environment(appState)
-        }
-    }
-    
-    private var ballerModeButton: some View {
-        Button {
-            showBallerMode = true
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(Color(.systemBackground))
-                    .shadow(color: Color.accent.opacity(0.25), radius: 12, y: 4)
-                    .overlay(
-                        Circle().stroke(Color.accent.opacity(0.35), lineWidth: 1.5)
-                    )
 
-                Image("ll-logo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-            }
-            .frame(width: 60, height: 60)
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            HomeView()
+                .tag(0)
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+
+            ProfileView()
+                .tag(1)
+                .tabItem {
+                    Label("Profiles", systemImage: "person.2.fill")
+                }
+
+            BallerModeView()
+                .tag(2)
+                .tabItem {
+                    Label("Group", systemImage: "person.3.fill")
+                }
+                .badge(appState.activeSession != nil ? "●" : nil)
+
+            EmergencyView()
+                .tag(3)
+                .tabItem {
+                    Label("SOS", systemImage: "cross.fill")
+                }
+                .badge(appState.hasDangerWarning ? "!" : nil)
+
+            MoreView()
+                .tag(4)
+                .tabItem {
+                    Label("More", systemImage: "ellipsis")
+                }
         }
-        .offset(y: -28)
+        .tint(Color.accent)
+        .environment(appState)
     }
 }
 

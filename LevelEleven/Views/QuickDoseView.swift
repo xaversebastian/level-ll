@@ -2,20 +2,12 @@
 //  QuickDoseView.swift
 //  LevelEleven
 //
-//  Version: 1.3  |  2026-03-12
+//  Version: 2.0  |  2026-03-12
 //
 //  Schneller Dose-Logger für das aktive Profil.
-//  Phase 1: Substanzliste mit Suchfeld und Favoriten-Sektion.
-//  Phase 2: Dosis-Formular mit Route-Picker (Segmented), Menge-Slider,
-//           Light/Common/Strong-Schnellwahl und personalisierten Infos.
-//  Phase 4: Redose-Warnung, Interaction-Pre-Check, Dose-Bestätigung (Banner fix: Overlay auf
-//           NavigationStack-Ebene), Notizfeld + "Last Used" Badge.
-//  Phase 5: Nasal Line Guide (fullScreenCover bei Route = nasal),
-//           Inline-Disclaimer, Pre-Consumption Interaction Alert.
-//
-//  HINWEIS: Wird über MoreView → "Quick Dose" aufgerufen.
-//  Für Gruppen-Dosing: GroupDoseView in BallerModeView.swift.
-//
+//  Phase 1: Substanzliste mit Suchfeld und Favoriten.
+//  Phase 2: Neue Dosiseingabe — große Zahl, Stepper-Buttons,
+//           Route-Pills, Preset-Row mit personalisierten Werten.
 
 import SwiftUI
 
@@ -28,7 +20,6 @@ struct QuickDoseView: View {
     @State private var amount: Double = 0
     @State private var searchText = ""
     @State private var note = ""
-    @State private var showNoteField = false
 
     // Redose alert
     @State private var pendingRedoseSubstance: Substance?
@@ -64,20 +55,19 @@ struct QuickDoseView: View {
                     substanceList
                 }
             }
-            .navigationTitle(selectedSubstance == nil ? "Quick Dose" : "Log Dose")
+            .navigationTitle(selectedSubstance == nil ? "Quick Dose" : selectedSubstance!.shortName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(selectedSubstance != nil ? "Back" : "Cancel") {
                         if selectedSubstance != nil {
-                            selectedSubstance = nil
+                            withAnimation(.spring(duration: 0.25)) { selectedSubstance = nil }
                         } else {
                             dismiss()
                         }
                     }
                 }
             }
-            // Redose Alert
             .alert("Redose Warning", isPresented: $showRedoseAlert, presenting: pendingRedoseSubstance) { substance in
                 Button("Cancel", role: .cancel) { pendingRedoseSubstance = nil }
                 Button("Log anyway", role: .destructive) {
@@ -90,7 +80,6 @@ struct QuickDoseView: View {
                     .map { $0.minutesAgo() }.min() ?? 0)
                 Text("\(substance.name) was taken \(mins) min ago — still within the onset window. Redosing now may cause unexpected intensity.")
             }
-            // Pre-Consumption Interaction Alert (always direct, ignores Calm Mode)
             .alert("⚠️ Interaction Warning", isPresented: $showInteractionAlert, presenting: pendingInteractionWarning) { _ in
                 Button("Cancel", role: .cancel) { pendingInteractionWarning = nil }
                 Button("Log anyway", role: .destructive) {
@@ -101,7 +90,6 @@ struct QuickDoseView: View {
             } message: { warning in
                 Text(warning.title + "\n\n" + warning.message + "\n\n" + warning.advice)
             }
-            // Nasal Guide
             .fullScreenCover(isPresented: $showNasalGuide) {
                 if let substance = selectedSubstance, let profile = appState.activeProfile {
                     NasalLineGuideView(
@@ -115,7 +103,6 @@ struct QuickDoseView: View {
                     }
                 }
             }
-            // Sticky bottom: confirmation banner + Log Dose CTA
             .overlay(alignment: .bottom) {
                 VStack(spacing: 10) {
                     if showConfirmation, let s = confirmedSubstance {
@@ -199,146 +186,244 @@ struct QuickDoseView: View {
         .foregroundStyle(.primary)
     }
 
-    // MARK: - Dose Form
+    // MARK: - Dose Form (new large-entry design)
 
     private func doseForm(_ substance: Substance) -> some View {
-        Form {
-            Section {
-                HStack {
-                    Image(systemName: substance.category.icon)
-                        .font(.title)
-                        .foregroundStyle(Color(hex: substance.category.color))
-                    VStack(alignment: .leading) {
-                        Text(substance.name).font(.title2.bold())
-                        Text(substance.category.rawValue.capitalized).foregroundStyle(.secondary)
+        let profile = appState.activeProfile
+        let lastDoseDate = profile.flatMap { p in
+            appState.recentDoses(for: p.id, hours: 24)
+                .first { $0.substanceId == substance.id }?.timestamp
+        }
+        let rec: DoseRecommendation? = profile.map {
+            IntoxEngine.recommendDose(
+                substance: substance,
+                route: selectedRoute,
+                profile: $0,
+                currentLevel: appState.currentLevel(for: $0),
+                lastDoseDate: lastDoseDate
+            )
+        }
+        let smallStep = max(0.5, substance.commonDose / 20.0)
+        let bigStep   = max(1.0, substance.commonDose / 10.0)
+        let catColor  = Color(hex: substance.category.color)
+
+        return ScrollView {
+            VStack(spacing: 0) {
+
+                // ── Route pills ─────────────────────────────────────────
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(substance.routes, id: \.self) { route in
+                            Button { selectedRoute = route } label: {
+                                Text(route.displayName)
+                                    .font(.subheadline.bold())
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 9)
+                                    .background(
+                                        selectedRoute == route
+                                        ? catColor
+                                        : Color.secondary.opacity(0.1),
+                                        in: Capsule()
+                                    )
+                                    .foregroundStyle(selectedRoute == route ? .white : .primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.vertical, 8)
-            }
+                .padding(.vertical, 20)
 
-            Section("Route") {
-                Picker("Route", selection: $selectedRoute) {
-                    ForEach(substance.routes, id: \.self) { route in
-                        Text(route.displayName).tag(route)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            if let profile = appState.activeProfile {
-                let lastDoseDate = appState.recentDoses(for: profile.id, hours: 24)
-                    .first { $0.substanceId == substance.id }?.timestamp
-                let rec = IntoxEngine.recommendDose(
-                    substance: substance,
-                    route: selectedRoute,
-                    profile: profile,
-                    currentLevel: appState.currentLevel(for: profile),
-                    lastDoseDate: lastDoseDate
-                )
-
-                Section("Amount") {
-                    VStack(spacing: 16) {
-                        HStack {
-                            Text(String(format: "%.1f", amount))
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
+                // ── Large amount display ────────────────────────────────
+                VStack(spacing: 6) {
+                    if amount > 0 {
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text(formatAmount(amount, substance: substance))
+                                .font(.system(size: 72, weight: .black, design: .rounded))
+                                .foregroundStyle(catColor)
+                                .contentTransition(.numericText())
+                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: amount)
                             Text(substance.unit.symbol)
-                                .font(.title2).foregroundStyle(.secondary)
+                                .font(.title2.bold())
+                                .foregroundStyle(catColor.opacity(0.6))
                         }
-
-                        Slider(value: $amount, in: 0...substance.strongDose * 2, step: doseStep(for: substance))
-
-                        HStack {
-                            doseButton("Light", dose: rec.adjustedLight, label: "\(Int(rec.adjustedLight.rounded()))")
-                            doseButton("Common", dose: rec.adjustedCommon, label: "\(Int(rec.adjustedCommon.rounded()))")
-                            doseButton("Strong", dose: rec.adjustedStrong, label: "\(Int(rec.adjustedStrong.rounded()))")
-                        }
-
-                        Text("Amounts refer to pure active substance weight")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        Text("— \(substance.unit.symbol)")
+                            .font(.system(size: 72, weight: .black, design: .rounded))
+                            .foregroundStyle(.secondary.opacity(0.3))
                     }
-                    .padding(.vertical, 8)
+
+                    if let rec, rec.warnings.isEmpty == false {
+                        // no subtitle needed, warnings shown below
+                    }
                 }
+                .frame(minHeight: 110)
 
-                Section("Personalized Info") {
-                    HStack {
-                        Text("Suggested")
-                        Spacer()
-                        Text("\(Int(rec.suggestedDose.rounded())) \(substance.unit.symbol)")
-                            .foregroundStyle(Color.accent)
-                            .fontWeight(.semibold)
+                // ── Stepper buttons ─────────────────────────────────────
+                HStack(spacing: 10) {
+                    stepperButton("−\(formatIncrement(bigStep, substance: substance))", color: .secondary) {
+                        amount = max(0, amount - bigStep)
                     }
+                    stepperButton("−\(formatIncrement(smallStep, substance: substance))", color: .secondary) {
+                        amount = max(0, amount - smallStep)
+                    }
+                    stepperButton("+\(formatIncrement(smallStep, substance: substance))", color: catColor) {
+                        amount += smallStep
+                    }
+                    stepperButton("+\(formatIncrement(bigStep, substance: substance))", color: catColor) {
+                        amount += bigStep
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
 
-                    if !rec.adjustmentFactors.isEmpty {
-                        DisclosureGroup("Factors (\(rec.adjustmentFactors.count))") {
+                // ── Preset row ──────────────────────────────────────────
+                let lightVal  = rec?.adjustedLight  ?? substance.lightDose
+                let commonVal = rec?.adjustedCommon ?? substance.commonDose
+                let strongVal = rec?.adjustedStrong ?? substance.strongDose
+
+                HStack(spacing: 8) {
+                    presetButton("Light",  value: lightVal,  unit: substance.unit.symbol, isActive: isPresetActive(lightVal),  color: Color.levelGreen)
+                    presetButton("Common", value: commonVal, unit: substance.unit.symbol, isActive: isPresetActive(commonVal), color: catColor, isRecommended: rec != nil)
+                    presetButton("Strong", value: strongVal, unit: substance.unit.symbol, isActive: isPresetActive(strongVal), color: Color.levelOrange)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+
+                // ── Personalized factors (collapsible) ──────────────────
+                if let rec, !rec.adjustmentFactors.isEmpty {
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 4) {
                             ForEach(rec.adjustmentFactors, id: \.self) { factor in
-                                Text("· \(factor)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                HStack(spacing: 6) {
+                                    Circle().fill(.secondary).frame(width: 4, height: 4)
+                                    Text(factor).font(.caption).foregroundStyle(.secondary)
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.badge.shield.checkmark")
+                                .font(.caption).foregroundStyle(catColor)
+                            Text("Suggested \(Int(rec.suggestedDose.rounded())) \(substance.unit.symbol) · personalized")
+                                .font(.caption.bold())
+                                .foregroundStyle(catColor)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                }
+
+                // ── IntoxEngine warnings ────────────────────────────────
+                if let rec, !rec.warnings.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(rec.warnings, id: \.self) { warning in
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.caption).foregroundStyle(.orange)
+                                    .padding(.top, 1)
+                                Text(warning)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                }
+
+                // ── Note field ──────────────────────────────────────────
+                HStack(spacing: 10) {
+                    Image(systemName: "note.text")
                         .font(.subheadline)
-                    }
-
-                    ForEach(rec.warnings, id: \.self) { warning in
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .font(.caption)
-                                .padding(.top, 2)
-                            Text(warning)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    }
+                        .foregroundStyle(.tertiary)
+                    TextField("Add a note…", text: $note)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
                 }
-            } else {
-                Section("Amount") {
-                    VStack(spacing: 16) {
-                        HStack {
-                            Text(String(format: "%.1f", amount))
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                            Text(substance.unit.symbol)
-                                .font(.title2).foregroundStyle(.secondary)
-                        }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
 
-                        Slider(value: $amount, in: 0...substance.strongDose * 2, step: doseStep(for: substance))
+                // ── Disclaimer ──────────────────────────────────────────
+                Text("Amounts refer to pure active substance weight.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 12)
+                    .padding(.horizontal, 20)
 
-                        HStack {
-                            doseButton("Light", dose: substance.lightDose, label: "\(Int(substance.lightDose))")
-                            doseButton("Common", dose: substance.commonDose, label: "\(Int(substance.commonDose))")
-                            doseButton("Strong", dose: substance.strongDose, label: "\(Int(substance.strongDose))")
-                        }
-
-                        Text("Amounts refer to pure active substance weight")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .padding(.vertical, 8)
-                }
+                Color.clear.frame(height: 100) // space for sticky button
             }
-
-            Section {
-                DisclosureGroup(isExpanded: $showNoteField) {
-                    TextField("e.g. pre-workout, party, festival…", text: $note, axis: .vertical)
-                        .lineLimit(2...4)
-                } label: {
-                    Label("Add Note", systemImage: "note.text")
-                        .foregroundStyle(showNoteField ? Color.accent : .secondary)
-                }
-            }
-
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
+        .background(Color(.systemGroupedBackground))
     }
 
-    // MARK: - Dose Flow (Interaction → Redose → Nasal Guide → Log)
+    // MARK: - Stepper Button
 
-    /// Entry point: runs interaction check first, then redose, then nasal guide.
+    private func stepperButton(_ label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.subheadline.bold())
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(color == .secondary ? .primary : color)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Preset Button
+
+    private func presetButton(_ title: String, value: Double, unit: String, isActive: Bool, color: Color, isRecommended: Bool = false) -> some View {
+        Button { amount = value } label: {
+            VStack(spacing: 3) {
+                Text(title)
+                    .font(.caption.bold())
+                    .foregroundStyle(isActive ? .white : .secondary)
+                Text("\(Int(value.rounded())) \(unit)")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(isActive ? .white : .primary)
+                if isRecommended {
+                    Text("rec.")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(isActive ? .white.opacity(0.7) : color)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(isActive ? color : color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func isPresetActive(_ value: Double) -> Bool {
+        abs(amount - value) < max(0.1, value * 0.05)
+    }
+
+    // MARK: - Format Helpers
+
+    private func formatAmount(_ value: Double, substance: Substance) -> String {
+        if value < 1 { return String(format: "%.2f", value) }
+        if value == floor(value) { return String(format: "%.0f", value) }
+        return String(format: "%.1f", value)
+    }
+
+    private func formatIncrement(_ increment: Double, substance: Substance) -> String {
+        if increment < 1 { return String(format: "%.1f", increment) }
+        return String(format: "%.0f", increment)
+    }
+
+    // MARK: - Dose Flow
+
     private func tappedLogDose(_ substance: Substance) {
-        // Step 1: Pre-consumption interaction check (always alarming, ignores Calm Mode)
         if let profile = appState.activeProfile {
             let simulatedDose = Dose(
                 profileId: profile.id,
@@ -371,7 +456,6 @@ struct QuickDoseView: View {
     }
 
     private func continueAfterInteractionCheck(_ substance: Substance) {
-        // Step 2: Redose check
         let onsetHours = substance.onset(for: selectedRoute) / 60
         let recent = appState.recentDoses(for: appState.activeProfileId ?? "", hours: onsetHours)
             .filter { $0.substanceId == substance.id }
@@ -384,7 +468,6 @@ struct QuickDoseView: View {
     }
 
     private func continueAfterRedoseCheck(_ substance: Substance) {
-        // Step 3: Nasal guide if route = nasal
         if selectedRoute == .nasal {
             showNasalGuide = true
             return
@@ -413,50 +496,30 @@ struct QuickDoseView: View {
         }
     }
 
-    // MARK: - Helpers
-
-    private func doseButton(_ title: String, dose: Double, label: String) -> some View {
-        Button { amount = dose } label: {
-            VStack(spacing: 2) {
-                Text(label).font(.headline)
-                Text(title).font(.caption)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(amount == dose ? Color.accent.opacity(0.2) : Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func doseStep(for substance: Substance) -> Double {
-        switch substance.unit {
-        case .mg: return substance.commonDose < 10 ? 0.5 : 5
-        case .ml: return 0.1
-        case .drinks: return 0.5
-        case .ug: return 5
-        case .puffs: return 1
-        case .g: return 0.5
-        }
-    }
-
-    // MARK: - Sticky Log Dose Button
+    // MARK: - Sticky Log Button
 
     private func stickyLogButton(for substance: Substance) -> some View {
         Button { tappedLogDose(substance) } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 if selectedRoute == .nasal {
-                    Image(systemName: "eye.fill")
+                    Image(systemName: "eye.fill").font(.body)
                 }
-                Text("Log Dose")
-                    .font(.headline)
+                if amount > 0 {
+                    Text("Log \(formatAmount(amount, substance: substance)) \(substance.unit.symbol) \(substance.shortName)")
+                        .font(.headline)
+                } else {
+                    Text("Set an amount above")
+                        .font(.headline)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(amount > 0 ? Color.accent : Color.secondary.opacity(0.3),
-                        in: RoundedRectangle(cornerRadius: DS.cardRadius))
+            .background(
+                amount > 0 ? Color.accent : Color.secondary.opacity(0.25),
+                in: RoundedRectangle(cornerRadius: DS.cardRadius)
+            )
             .foregroundStyle(.white)
-            .shadow(color: amount > 0 ? Color.accent.opacity(0.3) : .clear, radius: 10, y: 4)
+            .shadow(color: amount > 0 ? Color.accent.opacity(0.25) : .clear, radius: 8, y: 3)
         }
         .disabled(amount <= 0)
     }
@@ -477,7 +540,7 @@ struct QuickDoseView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("\(substance.name) • \(String(format: "%.0f", amount)) \(substance.unit.symbol) • \(selectedRoute.displayName)")
+                    Text("\(substance.name) · \(formatAmount(amount, substance: substance)) \(substance.unit.symbol) · \(selectedRoute.displayName)")
                         .font(.subheadline.bold())
                 }
                 if confirmedLevelDelta > 0.05 {
@@ -499,15 +562,13 @@ struct QuickDoseView: View {
                 Text("Undo")
                     .font(.caption.bold())
                     .foregroundStyle(.red)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(.red.opacity(0.1), in: Capsule())
             }
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .padding(.horizontal, 16)
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
         .onTapGesture {
             showConfirmation = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
@@ -516,6 +577,5 @@ struct QuickDoseView: View {
 }
 
 #Preview {
-    QuickDoseView()
-        .environment(AppState())
+    QuickDoseView().environment(AppState())
 }
