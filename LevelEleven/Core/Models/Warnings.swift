@@ -25,6 +25,15 @@ enum WarningSeverity: Int, Comparable {
         }
     }
 
+    var calmColor: Color {
+        switch self {
+        case .info:    return Color.levelCalm
+        case .caution: return Color.levelCalm
+        case .warning: return Color.levelAmber
+        case .danger:  return Color.levelAmber
+        }
+    }
+
     var icon: String {
         switch self {
         case .info:    return "info.circle.fill"
@@ -33,6 +42,18 @@ enum WarningSeverity: Int, Comparable {
         case .danger:  return "xmark.octagon.fill"
         }
     }
+
+    var calmIcon: String {
+        switch self {
+        case .info:    return "leaf.fill"
+        case .caution: return "hand.raised.fill"
+        case .warning: return "heart.circle.fill"
+        case .danger:  return "exclamationmark.circle.fill"
+        }
+    }
+
+    func displayColor(calm: Bool) -> Color { calm ? calmColor : color }
+    func displayIcon(calm: Bool) -> String { calm ? calmIcon : icon }
 }
 
 struct Warning: Identifiable {

@@ -42,6 +42,8 @@ final class AppState {
     private let cacheTTL: TimeInterval = 10
     @ObservationIgnored private let cacheQueue = DispatchQueue(label: "com.leveleleven.cache", attributes: .concurrent)
 
+    @ObservationIgnored private var liveActivityTimer: Timer?
+
     private func invalidateCache() {
         cacheQueue.async(flags: .barrier) {
             self.levelCache.removeAll()
@@ -706,15 +708,25 @@ final class AppState {
     }
 
     func levelColor(for level: Double, calmMode: Bool) -> Color {
-        // Unified palette — calm mode only softens, no longer changes hue
+        if calmMode {
+            switch Int(level.rounded()) {
+            case 0:      return .gray
+            case 1...2:  return .levelGreen
+            case 3...4:  return .levelCalm
+            case 5...6:  return .levelAmber
+            case 7...8:  return .levelAmber
+            case 9...11: return .levelMauve
+            default:     return .gray
+            }
+        }
         switch Int(level.rounded()) {
-        case 0:     return .gray
-        case 1...2: return .levelGreen
-        case 3...4: return Color(hex: "B5973A")   // muted gold
-        case 5...6: return .levelOrange
-        case 7...8: return .levelWarm             // terracotta
-        case 9...11: return calmMode ? .levelMauve : .levelMagenta
-        default:    return .gray
+        case 0:      return .gray
+        case 1...2:  return .levelGreen
+        case 3...4:  return Color(hex: "B5973A")
+        case 5...6:  return .levelOrange
+        case 7...8:  return .levelWarm
+        case 9...11: return .levelMagenta
+        default:     return .gray
         }
     }
 
@@ -880,6 +892,15 @@ final class AppState {
             print("[LiveActivity] iOS 16.2+ required")
         }
         #endif
+
+        startLiveActivityTimer()
+    }
+
+    private func startLiveActivityTimer() {
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            self?.updateLiveActivity()
+        }
     }
 
     func updateLiveActivity() {
@@ -936,6 +957,9 @@ final class AppState {
     }
 
     func endLiveActivity() {
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = nil
+
         #if canImport(ActivityKit)
         if #available(iOS 16.2, *) {
             let activities = Activity<BallerActivityAttributes>.activities

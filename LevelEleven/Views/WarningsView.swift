@@ -11,14 +11,28 @@ struct WarningsView: View {
     
     var body: some View {
         let warnings = currentWarnings
+        let calm = appState.calmMode
         
         return VStack(spacing: 0) {
+            if calm {
+                HStack(spacing: 10) {
+                    Image(systemName: "leaf.fill")
+                        .foregroundStyle(Color.levelCalm)
+                    Text("Calm mode — showing supportive guidance")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 8)
+            }
+
             if warnings.isEmpty {
                 HStack(spacing: 14) {
-                    Image(systemName: "checkmark.shield.fill")
-                        .foregroundStyle(.green)
+                    Image(systemName: calm ? "leaf.fill" : "checkmark.shield.fill")
+                        .foregroundStyle(calm ? Color.levelCalm : .green)
                         .frame(width: 22)
-                    Text("No warnings")
+                    Text(calm ? "All clear — you're doing well" : "No warnings")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -28,7 +42,7 @@ struct WarningsView: View {
             } else {
                 ForEach(Array(warnings.enumerated()), id: \.element.id) { idx, warning in
                     if idx > 0 { Divider().padding(.leading, 54) }
-                    warningRow(warning)
+                    warningRow(warning, calm: calm)
                 }
             }
         }
@@ -48,32 +62,45 @@ struct WarningsView: View {
         return warnings.sorted { $0.severity > $1.severity }
     }
     
-    private func warningRow(_ warning: Warning) -> some View {
-        HStack(spacing: 14) {
-            // Severity accent line
+    private func warningRow(_ warning: Warning, calm: Bool) -> some View {
+        let wColor = warning.severity.displayColor(calm: calm)
+        let wIcon  = warning.severity.displayIcon(calm: calm)
+
+        return HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(warning.severity.color)
+                .fill(wColor)
                 .frame(width: 3, height: 40)
 
-            Image(systemName: warning.severity.icon)
-                .foregroundStyle(warning.severity.color)
+            Image(systemName: wIcon)
+                .foregroundStyle(wColor)
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(warning.title)
                     .font(.subheadline.bold())
 
-                Text(warning.message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "lightbulb.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.caption2)
-                    Text(warning.advice)
+                if calm {
+                    HStack(spacing: 4) {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundStyle(Color.levelCalm)
+                            .font(.caption2)
+                        Text(warning.advice)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text(warning.message)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "lightbulb.fill")
+                            .foregroundStyle(.yellow)
+                            .font(.caption2)
+                        Text(warning.advice)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             
@@ -89,14 +116,19 @@ struct WarningsBannerView: View {
     
     var body: some View {
         let topWarning = getTopWarning()
+        let calm = appState.calmMode
         
         if let warning = topWarning {
+            let wColor = warning.severity.displayColor(calm: calm)
+            let wIcon  = warning.severity.displayIcon(calm: calm)
+
             HStack {
-                Image(systemName: warning.severity.icon)
-                    .foregroundStyle(warning.severity.color)
+                Image(systemName: wIcon)
+                    .foregroundStyle(wColor)
                 
-                Text(warning.title)
+                Text(calm ? warning.advice : warning.title)
                     .font(.caption.bold())
+                    .lineLimit(1)
                 
                 Spacer()
                 
@@ -105,7 +137,7 @@ struct WarningsBannerView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(12)
-            .background(warning.severity.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+            .background(wColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
         }
     }
     

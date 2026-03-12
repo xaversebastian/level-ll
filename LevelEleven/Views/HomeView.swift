@@ -125,8 +125,15 @@ struct HomeView: View {
 
             // Warnings section
             if !activeDoses.isEmpty && !warnings.isEmpty {
-                sectionHeader("Warning\(warnings.count > 1 ? "s (\(warnings.count))" : "")",
-                              color: warnings.first?.severity == .danger ? .red : Color.levelOrange)
+                let calm = appState.calmMode
+                let headerColor: Color = calm
+                    ? Color.levelCalm
+                    : (warnings.first?.severity == .danger ? .red : Color.levelOrange)
+                let headerTitle = calm
+                    ? "Heads up\(warnings.count > 1 ? " (\(warnings.count))" : "")"
+                    : "Warning\(warnings.count > 1 ? "s (\(warnings.count))" : "")"
+
+                sectionHeader(headerTitle, color: headerColor)
                 ForEach(Array(warnings.prefix(3).enumerated()), id: \.element.title) { idx, warning in
                     if idx > 0 { thinDivider }
                     warningRow(warning)
@@ -135,9 +142,9 @@ struct HomeView: View {
                 .animation(.spring(duration: 0.3), value: warnings.count)
                 if warnings.count > 3 {
                     Button { showWarnings = true } label: {
-                        Text("+\(warnings.count - 3) more warnings")
+                        Text("+\(warnings.count - 3) more")
                             .font(.caption.bold())
-                            .foregroundStyle(Color.levelOrange)
+                            .foregroundStyle(calm ? Color.levelCalm : Color.levelOrange)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, DS.screenPadding)
                             .padding(.vertical, 10)
@@ -321,21 +328,29 @@ struct HomeView: View {
 
     private func warningRow(_ warning: Warning) -> some View {
         let calm = appState.calmMode
-        let displayColor: Color = calm && warning.severity < .danger ? Color.levelCalm : warning.severity.color
-        let displayIcon = calm && warning.severity < .danger ? "info.circle.fill" : warning.severity.icon
+        let wColor = warning.severity.displayColor(calm: calm)
+        let wIcon  = warning.severity.displayIcon(calm: calm)
 
         return HStack(spacing: 14) {
             Button { showWarnings = true } label: {
                 HStack(spacing: 14) {
-                    Image(systemName: displayIcon)
+                    Image(systemName: wIcon)
                         .font(.body)
-                        .foregroundStyle(displayColor)
+                        .foregroundStyle(wColor)
                         .frame(width: 22)
 
-                    Text(warning.title)
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(warning.title)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.primary)
+                        if calm {
+                            Text(warning.advice)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .buttonStyle(.plain)
@@ -462,17 +477,22 @@ struct HomeView: View {
     // MARK: - Limit Banner
 
     private func limitBanner(level: Double, color: Color) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
-            Text("Personal limit reached (\(String(format: "%.1f", level)) / \(appState.activeProfile?.personalLimit ?? 7))")
+        let calm = appState.calmMode
+        let bannerColor: Color = calm ? .levelAmber : .red
+
+        return HStack(spacing: 10) {
+            Image(systemName: calm ? "hand.raised.fill" : "exclamationmark.triangle.fill")
+                .foregroundStyle(bannerColor)
+            Text(calm
+                 ? "You've reached your comfort zone — consider pausing"
+                 : "Personal limit reached (\(String(format: "%.1f", level)) / \(appState.activeProfile?.personalLimit ?? 7))")
                 .font(.subheadline.bold())
-                .foregroundStyle(.red)
+                .foregroundStyle(bannerColor)
             Spacer()
         }
         .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 10)
-        .background(.red.opacity(0.08))
+        .background(bannerColor.opacity(0.08))
     }
 
     // MARK: - Thin Divider

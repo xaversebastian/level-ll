@@ -277,7 +277,7 @@ struct MoreView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Calm Mode")
                         .font(.subheadline.bold())
-                    Text("Softens warning colors after dosing")
+                    Text("Trip-safe UI — softer colors, supportive guidance instead of alarm")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
