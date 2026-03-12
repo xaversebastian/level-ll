@@ -2,7 +2,7 @@
 //  BallerModeView.swift
 //  LevelEleven
 //
-//  Version: 1.2  |  2026-03-12
+//  Version: 1.3  |  2026-03-12
 //
 //  Live-Gruppenscreen für aktive Baller-Mode-Sessions.
 //  Zeigt Teilnehmer-Cards mit Level-Balken, Live-Statistiken (Swift Charts),
@@ -10,6 +10,11 @@
 //  Timer aktualisiert alle 30 Sekunden. "End"-Button beendet die Session.
 //  Enthält auch: SessionSetupView (Neue Session), GroupDoseView (Gruppen-Dose-Logger),
 //  AddParticipantView (Teilnehmer nachholen).
+//
+//  Updates v1.3:
+//  - Fixed timer lifecycle with proper AnyCancellable management
+//  - Fixed memory leaks in QuickDoseForProfileView with cancellable work items
+//  - Added pressFeedback to dose confirmation dismissal
 //
 //  HINWEIS: Alle Sub-Views (Setup, GroupDose, AddParticipant) sind in dieser Datei definiert.
 //  calculateLiveLevelTimeline() iteriert in 10-Minuten-Schritten – bei langen Sessions ggf. optimieren.
@@ -30,8 +35,7 @@ struct BallerModeView: View {
     @State private var quickDoseForProfileId: String?
     @State private var showQuickDoseForParticipant = false
     @State private var currentTime = Date()
-
-    let timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    @State private var timerCancellable: AnyCancellable?
 
     var body: some View {
         NavigationStack {
@@ -81,8 +85,13 @@ struct BallerModeView: View {
             } message: {
                 Text("The session will be archived and you can review it later.")
             }
-            .onReceive(timer) { _ in
-                currentTime = Date()
+            .onAppear {
+                timerCancellable = Timer.publish(every: 30, on: .main, in: .common)
+                    .autoconnect()
+                    .sink { _ in currentTime = Date() }
+            }
+            .onDisappear {
+                timerCancellable?.cancel()
             }
         }
     }
@@ -1130,6 +1139,7 @@ struct QuickDoseForProfileView: View {
     @State private var showConfirmation = false
     @State private var confirmedSubstance: Substance?
     @State private var lastLoggedDoseId: String?
+    @State private var dismissWorkItem: DispatchWorkItem?
 
     var profile: Profile? { appState.profiles.first { $0.id == profileId } }
 
@@ -1184,6 +1194,9 @@ struct QuickDoseForProfileView: View {
                 }
             }
             .animation(.spring(duration: 0.3), value: showConfirmation)
+            .onDisappear {
+                dismissWorkItem?.cancel()
+            }
         }
     }
 
@@ -1295,11 +1308,23 @@ struct QuickDoseForProfileView: View {
         confirmedSubstance = substance
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         showConfirmation = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            guard showConfirmation else { return }
-            showConfirmation = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
+        
+        // Cancel any existing work item
+        dismissWorkItem?.cancel()
+        
+        // Create new work item for delayed dismissal
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self, self.showConfirmation else { return }
+            self.showConfirmation = false
+            
+            let secondWorkItem = DispatchWorkItem { [weak self] in
+                self?.dismiss()
+            }
+            self.dismissWorkItem = secondWorkItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: secondWorkItem)
         }
+        dismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: workItem)
     }
 }
 

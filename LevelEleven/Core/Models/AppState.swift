@@ -2,13 +2,19 @@
 //  AppState.swift
 //  LevelEleven
 //
-//  Version: 1.3  |  2026-03-12
+//  Version: 1.4  |  2026-03-12
 //
 //  Zentraler App-State als @Observable-Klasse (iOS 17+).
 //  Verwaltet Profile, Doses, aktive Session und sessionHistory.
 //  Persistenz über UserDefaults + JSON (alle Typen sind Codable).
 //  Views greifen per @Environment(AppState.self) darauf zu – kein EnvironmentObject nötig.
 //  Kapselt außerdem Live-Activity-Start/-Stop/-Update für Baller Mode.
+//
+//  Updates v1.4:
+//  - Fixed force unwrapping in sessionDoses function (endedAt)
+//  - Added thread-safe cache operations with concurrent dispatch queue
+//  - Optimized minutesUntilBaseline with adaptive step sizing + binary search
+//  - Cache reads use sync, writes use barrier flags for thread safety
 //
 //  HINWEIS: @Observable ersetzt ObservableObject; keine @Published Properties erforderlich.
 //  UserDefaults-Keys sind als private StorageKey-Enum definiert.
@@ -46,10 +52,13 @@ final class AppState {
     private var levelCache:      [String: CacheEntry<Double>] = [:]
     private var activeDosesCache:[String: CacheEntry<[Dose]>] = [:]
     private let cacheTTL: TimeInterval = 10
+    private let cacheQueue = DispatchQueue(label: "com.leveleleven.cache", attributes: .concurrent)
 
     private func invalidateCache() {
-        levelCache.removeAll()
-        activeDosesCache.removeAll()
+        cacheQueue.async(flags: .barrier) {
+            self.levelCache.removeAll()
+            self.activeDosesCache.removeAll()
+        }
     }
 
     private func cacheKey(profileId: String, date: Date) -> String {
@@ -332,9 +341,10 @@ final class AppState {
     func sessionDoses(for session: BallerSession) -> [Dose] {
         // Include doses from ALL participants (active + removed)
         doses.filter { dose in
-            session.allParticipantIds.contains(dose.profileId) &&
-            dose.timestamp >= session.startedAt &&
-            (session.endedAt == nil || dose.timestamp <= session.endedAt!)
+            guard session.allParticipantIds.contains(dose.profileId),
+                  dose.timestamp >= session.startedAt else { return false }
+            if let endedAt = session.endedAt, dose.timestamp > endedAt { return false }
+            return true
         }
     }
 
@@ -516,19 +526,31 @@ final class AppState {
 
     func activeDoses(for profileId: String, at date: Date = Date()) -> [Dose] {
         let key = cacheKey(profileId: profileId, date: date)
-        if let cached = activeDosesCache[key],
+        
+        // Thread-safe cache read
+        var cachedValue: CacheEntry<[Dose]>?
+        cacheQueue.sync {
+            cachedValue = activeDosesCache[key]
+        }
+        
+        if let cached = cachedValue,
            date.timeIntervalSince(cached.computedAt) < cacheTTL {
             return cached.value
         }
+        
         let result = doses.filter { dose in
             guard dose.profileId == profileId,
                   let substance = Substances.byId[dose.substanceId] else { return false }
             let minutesAgo = dose.minutesAgo(from: date)
-            // Active window: route-specific duration + 3 half-lives (≈2.5% remaining)
             let activeWindow = substance.duration(for: dose.route) + substance.halfLifeMinutes * 3
             return minutesAgo >= 0 && minutesAgo < activeWindow
         }
-        activeDosesCache[key] = CacheEntry(value: result, computedAt: date)
+        
+        // Thread-safe cache write
+        cacheQueue.async(flags: .barrier) {
+            self.activeDosesCache[key] = CacheEntry(value: result, computedAt: date)
+        }
+        
         return result
     }
 
@@ -553,14 +575,23 @@ final class AppState {
         guard let profile = p else { return 0 }
 
         let key = cacheKey(profileId: profile.id, date: date)
-        if let cached = levelCache[key],
+        
+        // Thread-safe cache read
+        var cachedValue: CacheEntry<Double>?
+        cacheQueue.sync {
+            cachedValue = levelCache[key]
+        }
+        
+        if let cached = cachedValue,
            date.timeIntervalSince(cached.computedAt) < cacheTTL {
             return cached.value
         }
 
         let active = activeDoses(for: profile.id, at: date)
         guard !active.isEmpty else {
-            levelCache[key] = CacheEntry(value: 0, computedAt: date)
+            cacheQueue.async(flags: .barrier) {
+                self.levelCache[key] = CacheEntry(value: 0, computedAt: date)
+            }
             return 0
         }
 
@@ -572,7 +603,12 @@ final class AppState {
         }
 
         let result = min(11, totalIntensity)
-        levelCache[key] = CacheEntry(value: result, computedAt: date)
+        
+        // Thread-safe cache write
+        cacheQueue.async(flags: .barrier) {
+            self.levelCache[key] = CacheEntry(value: result, computedAt: date)
+        }
+        
         return result
     }
 
@@ -654,19 +690,56 @@ final class AppState {
     }
 
     /// Minuten bis das Profil ≈sober ist (Level < 0.1). nil = bereits sober.
-    /// Schrittweite 5 min, max 24h (1440 min) um Performance zu begrenzen.
+    /// Uses adaptive step sizing for performance: starts at 5 min, increases exponentially.
+    /// Max 24h (1440 min) cap.
     func minutesUntilBaseline(for profile: Profile? = nil, from date: Date = Date()) -> Double? {
         let p = profile ?? activeProfile
         guard let profile = p else { return nil }
         guard currentLevel(for: profile, at: date) >= 0.1 else { return nil }
-        let step: Double = 5
-        var elapsed: Double = step
-        while elapsed <= 1440 {
-            let future = date.addingTimeInterval(elapsed * 60)
-            if currentLevel(for: profile, at: future) < 0.1 { return elapsed }
+        
+        let maxMinutes: Double = 1440 // 24h cap
+        var elapsed: Double = 0
+        var step: Double = 5 // Start with 5 min steps
+        
+        while elapsed <= maxMinutes {
+            let checkTime = date.addingTimeInterval(elapsed * 60)
+            if currentLevel(for: profile, at: checkTime) < 0.1 {
+                // Found the window - backtrack with smaller steps for precision
+                if elapsed > 0 {
+                    let prevTime = date.addingTimeInterval((elapsed - step) * 60)
+                    if currentLevel(for: profile, at: prevTime) >= 0.1 {
+                        // Binary search between prevTime and checkTime for precision
+                        return binarySearchBaseline(profile: profile, start: elapsed - step, end: elapsed, from: date)
+                    }
+                }
+                return elapsed
+            }
+            
             elapsed += step
+            // Increase step size exponentially (up to 30 min) as level decays slower
+            step = min(30, step * 1.5)
         }
-        return 1440 // Fallback: >24h
+        
+        return maxMinutes // Fallback: >24h
+    }
+    
+    /// Binary search for precise baseline time within a window
+    private func binarySearchBaseline(profile: Profile, start: Double, end: Double, from date: Date) -> Double {
+        var low = start
+        var high = end
+        
+        // 5 iterations = ~0.16 min (10 sec) precision
+        for _ in 0..<5 {
+            let mid = (low + high) / 2
+            let midTime = date.addingTimeInterval(mid * 60)
+            if currentLevel(for: profile, at: midTime) < 0.1 {
+                high = mid
+            } else {
+                low = mid
+            }
+        }
+        
+        return high
     }
 
     /// True wenn für das aktive Profil mindestens eine .danger Warning existiert.

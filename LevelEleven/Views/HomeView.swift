@@ -2,11 +2,19 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Version: 4.0  |  2026-03-12
+//  Version: 4.1  |  2026-03-12
 //
 //  Komplett neu: 11-Segment-Hero (kein Ring-Gauge), flat content sections
 //  ohne Card-Chrome, safeAreaInset für Log-Dose-Button.
-
+//
+//  Updates v4.1:
+//  - Added pressFeedback modifier for tactile response on rows
+//  - Standardized all padding to DS.screenPadding (16pt)
+//  - Enhanced section headers with colored accent bars
+//  - Added content transition animations (slide/scale/opacity)
+//  - Fixed 44pt minimum touch targets for accessibility
+//  - Added smooth segment indicator animations
+//
 import SwiftUI
 import Combine
 
@@ -20,8 +28,7 @@ struct HomeView: View {
     @State private var showQuickDose = false
     @State private var showEmergency = false
     @State private var snoozedWarnings: [String: Date] = [:]
-
-    let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
+    @State private var timerCancellable: AnyCancellable?
 
     var body: some View {
         GeometryReader { geo in
@@ -40,7 +47,14 @@ struct HomeView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             logDoseButton
         }
-        .onReceive(timer) { _ in currentTime = Date() }
+        .onAppear {
+            timerCancellable = Timer.publish(every: 10, on: .main, in: .common)
+                .autoconnect()
+                .sink { _ in currentTime = Date() }
+        }
+        .onDisappear {
+            timerCancellable?.cancel()
+        }
         .sheet(isPresented: $showQuickDose) {
             QuickDoseView().environment(appState)
         }
@@ -92,7 +106,7 @@ struct HomeView: View {
             .foregroundStyle(.white)
             .shadow(color: Color.accent.opacity(0.2), radius: 8, y: 3)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 12)
         .background(.regularMaterial)
     }
@@ -128,14 +142,16 @@ struct HomeView: View {
                 ForEach(Array(warnings.prefix(3).enumerated()), id: \.element.title) { idx, warning in
                     if idx > 0 { thinDivider }
                     warningRow(warning)
+                        .transition(.asymmetric(insertion: .slide.combined(with: .opacity), removal: .opacity))
                 }
+                .animation(.spring(duration: 0.3), value: warnings.count)
                 if warnings.count > 3 {
                     Button { showWarnings = true } label: {
                         Text("+\(warnings.count - 3) more warnings")
                             .font(.caption.bold())
                             .foregroundStyle(Color.levelOrange)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, DS.screenPadding)
                             .padding(.vertical, 10)
                     }
                     .buttonStyle(.plain)
@@ -158,15 +174,17 @@ struct HomeView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 14)
             } else {
                 ForEach(Array(activeDoses.enumerated()), id: \.element.id) { idx, dose in
                     if let substance = Substances.byId[dose.substanceId] {
                         if idx > 0 { thinDivider }
                         doseRow(dose: dose, substance: substance)
+                            .transition(.asymmetric(insertion: .slide.combined(with: .opacity), removal: .scale.combined(with: .opacity)))
                     }
                 }
+                .animation(.spring(duration: 0.3), value: activeDoses.map(\.id))
             }
 
             Color.clear.frame(height: 20) // bottom breathing room
@@ -222,7 +240,7 @@ struct HomeView: View {
                     .background(.white.opacity(0.1), in: Capsule())
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, DS.screenPadding)
             .padding(.top, topInset + 16)
             .padding(.bottom, 18)
 
@@ -237,7 +255,7 @@ struct HomeView: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.2))
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, DS.screenPadding)
 
             // Description + sober time row
             Button { showTimeline = true } label: {
@@ -257,7 +275,7 @@ struct HomeView: View {
                 }
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 22)
+            .padding(.horizontal, DS.screenPadding)
             .padding(.top, 4)
             .padding(.bottom, 16)
 
@@ -270,9 +288,10 @@ struct HomeView: View {
                               : Color.white.opacity(0.08))
                         .frame(maxWidth: .infinity)
                         .frame(height: 5)
+                        .animation(.easeInOut(duration: 0.2), value: i <= Int(level))
                 }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, DS.screenPadding)
             .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -295,14 +314,19 @@ struct HomeView: View {
     // MARK: - Section Header
 
     private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
-        Text(title.uppercased())
-            .font(.system(size: 11, weight: .bold))
-            .tracking(1.5)
-            .foregroundStyle(color)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.top, 22)
-            .padding(.bottom, 8)
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Warning Row
@@ -327,6 +351,8 @@ struct HomeView: View {
                 }
             }
             .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .pressFeedback()
 
             Button {
                 snoozedWarnings[warning.title] = currentTime.addingTimeInterval(30 * 60)
@@ -334,12 +360,13 @@ struct HomeView: View {
                 Image(systemName: "bell.slash")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .padding(8)
+                    .frame(minWidth: 44, minHeight: 44)
                     .background(.secondary.opacity(0.1), in: Circle())
             }
             .buttonStyle(.plain)
+            .pressFeedback()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 11)
         .background(Color.appBackground)
     }
@@ -368,7 +395,7 @@ struct HomeView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
             .background(Color.accent.opacity(0.06))
         }
@@ -425,12 +452,16 @@ struct HomeView: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
                     .foregroundStyle(.secondary.opacity(0.3))
+                    .frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(.plain)
+            .pressFeedback()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 10)
         .background(Color.appBackground)
+        .contentShape(Rectangle())
+        .pressFeedback()
         .contextMenu {
             Button(role: .destructive) {
                 withAnimation(.easeOut(duration: 0.2)) { appState.deleteDose(dose.id) }
@@ -451,7 +482,7 @@ struct HomeView: View {
                 .foregroundStyle(.red)
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 10)
         .background(.red.opacity(0.08))
     }

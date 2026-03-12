@@ -2,13 +2,19 @@
 //  QuickDoseView.swift
 //  LevelEleven
 //
-//  Version: 2.0  |  2026-03-12
+//  Version: 2.1  |  2026-03-12
 //
 //  Schneller Dose-Logger für das aktive Profil.
 //  Phase 1: Substanzliste mit Suchfeld und Favoriten.
 //  Phase 2: Neue Dosiseingabe — große Zahl, Stepper-Buttons,
 //           Route-Pills, Preset-Row mit personalisierten Werten.
-
+//
+//  Updates v2.1:
+//  - Added pressFeedback modifier for tactile button response
+//  - Standardized padding to use DS.screenPadding tokens
+//  - Added max dose validation (3x strong dose safety limit)
+//  - Fixed memory leaks with cancellable DispatchWorkItem
+//
 import SwiftUI
 
 struct QuickDoseView: View {
@@ -37,6 +43,7 @@ struct QuickDoseView: View {
     @State private var confirmedSubstance: Substance?
     @State private var confirmedLevelDelta: Double = 0
     @State private var lastLoggedDoseId: String?
+    @State private var dismissWorkItem: DispatchWorkItem?
 
     var filteredSubstances: [Substance] {
         if searchText.isEmpty { return Substances.all }
@@ -55,7 +62,7 @@ struct QuickDoseView: View {
                     substanceList
                 }
             }
-            .navigationTitle(selectedSubstance == nil ? "Quick Dose" : selectedSubstance!.shortName)
+            .navigationTitle(selectedSubstance?.shortName ?? "Quick Dose")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -117,7 +124,9 @@ struct QuickDoseView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
-            .animation(.spring(duration: 0.3), value: showConfirmation)
+                .onDisappear {
+                    dismissWorkItem?.cancel()
+                }
             .animation(.spring(duration: 0.25), value: selectedSubstance?.id)
         }
     }
@@ -184,6 +193,7 @@ struct QuickDoseView: View {
             }
         }
         .foregroundStyle(.primary)
+        .pressFeedback()
     }
 
     // MARK: - Dose Form (new large-entry design)
@@ -230,7 +240,7 @@ struct QuickDoseView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, DS.screenPadding)
                 }
                 .padding(.vertical, 20)
 
@@ -268,13 +278,15 @@ struct QuickDoseView: View {
                         amount = max(0, amount - smallStep)
                     }
                     stepperButton("+\(formatIncrement(smallStep, substance: substance))", color: catColor) {
-                        amount += smallStep
+                        let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
+                        amount = min(maxAmount, amount + smallStep)
                     }
                     stepperButton("+\(formatIncrement(bigStep, substance: substance))", color: catColor) {
-                        amount += bigStep
+                        let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
+                        amount = min(maxAmount, amount + bigStep)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.top, 16)
 
                 // ── Preset row ──────────────────────────────────────────
@@ -287,7 +299,7 @@ struct QuickDoseView: View {
                     presetButton("Common", value: commonVal, unit: substance.unit.symbol, isActive: isPresetActive(commonVal), color: catColor, isRecommended: rec != nil)
                     presetButton("Strong", value: strongVal, unit: substance.unit.symbol, isActive: isPresetActive(strongVal), color: Color.levelOrange)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.top, 14)
 
                 // ── Personalized factors (collapsible) ──────────────────
@@ -312,7 +324,7 @@ struct QuickDoseView: View {
                                 .foregroundStyle(catColor)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, DS.screenPadding)
                     .padding(.top, 18)
                 }
 
@@ -333,7 +345,7 @@ struct QuickDoseView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
                     .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, DS.screenPadding)
                     .padding(.top, 14)
                 }
 
@@ -346,10 +358,10 @@ struct QuickDoseView: View {
                         .font(.subheadline)
                         .foregroundStyle(.primary)
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
                 .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 20)
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.top, 20)
 
                 // ── Disclaimer ──────────────────────────────────────────
@@ -358,7 +370,7 @@ struct QuickDoseView: View {
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 12)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, DS.screenPadding)
 
                 Color.clear.frame(height: 100) // space for sticky button
             }
@@ -378,6 +390,7 @@ struct QuickDoseView: View {
                 .foregroundStyle(color == .secondary ? .primary : color)
         }
         .buttonStyle(.plain)
+        .pressFeedback()
     }
 
     // MARK: - Preset Button
@@ -402,6 +415,7 @@ struct QuickDoseView: View {
             .background(isActive ? color : color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .pressFeedback()
     }
 
     private func isPresetActive(_ value: Double) -> Bool {
@@ -489,11 +503,23 @@ struct QuickDoseView: View {
         confirmedLevelDelta = levelAfter - levelBefore
         showConfirmation = true
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            guard showConfirmation else { return }
-            showConfirmation = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
+        
+        // Cancel any existing work item
+        dismissWorkItem?.cancel()
+        
+        // Create new work item for delayed dismissal
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self, self.showConfirmation else { return }
+            self.showConfirmation = false
+            
+            let secondWorkItem = DispatchWorkItem { [weak self] in
+                self?.dismiss()
+            }
+            self.dismissWorkItem = secondWorkItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: secondWorkItem)
         }
+        dismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: workItem)
     }
 
     // MARK: - Sticky Log Button
@@ -571,7 +597,13 @@ struct QuickDoseView: View {
         .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
         .onTapGesture {
             showConfirmation = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { dismiss() }
+            dismissWorkItem?.cancel()
+            
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.dismiss()
+            }
+            dismissWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: workItem)
         }
     }
 }

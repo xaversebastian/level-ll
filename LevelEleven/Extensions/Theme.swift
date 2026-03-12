@@ -2,7 +2,7 @@
 //  Theme.swift
 //  LevelEleven
 //
-//  Version: 2.0  |  2026-03-12
+//  Version: 2.1  |  2026-03-12
 //
 //  Komplett neues Design System — warm, geerdet, elegant.
 //  Inspiration: warme Creme-Töne, Kupfer-Akzent, dunkles Espresso-Hero.
@@ -11,7 +11,12 @@
 //  Hero-Sektion:    tiefes warmes Espresso (#1C1208)
 //  Primary Accent:  Kupfer (#C4622A) – ersetzt kaltes Indigo
 //  Cards:           reines Weiß auf warmem Grund
-
+//
+//  Updates v2.1:
+//  - Increased shadow opacity from 5% to 10% for better depth
+//  - Added pressFeedback view modifier for tactile button response
+//  - Shadow radius increased from 10 to 12 for softer shadows
+//
 import SwiftUI
 
 // MARK: - Color Tokens
@@ -68,10 +73,28 @@ enum DS {
     static let screenPadding: CGFloat = 16
 
     // Shadows
-    static let shadowColor  = Color.black.opacity(0.05)
-    static let shadowRadius: CGFloat = 10
+    static let shadowColor  = Color.black.opacity(0.10)
+    static let shadowRadius: CGFloat = 12
     static let shadowY:      CGFloat = 4
 
     // Subtle border
     static let borderOpacity: Double = 0.1
+}
+
+// MARK: - View Modifiers
+
+extension View {
+    /// Adds subtle press feedback animation for interactive elements
+    func pressFeedback() -> some View {
+        self.buttonStyle(PressFeedbackButtonStyle())
+    }
+}
+
+struct PressFeedbackButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
 }
