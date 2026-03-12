@@ -20,7 +20,7 @@ struct OnboardingView: View {
     private let pages: [OnboardingPage] = [
         OnboardingPage(
             icon: "waveform.path.ecg",
-            iconColor: .levelViolet,
+            iconColor: .levelCopper,
             title: "Welcome to Level Eleven",
             subtitle: "Track your intoxication in real time.\nStay aware. Stay safe.",
             detail: nil
@@ -102,7 +102,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
         }
-        .background(Color(hex: "080C16").ignoresSafeArea())
+        .background(Color.heroBackground.ignoresSafeArea())
         .foregroundStyle(.white)
     }
 
