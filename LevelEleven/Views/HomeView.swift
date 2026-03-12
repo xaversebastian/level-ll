@@ -2,7 +2,7 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-12
 //
 //  Hauptscreen mit Level-Gauge-Hero, Profil-Picker, Warnungs-Card, aktive-Substanzen-Card
 //  und Live-Status-Card (Level / Active / Phase).

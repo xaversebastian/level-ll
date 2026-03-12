@@ -2,7 +2,7 @@
 //  BallerModeView.swift
 //  LevelEleven
 //
-//  Version: 1.0  |  2026-03-11
+//  Version: 1.1  |  2026-03-12
 //
 //  Live-Gruppenscreen für aktive Baller-Mode-Sessions.
 //  Zeigt Teilnehmer-Cards mit Level-Balken, Live-Statistiken (Swift Charts),
