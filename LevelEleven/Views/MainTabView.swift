@@ -4,19 +4,11 @@
 //
 //  Version: 2.0  |  2026-03-12
 //
-//  Root-View der App. Beinhaltet die Tab-Bar (Home, Profiles, [Baller+], Emergency, More)
-//  und erstellt AppState als @State – das ist die einzige Stelle, wo AppState instanziiert wird.
-//  Der mittlere Tab-Button ist ein FAB (Floating Action Button) für den Baller-Mode-Sheet.
-//  MoreView (Substanzinfo, Timeline, Settings) und SubstanceDetailView sind hier ebenfalls definiert.
-//
 //  Updates v2.0:
 //  - MoreView redesigned to match HomeView design patterns
 //  - Standardized section headers with accent bars
 //  - Card-style sections with shadows and DS tokens
 //  - Added pressFeedback to interactive elements
-//
-//  HINWEIS: AppState wird per .environment(appState) in alle Child-Views injiziert.
-//  Neue Top-Level-Tabs hier registrieren.
 //
 
 import SwiftUI

@@ -17,8 +17,6 @@
 //  - Added pressFeedback for tactile response
 //  - Left accent line on profile rows for visual hierarchy
 //
-//  HINWEIS: Löschen eines Profils entfernt auch alle zugehörigen Doses (AppState.deleteProfile).
-//
 
 import SwiftUI
 

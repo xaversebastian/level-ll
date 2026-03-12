@@ -4,10 +4,6 @@
 //
 //  Version: 2.0  |  2026-03-12
 //
-//  Notfall-Tab – Split in zwei Modi:
-//  • "I need help" – sanft, Grounding-Übungen, kein roter Screen
-//  • "Help someone" – klinisch, direktiv, GCS + Notruf prominent
-//
 //  Segmented Picker oben wechselt mit withAnimation zwischen den Modi.
 //  "Help someone" behält GCS-Rechner und Overdose-Checkliste.
 //
@@ -17,8 +13,6 @@
 //  - Added pressFeedback to interactive elements
 //  - Consistent section header styling
 //
-//  HINWEIS: localEmergencyNumber() nutzt Locale.current.region – funktioniert offline.
-//  Der Notruf-Link öffnet die Telefon-App (tel:-URL-Schema).
 
 import SwiftUI
 
