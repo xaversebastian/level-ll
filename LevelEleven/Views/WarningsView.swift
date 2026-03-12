@@ -21,18 +21,23 @@ struct WarningsView: View {
     var body: some View {
         let warnings = currentWarnings
         
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(spacing: 0) {
             if warnings.isEmpty {
-                HStack {
+                HStack(spacing: 14) {
                     Image(systemName: "checkmark.shield.fill")
                         .foregroundStyle(.green)
+                        .frame(width: 22)
                     Text("No warnings")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    Spacer()
                 }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 10)
             } else {
-                ForEach(warnings) { warning in
-                    warningCard(warning)
+                ForEach(Array(warnings.enumerated()), id: \.element.id) { idx, warning in
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    warningRow(warning)
                 }
             }
         }
@@ -52,34 +57,39 @@ struct WarningsView: View {
         return warnings.sorted { $0.severity > $1.severity }
     }
     
-    private func warningCard(_ warning: Warning) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: warning.severity.icon)
-                    .foregroundStyle(warning.severity.color)
-                
+    private func warningRow(_ warning: Warning) -> some View {
+        HStack(spacing: 14) {
+            // Severity accent line
+            RoundedRectangle(cornerRadius: 2)
+                .fill(warning.severity.color)
+                .frame(width: 3, height: 40)
+
+            Image(systemName: warning.severity.icon)
+                .foregroundStyle(warning.severity.color)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text(warning.title)
                     .font(.subheadline.bold())
-                
-                Spacer()
+
+                Text(warning.message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "lightbulb.fill")
+                        .foregroundStyle(.yellow)
+                        .font(.caption2)
+                    Text(warning.advice)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             
-            Text(warning.message)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundStyle(.yellow)
-                    .font(.caption)
-                Text(warning.advice)
-                    .font(.caption)
-            }
-            .padding(8)
-            .background(.yellow.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            Spacer()
         }
-        .padding()
-        .background(warning.severity.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
 }
 

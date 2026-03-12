@@ -2,13 +2,11 @@
 //  OnboardingView.swift
 //  LevelEleven
 //
-//  Version: 1.1  |  2026-03-12
+//  Version: 2.0  |  2026-03-12
 //
-//  Erster-Start-Onboarding: 4 Screens in einem PageTabView.
-//  1. Welcome – App-Slogan
-//  2. Wie es funktioniert – Level-Skala, aktive Dose-Konzept
-//  3. Dein Profil – kurze Intro zum Profil-Konzept
-//  4. Los geht's – setzt hasCompletedOnboarding = true
+//  Redesigned first-use onboarding with polished espresso design,
+//  custom 11-segment progress indicator, refined typography,
+//  and consistent HomeView design language.
 //
 
 import SwiftUI
@@ -21,7 +19,7 @@ struct OnboardingView: View {
         OnboardingPage(
             icon: "waveform.path.ecg",
             iconColor: .levelCopper,
-            title: "Welcome to Level Eleven",
+            title: "Level Eleven",
             subtitle: "Track your intoxication in real time.\nStay aware. Stay safe.",
             detail: nil
         ),
@@ -29,20 +27,20 @@ struct OnboardingView: View {
             icon: "chart.line.uptrend.xyaxis",
             iconColor: .levelTeal,
             title: "How It Works",
-            subtitle: "Your current level is calculated from active doses using pharmacokinetic models.",
-            detail: "Level 0 = Sober · Level 5–6 = Strong · Level 11 = Maximum\nActive doses decay automatically over time based on half-life."
+            subtitle: "Your level is calculated from active doses using pharmacokinetic models.",
+            detail: "Level 0 = Sober · Level 5–6 = Strong · Level 11 = Maximum\nDoses decay automatically based on half-life."
         ),
         OnboardingPage(
             icon: "person.2.fill",
             iconColor: .levelOrange,
             title: "Profiles & Tolerance",
             subtitle: "Each profile stores weight, age, sex, ADHD status, and substance tolerances.",
-            detail: "Dose recommendations are personalized per profile. Tolerances decay automatically with abstinence."
+            detail: "Dose recommendations are personalized per profile.\nTolerances decay automatically with abstinence."
         ),
         OnboardingPage(
             icon: "shield.fill",
             iconColor: .orange,
-            title: "Important Information",
+            title: "Important",
             subtitle: "Please read before using this app.",
             detail: """
                 EN: This app is for harm reduction and educational purposes only. It does not constitute medical advice. All dosage amounts refer to pure active substance – actual substances are rarely pure. Possession and use of controlled substances may be illegal in your country. The developers accept no liability for harm resulting from use of this app.
@@ -52,100 +50,161 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             icon: "checkmark.shield.fill",
-            iconColor: .green,
+            iconColor: .levelGreen,
             title: "Ready to Go",
-            subtitle: "Your default profiles are set up.\nYou can edit them anytime in the Profiles tab.",
+            subtitle: "Your default profiles are set up.\nEdit them anytime in the Profiles tab.",
             detail: nil
         )
     ]
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $currentPage) {
-                ForEach(pages.indices, id: \.self) { idx in
-                    pageView(pages[idx]).tag(idx)
+        ZStack {
+            Color.heroBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Top branding
+                HStack {
+                    Text("LEVEL")
+                        .font(.system(size: 11, weight: .black))
+                        .tracking(3)
+                        .foregroundStyle(.white.opacity(0.3))
+                    Spacer()
+                    Text("\(currentPage + 1) / \(pages.count)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.3))
                 }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-            .ignoresSafeArea()
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.top, 16)
 
-            // Bottom Controls
-            VStack(spacing: 16) {
-                if currentPage < pages.count - 1 {
-                    Button {
-                        withAnimation { currentPage += 1 }
-                    } label: {
-                        Text("Next")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.accent, in: RoundedRectangle(cornerRadius: 16))
-                            .foregroundStyle(.white)
-                    }
+                // 11-segment progress indicator
+                segmentIndicator
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.top, 14)
 
-                    Button("Skip") { finishOnboarding() }
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Button {
-                        finishOnboarding()
-                    } label: {
-                        Text("Get Started")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.accent, in: RoundedRectangle(cornerRadius: 16))
-                            .foregroundStyle(.white)
+                // Page content
+                TabView(selection: $currentPage) {
+                    ForEach(pages.indices, id: \.self) { idx in
+                        pageView(pages[idx]).tag(idx)
                     }
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+
+                // Bottom controls
+                VStack(spacing: 14) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if currentPage < pages.count - 1 {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                currentPage += 1
+                            }
+                        } else {
+                            finishOnboarding()
+                        }
+                    } label: {
+                        Text(currentPage < pages.count - 1 ? "Continue" : "Get Started")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                            .foregroundStyle(.white)
+                            .shadow(color: Color.accent.opacity(0.2), radius: 8, y: 3)
+                    }
+
+                    if currentPage < pages.count - 1 {
+                        Button {
+                            finishOnboarding()
+                        } label: {
+                            Text("Skip")
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.35))
+                        }
+                    }
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 48)
         }
-        .background(Color.heroBackground.ignoresSafeArea())
         .foregroundStyle(.white)
     }
 
-    private func pageView(_ page: OnboardingPage) -> some View {
-        VStack(spacing: 32) {
-            Spacer()
+    // MARK: - Segment Indicator
 
-            ZStack {
-                Circle()
-                    .fill(page.iconColor.opacity(0.15))
-                    .frame(width: 120, height: 120)
-                Image(systemName: page.icon)
-                    .font(.system(size: 52, weight: .light))
-                    .foregroundStyle(page.iconColor)
+    private var segmentIndicator: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<pages.count, id: \.self) { i in
+                Capsule()
+                    .fill(i <= currentPage
+                          ? segmentColor(i)
+                          : Color.white.opacity(0.08))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 4)
+                    .animation(.easeInOut(duration: 0.25), value: currentPage)
             }
+        }
+    }
 
-            VStack(spacing: 16) {
+    private func segmentColor(_ i: Int) -> Color {
+        switch i {
+        case 0:      return Color.levelCopper
+        case 1:      return Color.levelTeal
+        case 2:      return Color.levelOrange
+        case 3:      return .orange
+        default:     return Color.levelGreen
+        }
+    }
+
+    // MARK: - Page View
+
+    private func pageView(_ page: OnboardingPage) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                Spacer(minLength: 40)
+
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(page.iconColor.opacity(0.12))
+                        .frame(width: 100, height: 100)
+                    Image(systemName: page.icon)
+                        .font(.system(size: 44, weight: .light))
+                        .foregroundStyle(page.iconColor)
+                }
+                .padding(.bottom, 32)
+
+                // Title
                 Text(page.title)
-                    .font(.title.bold())
+                    .font(.system(size: 32, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
+                    .padding(.bottom, 12)
 
+                // Subtitle
                 Text(page.subtitle)
                     .font(.body)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineSpacing(4)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
 
+                // Detail
                 if let detail = page.detail {
                     Text(detail)
                         .font(.caption)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color(white: 0.5))
-                        .padding(.horizontal, 8)
-                        .padding(12)
-                        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.white.opacity(0.4))
+                        .lineSpacing(3)
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
                 }
-            }
-            .padding(.horizontal, 24)
 
-            Spacer()
-            Spacer() // Extra space for bottom controls
+                Spacer(minLength: 120)
+            }
+            .padding(.horizontal, DS.screenPadding)
         }
     }
+
+    // MARK: - Finish
 
     private func finishOnboarding() {
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")

@@ -97,83 +97,107 @@ struct BallerModeView: View {
         }
     }
 
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
+    private var thinDivider: some View {
+        Divider().padding(.leading, 54)
+    }
+
     // MARK: - No Session
 
     private var noSessionView: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                Spacer(minLength: 60)
-
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [Color.accent.opacity(0.3), .pink.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 120, height: 120)
+            VStack(spacing: 0) {
+                // Hero area
+                VStack(spacing: 12) {
                     Image(systemName: "person.3.fill")
-                        .font(.system(size: 48))
+                        .font(.system(size: 44))
                         .foregroundStyle(Color.accent)
-                }
+                        .padding(.top, 40)
 
-                VStack(spacing: 8) {
                     Text("Baller Mode")
-                        .font(.title.bold())
+                        .font(.system(size: 28, weight: .black, design: .rounded))
+
                     Text("Track levels together with your crew.\nSelect profiles and see everyone's status.")
+                        .font(.subheadline)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 32)
+                        .padding(.bottom, 20)
                 }
 
-                VStack(alignment: .leading, spacing: 16) {
-                    featureRow(icon: "person.crop.circle.badge.checkmark", title: "Multi-Profile", desc: "Pick who's joining from saved profiles")
-                    featureRow(icon: "pills.fill", title: "Group Dosing", desc: "See recommended doses for everyone")
-                    featureRow(icon: "gauge.with.needle.fill", title: "Live Levels", desc: "Track everyone's level in real-time")
-                }
-                .padding(24)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
-                .padding(.horizontal, 24)
+                // Features
+                sectionHeader("Features", color: Color.accent)
 
-                Button {
-                    showSetup = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Start Session")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.accent, in: RoundedRectangle(cornerRadius: 16))
-                    .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 24)
+                featureRow(icon: "person.crop.circle.badge.checkmark", title: "Multi-Profile", desc: "Pick who's joining from saved profiles")
+                thinDivider
+                featureRow(icon: "pills.fill", title: "Group Dosing", desc: "See recommended doses for everyone")
+                thinDivider
+                featureRow(icon: "gauge.with.needle.fill", title: "Live Levels", desc: "Track everyone's level in real-time")
 
-                if !appState.sessionHistory.isEmpty {
+                // Actions
+                VStack(spacing: 10) {
                     Button {
-                        showHistory = true
+                        showSetup = true
                     } label: {
-                        HStack {
-                            Image(systemName: "clock.arrow.circlepath")
-                            Text("Past Sessions")
-                                .fontWeight(.medium)
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Start Session")
+                                .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        .padding(.vertical, 15)
+                        .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                        .foregroundStyle(.white)
+                        .shadow(color: Color.accent.opacity(0.2), radius: 8, y: 3)
                     }
-                    .foregroundStyle(Color.accent)
-                    .padding(.horizontal, 24)
-                }
 
-                Spacer(minLength: 60)
+                    if !appState.sessionHistory.isEmpty {
+                        Button {
+                            showHistory = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                Text("Past Sessions")
+                                    .fontWeight(.medium)
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(Color.accent)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.top, 24)
+                .padding(.bottom, 40)
             }
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
     }
 
     private func featureRow(icon: String, title: String, desc: String) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(Color.accent)
-                .frame(width: 32)
+                .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.bold())
@@ -181,89 +205,87 @@ struct BallerModeView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Spacer()
         }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 11)
     }
 
     // MARK: - Active Session
 
     private func activeSessionView(_ session: BallerSession) -> some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    sessionHeader(session)
-
-                    // Active Participants
-                    ForEach(session.participantIds, id: \.self) { profileId in
-                        if let profile = appState.profiles.first(where: { $0.id == profileId }) {
-                            participantCard(profile, session: session)
-                        }
-                    }
-
-                    // Removed Participants (can be re-added)
-                    if !session.removedParticipantIds.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Left")
-                                .font(.subheadline.bold())
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, 4)
-
-                            ForEach(session.removedParticipantIds, id: \.self) { profileId in
-                                if let profile = appState.profiles.first(where: { $0.id == profileId }) {
-                                    removedParticipantRow(profile)
-                                }
-                            }
-                        }
-                        .padding(.top, 8)
-                    }
-
-                    // MARK: - Live Statistics Section
-                    liveStatsSection(session)
-
-                    // Add Participant Button
-                    Button {
-                        showAddParticipant = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "person.badge.plus")
-                            Text("Add Participant")
-                        }
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    .foregroundStyle(Color.accent)
-
-                    // Spacer for sticky FAB
-                    Color.clear.frame(height: 80)
-                }
-                .padding(16)
-            }
-
-            // Sticky FAB – always visible
+        ScrollView {
             VStack(spacing: 0) {
-                LinearGradient(
-                    colors: [.clear, Color(.systemBackground).opacity(0.95)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 32)
-                .allowsHitTesting(false)
+                sessionHeader(session)
 
-                Button {
-                    showAddDose = true
-                } label: {
-                    Label("Log Dose for Group", systemImage: "pills.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.accent, in: RoundedRectangle(cornerRadius: 14))
-                        .foregroundStyle(.white)
+                // Active Participants
+                sectionHeader("Participants (\(session.participantIds.count))", color: Color.accent)
+
+                ForEach(Array(session.participantIds.enumerated()), id: \.element) { idx, profileId in
+                    if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                        if idx > 0 { thinDivider }
+                        participantRow(profile, session: session)
+                    }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-                .background(Color(.systemBackground).opacity(0.95))
+
+                // Removed Participants
+                if !session.removedParticipantIds.isEmpty {
+                    sectionHeader("Left", color: .secondary)
+
+                    ForEach(Array(session.removedParticipantIds.enumerated()), id: \.element) { idx, profileId in
+                        if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                            if idx > 0 { thinDivider }
+                            removedParticipantRow(profile)
+                        }
+                    }
+                }
+
+                // Live Statistics
+                liveStatsSection(session)
+
+                // Add Participant
+                Button {
+                    showAddParticipant = true
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "person.badge.plus")
+                            .foregroundStyle(Color.accent)
+                            .frame(width: 22)
+                        Text("Add Participant")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.accent)
+                        Spacer()
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
+                .pressFeedback()
+
+                Color.clear.frame(height: 80)
             }
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button {
+                showAddDose = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "pills.fill")
+                        .font(.body.bold())
+                    Text("Log Dose for Group")
+                        .font(.headline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                .foregroundStyle(.white)
+                .shadow(color: Color.accent.opacity(0.2), radius: 8, y: 3)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(.regularMaterial)
         }
     }
 
@@ -272,25 +294,22 @@ struct BallerModeView: View {
     private func liveStatsSection(_ session: BallerSession) -> some View {
         let sessionDoses = appState.sessionDoses(for: session)
 
-        return VStack(spacing: 16) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .foregroundStyle(Color.accent)
-                Text("Live Statistics")
-                    .font(.headline)
-                Spacer()
-            }
+        return VStack(spacing: 0) {
+            sectionHeader("Live Statistics", color: Color.accent)
 
             quickStatsGrid(session, doses: sessionDoses)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.bottom, 16)
 
             if !sessionDoses.isEmpty {
                 liveLevelChart(session)
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.bottom, 16)
             }
 
             perParticipantStats(session, doses: sessionDoses)
+                .padding(.horizontal, DS.screenPadding)
         }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func quickStatsGrid(_ session: BallerSession, doses: [Dose]) -> some View {
@@ -425,7 +444,7 @@ struct BallerModeView: View {
                     Image(systemName: "clock.fill")
                         .foregroundStyle(Color.accent)
                     Text(session.durationFormatted)
-                    Text("•")
+                    Text("·")
                         .foregroundStyle(.secondary)
                     Image(systemName: "person.2.fill")
                     Text("\(session.participantIds.count)")
@@ -442,86 +461,71 @@ struct BallerModeView: View {
                     .foregroundStyle(.red)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(.red.opacity(0.1), in: Capsule())
+                    .background(.red.opacity(0.08), in: Capsule())
             }
+            .pressFeedback()
         }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 14)
     }
 
-    private func participantCard(_ profile: Profile, session: BallerSession) -> some View {
+    private func participantRow(_ profile: Profile, session: BallerSession) -> some View {
         let level = appState.currentLevel(for: profile, at: currentTime)
         let color = appState.levelColor(for: level)
         let atLimit = level >= Double(profile.personalLimit)
 
-        return VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.15))
-                        .frame(width: 50, height: 50)
-                    Text(profile.avatarEmoji)
-                        .font(.title2)
+        return HStack(spacing: 14) {
+            // Left accent line
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 3, height: 40)
+
+            Text(profile.avatarEmoji)
+                .font(.title3)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(profile.name)
+                    .font(.subheadline.bold())
+                HStack(spacing: 4) {
+                    Text("\(Int(profile.weight))kg")
+                    Text("·")
+                    Text(appState.levelDescription(for: level))
                 }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(profile.name)
-                            .font(.headline)
-
-                    }
-                    Text("\(Int(profile.weight))kg • \(appState.levelDescription(for: level))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(String(format: "%.1f", level))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(color)
-                    Text("/11")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Remove button
-                Button {
-                    appState.removeSessionParticipant(profile.id)
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary.opacity(0.5))
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
-            // Level Bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(.secondary.opacity(0.15))
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(color)
-                        .frame(width: geo.size.width * min(level / 11.0, 1.0))
-                }
-            }
-            .frame(height: 8)
+            Spacer()
 
-            if atLimit {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                    Text("Limit reached!")
-                        .font(.caption.bold())
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity)
-                .background(.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+            // Level display
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                Text(String(format: "%.1f", level))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(color)
+                    .contentTransition(.numericText())
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7), value: level)
+                Text("/11")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
+
+            // Remove button
+            Button {
+                appState.removeSessionParticipant(profile.id)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.secondary.opacity(0.3))
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
         }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
+        .background(Color.appBackground)
+        .contentShape(Rectangle())
+        .pressFeedback()
         .contextMenu {
             Button {
                 quickDoseForProfileId = profile.id
@@ -535,21 +539,39 @@ struct BallerModeView: View {
                 Label("Remove from Session", systemImage: "person.badge.minus")
             }
         }
+        .overlay(alignment: .bottom) {
+            if atLimit {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text("Limit reached")
+                        .font(.caption.bold())
+                        .foregroundStyle(.red)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.leading, 20)
+                .padding(.vertical, 6)
+                .background(.red.opacity(0.06))
+            }
+        }
     }
 
     private func removedParticipantRow(_ profile: Profile) -> some View {
         let level = appState.currentLevel(for: profile, at: currentTime)
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 14) {
             Text(profile.avatarEmoji)
                 .font(.title3)
+                .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
                     .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Text("Level: \(String(format: "%.1f", level))")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
 
             Spacer()
@@ -564,9 +586,10 @@ struct BallerModeView: View {
                     .padding(.vertical, 6)
                     .background(Color.accent.opacity(0.1), in: Capsule())
             }
+            .pressFeedback()
         }
-        .padding(12)
-        .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
 }
 
@@ -585,48 +608,56 @@ struct AddParticipantView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if availableProfiles.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "person.crop.circle.badge.checkmark")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        Text("All profiles are already in the session")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
-                    .listRowBackground(Color.clear)
-                } else {
-                    ForEach(availableProfiles) { profile in
-                        Button {
-                            appState.addSessionParticipant(profile.id)
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(profile.avatarEmoji)
-                                    .font(.title2)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(profile.name)
-                                        .font(.subheadline.bold())
-                                    Text("\(Int(profile.weight))kg • Limit \(profile.personalLimit)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(Color.accent)
-                            }
+            ScrollView {
+                VStack(spacing: 0) {
+                    if availableProfiles.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.crop.circle.badge.checkmark")
+                                .font(.largeTitle)
+                                .foregroundStyle(.secondary)
+                            Text("All profiles are already in the session")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 60)
+                    } else {
+                        ForEach(Array(availableProfiles.enumerated()), id: \.element.id) { idx, profile in
+                            if idx > 0 { Divider().padding(.leading, 54) }
+                            Button {
+                                appState.addSessionParticipant(profile.id)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    Text(profile.avatarEmoji)
+                                        .font(.title2)
+                                        .frame(width: 22)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(profile.name)
+                                            .font(.subheadline.bold())
+                                        Text("\(Int(profile.weight))kg · Limit \(profile.personalLimit)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(Color.accent)
+                                }
+                                .padding(.horizontal, DS.screenPadding)
+                                .padding(.vertical, 12)
+                            }
+                            .buttonStyle(.plain)
+                            .pressFeedback()
+                        }
                     }
                 }
             }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Add Participant")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -647,66 +678,83 @@ struct SessionSetupView: View {
     @State private var selectedProfileIds: Set<String> = []
     @State private var showNewProfile = false
 
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Session Name
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Session Name")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Session Name
+                    sectionHeader("Session Name", color: Color.accent)
+
                     TextField("e.g. Friday Night", text: $sessionName)
                         .textFieldStyle(.plain)
-                        .padding()
-                        .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                }
-                .padding()
+                        .padding(14)
+                        .background(.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, DS.screenPadding)
 
-                Divider()
-
-                // Profile Selection
-                VStack(alignment: .leading, spacing: 12) {
+                    // Profile Selection
                     HStack {
-                        Text("Who's joining?")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.secondary)
+                        sectionHeader("Who's Joining?", color: Color.accent)
                         Spacer()
                         Button {
                             showNewProfile = true
                         } label: {
                             Label("New", systemImage: "plus")
-                                .font(.caption)
+                                .font(.caption.bold())
+                                .foregroundStyle(Color.accent)
                         }
+                        .padding(.trailing, DS.screenPadding)
+                        .padding(.top, 22)
                     }
 
                     if appState.profiles.isEmpty {
                         Text("No profiles yet. Create one to start.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                            .padding(.vertical, 20)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 30)
                     } else {
-                        ForEach(appState.profiles) { profile in
+                        ForEach(Array(appState.profiles.enumerated()), id: \.element.id) { idx, profile in
+                            if idx > 0 { Divider().padding(.leading, 54) }
                             profileSelectRow(profile)
                         }
                     }
                 }
-                .padding()
-
-                Spacer()
-
-                // Start Button
+                .padding(.bottom, 100)
+            }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
                     startSession()
                 } label: {
                     Text("Start with \(selectedProfileIds.count) people")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedProfileIds.isEmpty ? Color.gray : Color.accent, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.vertical, 15)
+                        .background(selectedProfileIds.isEmpty ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
+                        .shadow(color: Color.accent.opacity(selectedProfileIds.isEmpty ? 0 : 0.2), radius: 8, y: 3)
                 }
                 .disabled(selectedProfileIds.isEmpty)
-                .padding()
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(.regularMaterial)
             }
             .navigationTitle("New Session")
             .navigationBarTitleDisplayMode(.inline)
@@ -738,19 +786,15 @@ struct SessionSetupView: View {
                 selectedProfileIds.insert(profile.id)
             }
         } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.accent.opacity(0.15) : .secondary.opacity(0.1))
-                        .frame(width: 44, height: 44)
-                    Text(profile.avatarEmoji)
-                        .font(.title3)
-                }
+            HStack(spacing: 14) {
+                Text(profile.avatarEmoji)
+                    .font(.title3)
+                    .frame(width: 22)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
                         .font(.subheadline.bold())
-                    Text("\(Int(profile.weight))kg • Limit \(profile.personalLimit)")
+                    Text("\(Int(profile.weight))kg · Limit \(profile.personalLimit)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -761,10 +805,12 @@ struct SessionSetupView: View {
                     .font(.title2)
                     .foregroundStyle(isSelected ? Color.accent : .secondary.opacity(0.3))
             }
-            .padding(12)
-            .background(isSelected ? Color.accent.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.accent.opacity(0.04) : .clear)
         }
-        .foregroundStyle(.primary)
+        .buttonStyle(.plain)
+        .pressFeedback()
     }
 
     private func startSession() {
@@ -844,28 +890,47 @@ struct GroupDoseView: View {
         }
     }
 
-    // MARK: - Substance List View (directly showing overview)
+    // MARK: - Substance List View
+
+    private func groupSectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
 
     private var substanceListView: some View {
-        List {
-            ForEach(SubstanceCategory.allCases, id: \.self) { category in
-                let substances = Substances.all.filter { $0.category == category }
-                if !substances.isEmpty {
-                    Section(category.rawValue.capitalized) {
-                        ForEach(substances) { substance in
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(SubstanceCategory.allCases, id: \.self) { category in
+                    let substances = Substances.all.filter { $0.category == category }
+                    if !substances.isEmpty {
+                        groupSectionHeader(category.rawValue.capitalized, color: Color(hex: category.color))
+
+                        ForEach(Array(substances.enumerated()), id: \.element.id) { idx, substance in
+                            if idx > 0 { Divider().padding(.leading, 54) }
                             Button {
                                 selectedSubstance = substance
                                 selectedRoute = substance.primaryRoute
                             } label: {
-                                HStack {
+                                HStack(spacing: 14) {
                                     Image(systemName: category.icon)
                                         .foregroundStyle(Color(hex: category.color))
-                                        .frame(width: 28)
+                                        .frame(width: 22)
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(substance.name)
-                                            .font(.body)
-                                        Text("\(String(format: "%.0f", substance.commonDose)) \(substance.unit.symbol) • \(substance.primaryRoute.displayName)")
+                                            .font(.subheadline.bold())
+                                        Text("\(String(format: "%.0f", substance.commonDose)) \(substance.unit.symbol) · \(substance.primaryRoute.displayName)")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
@@ -876,22 +941,28 @@ struct GroupDoseView: View {
                                         .font(.caption)
                                         .foregroundStyle(.tertiary)
                                 }
+                                .padding(.horizontal, DS.screenPadding)
+                                .padding(.vertical, 11)
                             }
-                            .foregroundStyle(.primary)
+                            .buttonStyle(.plain)
+                            .pressFeedback()
                         }
                     }
                 }
             }
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
     }
 
     // MARK: - Dose Configuration View
 
     private func doseConfigView(_ substance: Substance) -> some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 // Substance Header
-                HStack {
+                HStack(spacing: 14) {
                     Image(systemName: substance.category.icon)
                         .font(.title2)
                         .foregroundStyle(Color(hex: substance.category.color))
@@ -904,45 +975,49 @@ struct GroupDoseView: View {
                     }
                     Spacer()
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 14)
 
                 // Route Picker
                 routeSection(substance)
 
-                Divider().padding(.horizontal)
+                // Recommendations
+                groupSectionHeader("Recommended Doses", color: Color.accent)
 
-                // Recommendations for all
-                Text("Recommended Doses")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-
-                ForEach(participants) { profile in
-                    recommendationCard(profile: profile, substance: substance)
+                ForEach(Array(participants.enumerated()), id: \.element.id) { idx, profile in
+                    if idx > 0 { Divider().padding(.horizontal, DS.screenPadding) }
+                    recommendationRow(profile: profile, substance: substance)
                 }
 
-                // Log Button
-                Button {
-                    logDoses()
-                } label: {
-                    Text("Log for \(selectedProfilesForDose.count) people")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedProfilesForDose.isEmpty ? Color.gray : Color.accent, in: RoundedRectangle(cornerRadius: 14))
-                        .foregroundStyle(.white)
-                }
-                .disabled(selectedProfilesForDose.isEmpty)
-                .padding(.horizontal)
+                Color.clear.frame(height: 80)
             }
-            .padding(.vertical)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button {
+                logDoses()
+            } label: {
+                Text("Log for \(selectedProfilesForDose.count) people")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(selectedProfilesForDose.isEmpty ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(.white)
+                    .shadow(color: Color.accent.opacity(selectedProfilesForDose.isEmpty ? 0 : 0.2), radius: 8, y: 3)
+            }
+            .disabled(selectedProfilesForDose.isEmpty)
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(.regularMaterial)
         }
     }
 
     private func routeSection(_ substance: Substance) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Route")
-                .font(.subheadline.bold())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
                 .foregroundStyle(.secondary)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -955,17 +1030,19 @@ struct GroupDoseView: View {
                                 .font(.subheadline)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 10)
-                                .background(selectedRoute == route ? Color.accent : .secondary.opacity(0.1), in: Capsule())
+                                .background(selectedRoute == route ? Color.accent : .secondary.opacity(0.08), in: Capsule())
                                 .foregroundStyle(selectedRoute == route ? .white : .primary)
                         }
+                        .pressFeedback()
                     }
                 }
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 12)
     }
 
-    private func recommendationCard(profile: Profile, substance: Substance) -> some View {
+    private func recommendationRow(profile: Profile, substance: Substance) -> some View {
         let rec = IntoxEngine.recommendDose(substance: substance, route: selectedRoute, profile: profile)
         let isSelected = selectedProfilesForDose.contains(profile.id)
         let currentAmount = doseAmounts[profile.id] ?? rec.suggestedDose
@@ -974,7 +1051,6 @@ struct GroupDoseView: View {
 
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
-                // Select checkbox
                 Button {
                     if isSelected {
                         selectedProfilesForDose.remove(profile.id)
@@ -985,34 +1061,35 @@ struct GroupDoseView: View {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
                         .foregroundStyle(isSelected ? Color.accent : .secondary.opacity(0.3))
+                        .frame(minWidth: 44, minHeight: 44)
                 }
+                .buttonStyle(.plain)
+                .pressFeedback()
 
-                // Profile info
                 Text(profile.avatarEmoji)
-                    .font(.title2)
+                    .font(.title3)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
                         .font(.subheadline.bold())
-                    Text("\(Int(profile.weight))kg • Tol: \(profile.tolerance(for: substance.id))")
+                    Text("\(Int(profile.weight))kg · Tol: \(profile.tolerance(for: substance.id))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                // Current dose amount
                 VStack(alignment: .trailing, spacing: 0) {
                     Text(String(format: "%.1f", currentAmount))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.accent)
+                        .contentTransition(.numericText())
                     Text(substance.unit.symbol)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            // Dose Slider
             VStack(spacing: 4) {
                 Slider(
                     value: Binding(
@@ -1032,10 +1109,11 @@ struct GroupDoseView: View {
                     Button {
                         doseAmounts[profile.id] = rec.suggestedDose
                     } label: {
-                        Text("Recommended: \(String(format: "%.1f", rec.suggestedDose))")
+                        Text("Rec: \(String(format: "%.1f", rec.suggestedDose))")
                             .font(.caption2)
                             .foregroundStyle(Color.accent)
                     }
+                    .pressFeedback()
                     Spacer()
                     Text(String(format: "%.0f", maxDose))
                         .font(.caption2)
@@ -1043,7 +1121,6 @@ struct GroupDoseView: View {
                 }
             }
 
-            // Adjustment factors
             if !rec.adjustmentFactors.isEmpty {
                 HStack(spacing: 8) {
                     ForEach(rec.adjustmentFactors, id: \.self) { factor in
@@ -1051,13 +1128,12 @@ struct GroupDoseView: View {
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(.secondary.opacity(0.1), in: Capsule())
+                            .background(.secondary.opacity(0.06), in: Capsule())
                     }
                     Spacer()
                 }
             }
 
-            // Warnings
             ForEach(rec.warnings, id: \.self) { warning in
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -1070,9 +1146,8 @@ struct GroupDoseView: View {
                 }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .padding(.horizontal)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 14)
         .onAppear {
             if doseAmounts[profile.id] == nil {
                 doseAmounts[profile.id] = rec.suggestedDose
@@ -1202,19 +1277,44 @@ struct QuickDoseForProfileView: View {
     }
 
     private var substanceList: some View {
-        List {
-            if let p = profile, !p.favorites.isEmpty {
-                Section("Favorites") {
-                    ForEach(p.favorites, id: \.self) { id in
-                        if let substance = Substances.byId[id] { substanceRow(substance) }
+        ScrollView {
+            VStack(spacing: 0) {
+                if let p = profile, !p.favorites.isEmpty {
+                    profileSectionHeader("Favorites", color: Color.accent)
+                    ForEach(Array(p.favorites.enumerated()), id: \.element) { idx, id in
+                        if let substance = Substances.byId[id] {
+                            if idx > 0 { Divider().padding(.leading, 54) }
+                            substanceRow(substance)
+                        }
                     }
                 }
+                profileSectionHeader("All Substances", color: .secondary)
+                ForEach(Array(filteredSubstances.enumerated()), id: \.element.id) { idx, substance in
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    substanceRow(substance)
+                }
             }
-            Section("All Substances") {
-                ForEach(filteredSubstances) { substance in substanceRow(substance) }
-            }
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
         .searchable(text: $searchText, prompt: "Search substances")
+    }
+
+    private func profileSectionHeader(_ title: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
     }
 
     private func substanceRow(_ substance: Substance) -> some View {
@@ -1223,77 +1323,112 @@ struct QuickDoseForProfileView: View {
             selectedRoute = substance.primaryRoute
             amount = substance.commonDose
         } label: {
-            HStack {
+            HStack(spacing: 14) {
                 Image(systemName: substance.category.icon)
-                    .foregroundStyle(Color(hex: substance.category.color)).frame(width: 30)
-                VStack(alignment: .leading) {
-                    Text(substance.name).font(.body)
+                    .foregroundStyle(Color(hex: substance.category.color))
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(substance.name).font(.subheadline.bold())
                     Text(substance.category.rawValue.capitalized).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text("\(String(format: "%.0f", substance.commonDose)) \(substance.unit.symbol)")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 11)
         }
-        .foregroundStyle(.primary)
+        .buttonStyle(.plain)
+        .pressFeedback()
     }
 
     private func doseForm(_ substance: Substance) -> some View {
-        Form {
-            Section {
-                HStack {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Substance header
+                HStack(spacing: 14) {
                     Image(systemName: substance.category.icon)
-                        .font(.title).foregroundStyle(Color(hex: substance.category.color))
+                        .font(.title2).foregroundStyle(Color(hex: substance.category.color))
                     VStack(alignment: .leading) {
-                        Text(substance.name).font(.title2.bold())
-                        Text(substance.category.rawValue.capitalized).foregroundStyle(.secondary)
+                        Text(substance.name).font(.title3.bold())
+                        Text(substance.category.rawValue.capitalized).font(.caption).foregroundStyle(.secondary)
                     }
+                    Spacer()
                 }
-                .padding(.vertical, 8)
-            }
-            Section("Route") {
-                Picker("Route", selection: $selectedRoute) {
-                    ForEach(substance.routes, id: \.self) { Text($0.displayName).tag($0) }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 14)
+
+                // Route
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ROUTE")
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(1.5)
+                        .foregroundStyle(.secondary)
+                    Picker("Route", selection: $selectedRoute) {
+                        ForEach(substance.routes, id: \.self) { Text($0.displayName).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
-            }
-            Section("Amount") {
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+
+                // Amount
+                profileSectionHeader("Amount", color: Color.accent)
+
                 VStack(spacing: 16) {
-                    HStack {
+                    HStack(alignment: .lastTextBaseline, spacing: 4) {
                         Text(String(format: "%.1f", amount))
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                        Text(substance.unit.symbol).font(.title2).foregroundStyle(.secondary)
+                            .font(.system(size: 44, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.accent)
+                            .contentTransition(.numericText())
+                        Text(substance.unit.symbol).font(.title3).foregroundStyle(.secondary)
                     }
                     Slider(value: $amount, in: 0...substance.strongDose * 2,
                            step: substance.unit == .mg ? (substance.commonDose < 10 ? 0.5 : 5) : 1)
-                    HStack {
+                    .tint(Color.accent)
+                    HStack(spacing: 8) {
                         quickDoseButton("Light", dose: substance.lightDose)
                         quickDoseButton("Common", dose: substance.commonDose)
                         quickDoseButton("Strong", dose: substance.strongDose)
                     }
                 }
+                .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 8)
+
+                Color.clear.frame(height: 80)
             }
-            Section {
-                Button { logDose(substance) } label: {
-                    HStack { Spacer(); Text("Log Dose").font(.headline); Spacer() }
-                }
-                .disabled(amount <= 0)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button { logDose(substance) } label: {
+                Text("Log Dose")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(amount <= 0 ? Color.gray : Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(.white)
+                    .shadow(color: Color.accent.opacity(amount <= 0 ? 0 : 0.2), radius: 8, y: 3)
             }
+            .disabled(amount <= 0)
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .background(.regularMaterial)
         }
     }
 
     private func quickDoseButton(_ label: String, dose: Double) -> some View {
         Button { amount = dose } label: {
-            VStack {
+            VStack(spacing: 4) {
                 Text(String(format: "%.0f", dose)).font(.headline)
                 Text(label).font(.caption)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 8)
-            .background(amount == dose ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(amount == dose ? Color.accent.opacity(0.15) : .secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+            .foregroundStyle(amount == dose ? Color.accent : .primary)
         }
         .buttonStyle(.plain)
+        .pressFeedback()
     }
 
     private func logDose(_ substance: Substance) {

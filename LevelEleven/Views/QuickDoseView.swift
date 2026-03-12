@@ -131,27 +131,48 @@ struct QuickDoseView: View {
 
     // MARK: - Substance List
 
+    private func quickSectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     private var substanceList: some View {
         let profileId = appState.activeProfileId ?? ""
         let recentDoses = appState.recentDoses(for: profileId, hours: 24)
 
-        return List {
-            if let profile = appState.activeProfile, !profile.favorites.isEmpty {
-                Section("Favorites") {
-                    ForEach(profile.favorites, id: \.self) { id in
+        return ScrollView {
+            VStack(spacing: 0) {
+                if let profile = appState.activeProfile, !profile.favorites.isEmpty {
+                    quickSectionHeader("Favorites", color: Color.accent)
+                    ForEach(Array(profile.favorites.enumerated()), id: \.element) { idx, id in
                         if let substance = Substances.byId[id] {
+                            if idx > 0 { Divider().padding(.leading, 54) }
                             substanceRow(substance, recentDoses: recentDoses)
                         }
                     }
                 }
-            }
 
-            Section("All Substances") {
-                ForEach(filteredSubstances) { substance in
+                quickSectionHeader("All Substances", color: .secondary)
+                ForEach(Array(filteredSubstances.enumerated()), id: \.element.id) { idx, substance in
+                    if idx > 0 { Divider().padding(.leading, 54) }
                     substanceRow(substance, recentDoses: recentDoses)
                 }
             }
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
         .searchable(text: $searchText, prompt: "Search substances")
     }
 
@@ -163,13 +184,13 @@ struct QuickDoseView: View {
             selectedRoute = substance.primaryRoute
             amount = substance.commonDose
         } label: {
-            HStack {
+            HStack(spacing: 14) {
                 Image(systemName: substance.category.icon)
                     .foregroundStyle(Color(hex: substance.category.color))
-                    .frame(width: 30)
+                    .frame(width: 22)
 
-                VStack(alignment: .leading) {
-                    Text(substance.name).font(.body)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(substance.name).font(.subheadline.bold())
                     Text(substance.category.rawValue.capitalized)
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -189,8 +210,10 @@ struct QuickDoseView: View {
                 Text("\(String(format: "%.0f", substance.commonDose)) \(substance.unit.symbol)")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 11)
         }
-        .foregroundStyle(.primary)
+        .buttonStyle(.plain)
         .pressFeedback()
     }
 
@@ -373,7 +396,7 @@ struct QuickDoseView: View {
                 Color.clear.frame(height: 100) // space for sticky button
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.appBackground)
     }
 
     // MARK: - Stepper Button

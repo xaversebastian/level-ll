@@ -2,16 +2,16 @@
 //  EmergencyView.swift
 //  LevelEleven
 //
-//  Version: 2.0  |  2026-03-12
+//  Version: 3.0  |  2026-03-12
 //
 //  Segmented Picker oben wechselt mit withAnimation zwischen den Modi.
 //  "Help someone" behält GCS-Rechner und Overdose-Checkliste.
 //
-//  Updates v2.0:
-//  - Redesigned to match HomeView design patterns
-//  - Standardized padding with DS.screenPadding
-//  - Added pressFeedback to interactive elements
-//  - Consistent section header styling
+//  Updates v3.0:
+//  - Flat rows on warm cream background matching HomeView
+//  - Removed card chrome and shadows
+//  - Consistent section headers with accent bars
+//  - DS.screenPadding everywhere
 //
 
 import SwiftUI
@@ -42,7 +42,7 @@ struct EmergencyView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 0) {
                     // Mode picker
                     Picker("Mode", selection: $mode.animation(.easeInOut)) {
                         ForEach(EmergencyMode.allCases, id: \.self) { m in
@@ -51,7 +51,8 @@ struct EmergencyView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, DS.screenPadding)
-                    .padding(.top, 8)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
 
                     if mode == .self_ {
                         selfHelpContent
@@ -59,18 +60,41 @@ struct EmergencyView: View {
                         helpOtherContent
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.bottom, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Emergency")
             .sheet(isPresented: $showGCSInfo) { gcsInfoSheet }
         }
     }
 
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
+    private var thinDivider: some View {
+        Divider().padding(.leading, 54)
+    }
+
     // MARK: - "I need help" (Calm / Grounding)
 
     private var selfHelpContent: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             // Reassurance header
             VStack(spacing: 10) {
                 Image(systemName: "heart.circle.fill")
@@ -86,42 +110,82 @@ struct EmergencyView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding()
+            .padding(.vertical, 20)
             .frame(maxWidth: .infinity)
-            .background(Color.levelCalm.opacity(0.08), in: RoundedRectangle(cornerRadius: DS.cardRadius))
-            .padding(.horizontal, DS.screenPadding)
+            .background(Color.levelCalm.opacity(0.06))
 
             // Breathing exercise
-            breathingSection
-                .padding(.horizontal, DS.screenPadding)
-
-            // Grounding exercises
-            groundingSection
-                .padding(.horizontal, DS.screenPadding)
-
-            // Soft contact / emergency (less prominent)
-            softEmergencySection
-                .padding(.horizontal, DS.screenPadding)
-        }
-    }
-
-    private var breathingSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
             sectionHeader("Breathing Exercise", color: Color.levelCopper)
 
-            VStack(spacing: 10) {
-                breathingStep(number: "4", label: "Breathe in slowly", color: Color.levelCalm)
-                breathingStep(number: "7", label: "Hold your breath", color: Color.levelCopper)
-                breathingStep(number: "8", label: "Breathe out completely", color: Color.levelTeal)
-            }
+            breathingStep(number: "4", label: "Breathe in slowly", color: Color.levelCalm)
+            thinDivider
+            breathingStep(number: "7", label: "Hold your breath", color: Color.levelCopper)
+            thinDivider
+            breathingStep(number: "8", label: "Breathe out completely", color: Color.levelTeal)
 
             Text("Repeat 3–4 times. This activates your parasympathetic nervous system.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.top, 8)
+
+            // Grounding exercises
+            sectionHeader("Grounding – 5-4-3-2-1", color: Color.levelCopper)
+
+            groundingItem(count: "5", sense: "things you can see")
+            groundingItem(count: "4", sense: "things you can touch")
+            groundingItem(count: "3", sense: "things you can hear")
+            groundingItem(count: "2", sense: "things you can smell")
+            groundingItem(count: "1", sense: "thing you can taste")
+
+            Text("Put your feet flat on the floor. Feel the ground beneath you.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.top, 8)
+
+            // Support options
+            sectionHeader("Support Options", color: .secondary)
+
+            Button {
+                if let url = URL(string: "tel:") { UIApplication.shared.open(url) }
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "phone.circle.fill")
+                        .foregroundStyle(Color.levelCalm)
+                        .frame(width: 22)
+                    Text("Call someone you trust")
+                        .font(.subheadline.bold())
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+
+            thinDivider
+
+            Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
+                HStack(spacing: 14) {
+                    Image(systemName: "cross.case.fill")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22)
+                    Text("Call Emergency (\(localEmergencyNumber))")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+                .background(Color.appBackground)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
         }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func breathingStep(number: String, label: String, color: Color) -> some View {
@@ -143,161 +207,132 @@ struct EmergencyView: View {
             }
             Spacer()
         }
-    }
-
-    private var groundingSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Grounding – 5-4-3-2-1", color: Color.levelCopper)
-
-            groundingItem(count: "5", sense: "things you can see")
-            groundingItem(count: "4", sense: "things you can touch")
-            groundingItem(count: "3", sense: "things you can hear")
-            groundingItem(count: "2", sense: "things you can smell")
-            groundingItem(count: "1", sense: "thing you can taste")
-
-            Text("Put your feet flat on the floor. Feel the ground beneath you.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
-        }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
 
     private func groundingItem(count: String, sense: String) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             Text(count)
                 .font(.headline.bold())
                 .foregroundStyle(Color.levelCopper)
-                .frame(width: 24)
+                .frame(width: 22, alignment: .center)
             Text(sense)
                 .font(.subheadline)
             Spacer()
         }
-    }
-
-    private var softEmergencySection: some View {
-        VStack(spacing: 12) {
-            sectionHeader("Support Options", color: .secondary)
-
-            // Call a friend
-            Button {
-                // Opens contacts
-                if let url = URL(string: "tel:") { UIApplication.shared.open(url) }
-            } label: {
-                Label("Call someone you trust", systemImage: "phone.circle.fill")
-                    .font(.subheadline.bold())
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.levelCalm.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(Color.levelCalm)
-            }
-            .buttonStyle(.plain)
-            .pressFeedback()
-
-            // Emergency (less prominent in self mode)
-            Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
-                Label("Call Emergency (\(localEmergencyNumber))", systemImage: "cross.case.fill")
-                    .font(.caption.bold())
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                    .foregroundStyle(.secondary)
-            }
-            .pressFeedback()
-        }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 6)
     }
 
     // MARK: - "Help someone" (Clinical / Direct)
 
     private var helpOtherContent: some View {
-        VStack(spacing: 16) {
-            emergencyCallSection
-                .padding(.horizontal, DS.screenPadding)
-            gcsSection
-                .padding(.horizontal, DS.screenPadding)
-            checklistSection
-                .padding(.horizontal, DS.screenPadding)
-            tipsSection
-                .padding(.horizontal, DS.screenPadding)
-        }
-    }
+        VStack(spacing: 0) {
+            // Emergency call banner
+            VStack(spacing: 12) {
+                Image(systemName: "cross.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.red)
 
-    private var emergencyCallSection: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "cross.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.red)
+                Text("In an emergency: Call \(localEmergencyNumber)")
+                    .font(.title3.bold())
 
-            Text("In an emergency: Call \(localEmergencyNumber)")
-                .font(.title2.bold())
-
-            Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
-                HStack {
-                    Image(systemName: "phone.fill")
-                    Text("Call Emergency")
-                }
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(.red, in: RoundedRectangle(cornerRadius: 12))
-            }
-            .pressFeedback()
-        }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-    }
-
-    private var gcsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "brain.head.profile")
-                    .font(.title2)
-                    .foregroundStyle(Color.accent)
-                Text("Glasgow Coma Scale")
+                Link(destination: URL(string: "tel:\(localEmergencyNumber)")!) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "phone.fill")
+                        Text("Call Emergency")
+                    }
                     .font(.headline)
-                Spacer()
-                Button { showGCSInfo = true } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(.red.gradient, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .pressFeedback()
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 16)
+            .background(.red.opacity(0.04))
 
-            gcsComponent(title: "Eye Opening", score: $eyeScore,
-                         options: [(4,"Spontaneous"),(3,"To Voice"),(2,"To Pain"),(1,"None")])
-            gcsComponent(title: "Verbal Response", score: $verbalScore,
-                         options: [(5,"Oriented"),(4,"Confused"),(3,"Words"),(2,"Sounds"),(1,"None")])
-            gcsComponent(title: "Motor Response", score: $motorScore,
-                         options: [(6,"Obeys"),(5,"Localizes"),(4,"Withdraws"),(3,"Flexion"),(2,"Extension"),(1,"None")])
+            // GCS Section
+            sectionHeader("Glasgow Coma Scale", color: Color.accent)
 
-            Divider()
-
-            VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Total Score").font(.headline)
+                    Image(systemName: "brain.head.profile")
+                        .font(.title2)
+                        .foregroundStyle(Color.accent)
+                    Text("Consciousness Check")
+                        .font(.subheadline.bold())
                     Spacer()
-                    Text("\(gcsTotal)")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(gcsColor)
-                    Text("/ 15").font(.headline).foregroundStyle(.secondary)
+                    Button { showGCSInfo = true } label: {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .pressFeedback()
                 }
-                HStack {
-                    Text(gcsSeverity).font(.subheadline.bold()).foregroundStyle(gcsColor)
-                    Spacer()
+
+                gcsComponent(title: "Eye Opening", score: $eyeScore,
+                             options: [(4,"Spontaneous"),(3,"To Voice"),(2,"To Pain"),(1,"None")])
+                gcsComponent(title: "Verbal Response", score: $verbalScore,
+                             options: [(5,"Oriented"),(4,"Confused"),(3,"Words"),(2,"Sounds"),(1,"None")])
+                gcsComponent(title: "Motor Response", score: $motorScore,
+                             options: [(6,"Obeys"),(5,"Localizes"),(4,"Withdraws"),(3,"Flexion"),(2,"Extension"),(1,"None")])
+
+                Divider()
+
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("Total Score").font(.headline)
+                        Spacer()
+                        Text("\(gcsTotal)")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundStyle(gcsColor)
+                        Text("/ 15").font(.headline).foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text(gcsSeverity).font(.subheadline.bold()).foregroundStyle(gcsColor)
+                        Spacer()
+                    }
+                    gcsRecommendation
                 }
-                gcsRecommendation
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+
+            // Overdose Checklist
+            sectionHeader("Overdose Checklist", color: .orange)
+
+            checklistItem("Check responsiveness", icon: "hand.raised.fill")
+            thinDivider
+            checklistItem("Call \(localEmergencyNumber) emergency", icon: "phone.fill")
+            thinDivider
+            checklistItem("Recovery position (on their side)", icon: "person.fill")
+            thinDivider
+            checklistItem("Stay with the person", icon: "person.2.fill")
+            thinDivider
+            checklistItem("Do not leave them alone", icon: "exclamationmark.triangle.fill")
+            thinDivider
+            checklistItem("Inform emergency services what was taken", icon: "info.circle.fill")
+
+            // Harm Reduction Tips
+            sectionHeader("Harm Reduction Tips", color: Color.levelCalm)
+
+            tipItem("Stay hydrated, but don't overdrink")
+            thinDivider
+            tipItem("Don't mix depressants (alcohol, opioids, GHB)")
+            thinDivider
+            tipItem("Start low with new substances")
+            thinDivider
+            tipItem("Test substances when possible")
+            thinDivider
+            tipItem("Take breaks in cool areas")
+            thinDivider
+            tipItem("Never use alone")
         }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     private func gcsComponent(title: String, score: Binding<Int>, options: [(Int, String)]) -> some View {
@@ -372,7 +407,7 @@ struct EmergencyView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(gcsColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+        .background(gcsColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private var gcsInfoSheet: some View {
@@ -400,6 +435,7 @@ struct EmergencyView: View {
                 }
                 .padding()
             }
+            .background(Color.appBackground)
             .navigationTitle("GCS Info")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -410,22 +446,6 @@ struct EmergencyView: View {
         }
     }
 
-    // MARK: - Section Header
-
-    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
-        HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(color)
-                .frame(width: 4, height: 16)
-            Text(title.uppercased())
-                .font(.system(size: 12, weight: .bold))
-                .tracking(1.5)
-                .foregroundStyle(color)
-            Spacer()
-        }
-        .padding(.bottom, 8)
-    }
-
     private func scoreExplanation(range: String, description: String, color: Color) -> some View {
         HStack {
             Text(range).font(.subheadline.bold()).foregroundStyle(color).frame(width: 50, alignment: .leading)
@@ -434,52 +454,30 @@ struct EmergencyView: View {
         }
     }
 
-    private var checklistSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Overdose Checklist", color: .orange)
-            checklistItem("Check responsiveness", icon: "hand.raised.fill")
-            checklistItem("Call \(localEmergencyNumber) emergency", icon: "phone.fill")
-            checklistItem("Recovery position (on their side)", icon: "person.fill")
-            checklistItem("Stay with the person", icon: "person.2.fill")
-            checklistItem("Do not leave them alone", icon: "exclamationmark.triangle.fill")
-            checklistItem("Inform emergency services what was taken", icon: "info.circle.fill")
-        }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-    }
-
     private func checklistItem(_ text: String, icon: String) -> some View {
-        HStack {
-            Image(systemName: icon).foregroundStyle(.orange).frame(width: 30)
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .foregroundStyle(.orange)
+                .frame(width: 22)
             Text(text)
+                .font(.subheadline)
             Spacer()
         }
-        .padding(.vertical, 4)
-    }
-
-    private var tipsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Harm Reduction Tips", color: Color.levelCalm)
-            tipItem("Stay hydrated, but don't overdrink")
-            tipItem("Don't mix depressants (alcohol, opioids, GHB)")
-            tipItem("Start low with new substances")
-            tipItem("Test substances when possible")
-            tipItem("Take breaks in cool areas")
-            tipItem("Never use alone")
-        }
-        .padding()
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: DS.cardRadius))
-        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
 
     private func tipItem(_ text: String) -> some View {
-        HStack(alignment: .top) {
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+        HStack(spacing: 14) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(Color.levelGreen)
+                .frame(width: 22)
             Text(text)
+                .font(.subheadline)
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
 }
 

@@ -84,7 +84,8 @@ struct MoreView: View {
                 }
                 .padding(.vertical, 8)
             }
-            .background(Color(.systemGroupedBackground))
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("More")
         }
     }
@@ -127,9 +128,9 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
+            .pressFeedback()
             
             Divider().padding(.leading, 54)
             
@@ -149,9 +150,9 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
+            .pressFeedback()
             
             Divider().padding(.leading, 54)
             
@@ -171,9 +172,9 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
+            .pressFeedback()
             
             if let url = buildExportURL() {
                 Divider().padding(.leading, 54)
@@ -192,17 +193,11 @@ struct MoreView: View {
                     }
                     .padding(.horizontal, DS.screenPadding)
                     .padding(.vertical, 12)
-                    .background(Color.appBackground)
                 }
                 .buttonStyle(.plain)
+                .pressFeedback()
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: DS.cardRadius)
-                .fill(Color.appBackground)
-                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-        )
-        .padding(.horizontal, DS.screenPadding)
     }
     
     // MARK: - Current Profile
@@ -232,9 +227,8 @@ struct MoreView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            .background(Color.appBackground)
             
-            Divider().padding(.leading, 66)
+            Divider().padding(.leading, 54)
             
             Button(role: .destructive) {
                 appState.clearDoses(for: profile.id)
@@ -249,17 +243,10 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
             .pressFeedback()
         }
-        .background(
-            RoundedRectangle(cornerRadius: DS.cardRadius)
-                .fill(Color.appBackground)
-                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-        )
-        .padding(.horizontal, DS.screenPadding)
     }
     
     // MARK: - Settings
@@ -287,7 +274,6 @@ struct MoreView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            .background(Color.appBackground)
             
             Divider().padding(.leading, 54)
             
@@ -308,18 +294,12 @@ struct MoreView: View {
                     get: { appState.calmMode },
                     set: { appState.calmMode = $0 }
                 ))
+                .tint(Color.accent)
                 .labelsHidden()
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            .background(Color.appBackground)
         }
-        .background(
-            RoundedRectangle(cornerRadius: DS.cardRadius)
-                .fill(Color.appBackground)
-                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-        )
-        .padding(.horizontal, DS.screenPadding)
     }
     
     // MARK: - Legal
@@ -342,9 +322,9 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
+            .pressFeedback()
             
             Divider().padding(.leading, 54)
             
@@ -361,7 +341,6 @@ struct MoreView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            .background(Color.appBackground)
             
             Divider().padding(.leading, 54)
             
@@ -379,7 +358,6 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
             .pressFeedback()
@@ -400,7 +378,6 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
             .pressFeedback()
@@ -421,17 +398,10 @@ struct MoreView: View {
                 }
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 12)
-                .background(Color.appBackground)
             }
             .buttonStyle(.plain)
             .pressFeedback()
         }
-        .background(
-            RoundedRectangle(cornerRadius: DS.cardRadius)
-                .fill(Color.appBackground)
-                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-        )
-        .padding(.horizontal, DS.screenPadding)
     }
 
     private func buildExportURL() -> URL? {
@@ -457,93 +427,130 @@ struct MoreView: View {
 }
 
 struct SubstanceInfoView: View {
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     var body: some View {
-        List {
-            ForEach(SubstanceCategory.allCases, id: \.self) { category in
-                let substances = Substances.all.filter { $0.category == category }
-                if !substances.isEmpty {
-                    Section(category.rawValue.capitalized) {
-                        ForEach(substances) { substance in
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(SubstanceCategory.allCases, id: \.self) { category in
+                    let substances = Substances.all.filter { $0.category == category }
+                    if !substances.isEmpty {
+                        sectionHeader(category.rawValue.capitalized, color: Color(hex: category.color))
+                        
+                        ForEach(Array(substances.enumerated()), id: \.element.id) { idx, substance in
+                            if idx > 0 { Divider().padding(.leading, 54) }
                             NavigationLink {
                                 SubstanceDetailView(substance: substance)
                             } label: {
-                                HStack {
+                                HStack(spacing: 14) {
                                     Image(systemName: category.icon)
                                         .foregroundStyle(Color(hex: category.color))
-                                        .frame(width: 28)
+                                        .frame(width: 22)
                                     
-                                    VStack(alignment: .leading) {
+                                    VStack(alignment: .leading, spacing: 2) {
                                         Text(substance.name)
-                                            .font(.body)
+                                            .font(.subheadline.bold())
                                         Text(substance.shortName)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
                                 }
+                                .padding(.horizontal, DS.screenPadding)
+                                .padding(.vertical, 11)
                             }
+                            .buttonStyle(.plain)
+                            .pressFeedback()
                         }
                     }
                 }
             }
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
         .navigationTitle("Substances")
     }
 }
 
 struct SubstanceDetailView: View {
     let substance: Substance
+
+    private func detailSectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
     
     var body: some View {
-        List {
-            Section("Overview") {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: substance.category.icon)
-                            .font(.largeTitle)
-                            .foregroundStyle(Color(hex: substance.category.color))
-                        
-                        VStack(alignment: .leading) {
-                            Text(substance.name)
-                                .font(.title2.bold())
-                            Text(substance.category.rawValue.capitalized)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+        ScrollView {
+            VStack(spacing: 0) {
+                // Overview header
+                HStack(spacing: 14) {
+                    Image(systemName: substance.category.icon)
+                        .font(.system(size: 32))
+                        .foregroundStyle(Color(hex: substance.category.color))
                     
-                    Text(substance.description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 8)
-            }
-            
-            Section("Dosage") {
-                HStack {
-                    Circle().fill(.green).frame(width: 8, height: 8)
-                    Text("Light")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(substance.name)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                        Text(substance.category.rawValue.capitalized)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
-                    Text(formatDose(substance.lightDose))
-                        .foregroundStyle(.green)
                 }
-                HStack {
-                    Circle().fill(.orange).frame(width: 8, height: 8)
-                    Text("Common")
-                    Spacer()
-                    Text(formatDose(substance.commonDose))
-                        .foregroundStyle(.orange)
-                }
-                HStack {
-                    Circle().fill(.red).frame(width: 8, height: 8)
-                    Text("Strong")
-                    Spacer()
-                    Text(formatDose(substance.strongDose))
-                        .foregroundStyle(.red)
-                }
-            }
-            
-            if substance.onsetByRoute != nil || substance.durationByRoute != nil || substance.peakByRoute != nil {
-                // Route-spezifische Zeiten als Tabelle
-                Section("Timing (by Route)") {
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 16)
+
+                Text(substance.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.bottom, 8)
+
+                // Dosage
+                detailSectionHeader("Dosage", color: Color.accent)
+                dosageRow(label: "Light", dose: substance.lightDose, color: .green)
+                Divider().padding(.leading, 54)
+                dosageRow(label: "Common", dose: substance.commonDose, color: .orange)
+                Divider().padding(.leading, 54)
+                dosageRow(label: "Strong", dose: substance.strongDose, color: .red)
+
+                // Timing
+                if substance.onsetByRoute != nil || substance.durationByRoute != nil || substance.peakByRoute != nil {
+                    detailSectionHeader("Timing (by Route)", color: .secondary)
+                    
                     Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
                         GridRow {
                             Text("Route").font(.caption.bold()).foregroundStyle(.secondary)
@@ -561,99 +568,135 @@ struct SubstanceDetailView: View {
                             }
                         }
                     }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
+
                     timingRow(label: "Half-life", minutes: substance.halfLifeMinutes)
-                }
-            } else {
-                Section("Timing (\(substance.primaryRoute.displayName))") {
+                } else {
+                    detailSectionHeader("Timing (\(substance.primaryRoute.displayName))", color: .secondary)
                     timingRow(label: "Onset", minutes: substance.onsetMinutes)
+                    Divider().padding(.leading, 54)
                     timingRow(label: "Peak", minutes: substance.peakMinutes)
+                    Divider().padding(.leading, 54)
                     timingRow(label: "Duration", minutes: substance.durationMinutes)
+                    Divider().padding(.leading, 54)
                     timingRow(label: "Half-life", minutes: substance.halfLifeMinutes)
                 }
-            }
-            
-            Section("Routes") {
-                ForEach(substance.routes, id: \.self) { route in
-                    HStack {
+
+                // Routes
+                detailSectionHeader("Routes", color: .secondary)
+                ForEach(Array(substance.routes.enumerated()), id: \.element) { idx, route in
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    HStack(spacing: 14) {
                         Text(route.displayName)
+                            .font(.subheadline)
                         Spacer()
-                        Text("\(Int(route.bioavailability * 100))% Bioavailability")
+                        Text("\(Int(route.bioavailability * 100))%")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if route == substance.primaryRoute {
                             Text("Primary")
-                                .font(.caption)
+                                .font(.caption2)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(.blue.opacity(0.2), in: Capsule())
-                                .foregroundStyle(.blue)
+                                .background(Color.accent.opacity(0.15), in: Capsule())
+                                .foregroundStyle(Color.accent)
                         }
                     }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 10)
                 }
-            }
-            
-            Section {
-                ForEach(substance.risks, id: \.self) { risk in
-                    HStack(alignment: .top, spacing: 8) {
+
+                // Risks
+                detailSectionHeader("Risks", color: .red)
+                ForEach(Array(substance.risks.enumerated()), id: \.element) { idx, risk in
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    HStack(alignment: .top, spacing: 14) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                             .font(.caption)
+                            .frame(width: 22)
                         Text(risk)
                             .font(.subheadline)
+                        Spacer()
                     }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
                 }
-            } header: {
-                Label("Risks", systemImage: "exclamationmark.triangle")
-            }
-            
-            Section {
-                ForEach(substance.saferUse, id: \.self) { tip in
-                    HStack(alignment: .top, spacing: 8) {
+
+                // Safer Use
+                detailSectionHeader("Safer Use", color: .green)
+                ForEach(Array(substance.saferUse.enumerated()), id: \.element) { idx, tip in
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    HStack(alignment: .top, spacing: 14) {
                         Image(systemName: "checkmark.shield.fill")
                             .foregroundStyle(.green)
                             .font(.caption)
+                            .frame(width: 22)
                         Text(tip)
                             .font(.subheadline)
+                        Spacer()
                     }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
                 }
-            } header: {
-                Label("Safer Use", systemImage: "heart.text.square")
-            }
 
-            if substance.id == "mdma" {
-                Section("Drug Checking") {
-                    Link(destination: URL(string: "https://checkdrugs.at")!) {
-                        HStack {
-                            Image(systemName: "flask.fill").foregroundStyle(.blue)
-                            Text("checkdrugs.at")
-                            Spacer()
-                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    Link(destination: URL(string: "https://eve-rave.ch")!) {
-                        HStack {
-                            Image(systemName: "flask.fill").foregroundStyle(.blue)
-                            Text("eve-rave.ch")
-                            Spacer()
-                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    Link(destination: URL(string: "https://energy-control.org")!) {
-                        HStack {
-                            Image(systemName: "flask.fill").foregroundStyle(.blue)
-                            Text("energy-control.org")
-                            Spacer()
-                            Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                // Drug Checking (MDMA only)
+                if substance.id == "mdma" {
+                    detailSectionHeader("Drug Checking", color: .blue)
+                    drugCheckLink("checkdrugs.at", url: "https://checkdrugs.at")
+                    Divider().padding(.leading, 54)
+                    drugCheckLink("eve-rave.ch", url: "https://eve-rave.ch")
+                    Divider().padding(.leading, 54)
+                    drugCheckLink("energy-control.org", url: "https://energy-control.org")
+
                     Text("Get your MDMA tested before use. Street pills vary widely in purity and content.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DS.screenPadding)
+                        .padding(.vertical, 8)
                 }
             }
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
         .navigationTitle(substance.shortName)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func dosageRow(label: String, dose: Double, color: Color) -> some View {
+        HStack(spacing: 14) {
+            Circle().fill(color).frame(width: 8, height: 8).frame(width: 22)
+            Text(label).font(.subheadline)
+            Spacer()
+            Text(formatDose(dose))
+                .font(.subheadline.bold())
+                .foregroundStyle(color)
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
+    }
+
+    private func drugCheckLink(_ name: String, url: String) -> some View {
+        Link(destination: URL(string: url)!) {
+            HStack(spacing: 14) {
+                Image(systemName: "flask.fill")
+                    .foregroundStyle(.blue)
+                    .frame(width: 22)
+                Text(name)
+                    .font(.subheadline)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+        .pressFeedback()
     }
     
     private func formatDose(_ dose: Double) -> String {
@@ -667,12 +710,16 @@ struct SubstanceDetailView: View {
     }
     
     private func timingRow(label: String, minutes: Double) -> some View {
-        HStack {
+        HStack(spacing: 14) {
             Text(label)
+                .font(.subheadline)
             Spacer()
             Text(formatTime(minutes))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
     }
     
     private func formatTime(_ minutes: Double) -> String {
@@ -688,53 +735,61 @@ struct SubstanceDetailView: View {
 // MARK: - Disclaimer View
 
 struct DisclaimerView: View {
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(spacing: 0) {
                 // EN
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("English", systemImage: "globe")
-                        .font(.headline)
-                        .foregroundStyle(Color.accent)
+                sectionHeader("English", color: Color.accent)
 
-                    Text("""
-                        This app is for harm reduction and educational purposes only. It does not constitute medical advice.
+                Text("""
+                    This app is for harm reduction and educational purposes only. It does not constitute medical advice.
 
-                        All dosage amounts refer to pure active substance. Actual street substances are rarely pure – start lower than the displayed amounts.
+                    All dosage amounts refer to pure active substance. Actual street substances are rarely pure – start lower than the displayed amounts.
 
-                        Possession and use of controlled substances may be illegal in your country. Always be aware of applicable laws.
+                    Possession and use of controlled substances may be illegal in your country. Always be aware of applicable laws.
 
-                        The developers accept no liability for harm resulting from use of this app. Use at your own risk.
-                        """)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    The developers accept no liability for harm resulting from use of this app. Use at your own risk.
+                    """)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, DS.screenPadding)
 
                 // DE
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Deutsch", systemImage: "globe")
-                        .font(.headline)
-                        .foregroundStyle(Color.accent)
+                sectionHeader("Deutsch", color: Color.accent)
 
-                    Text("""
-                        Diese App dient ausschließlich zur Schadensminimierung (Harm Reduction) und zu Bildungszwecken. Sie ersetzt keine medizinische Beratung.
+                Text("""
+                    Diese App dient ausschließlich zur Schadensminimierung (Harm Reduction) und zu Bildungszwecken. Sie ersetzt keine medizinische Beratung.
 
-                        Alle Mengenangaben beziehen sich auf reinen Wirkstoff. Tatsächliche Substanzen sind selten rein – starte mit kleineren Mengen als angegeben.
+                    Alle Mengenangaben beziehen sich auf reinen Wirkstoff. Tatsächliche Substanzen sind selten rein – starte mit kleineren Mengen als angegeben.
 
-                        Besitz und Konsum können in Ihrem Land strafbar sein. Informiere dich über die geltenden Gesetze.
+                    Besitz und Konsum können in Ihrem Land strafbar sein. Informiere dich über die geltenden Gesetze.
 
-                        Die Entwickler übernehmen keine Haftung für Schäden durch die Nutzung dieser App. Nutzung auf eigenes Risiko.
-                        """)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    Die Entwickler übernehmen keine Haftung für Schäden durch die Nutzung dieser App. Nutzung auf eigenes Risiko.
+                    """)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, DS.screenPadding)
             }
-            .padding()
+            .padding(.bottom, 20)
         }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
         .navigationTitle("Disclaimer & Terms")
         .navigationBarTitleDisplayMode(.inline)
     }

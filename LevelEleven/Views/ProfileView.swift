@@ -2,7 +2,7 @@
 //  ProfileView.swift
 //  LevelEleven
 //
-//  Version: 2.0  |  2026-03-12
+//  Version: 3.0  |  2026-03-12
 //
 //  Profilverwaltung: Liste aller Profile mit Swipe-to-Delete und Edit.
 //  Tipp auf ein Profil setzt es als aktives Profil. Plus-Button öffnet ProfileEditorView.
@@ -10,12 +10,11 @@
 //  Name, Emoji-Avatar (Grid-Picker), Alter/Gewicht/Geschlecht, ADHS-Flag,
 //  persönliches Limit (1–11) und Toleranzwerte je Substanz (Stepper 0–11).
 //
-//  Updates v2.0:
-//  - Redesigned to match HomeView design patterns
-//  - Added section headers with accent bars
-//  - Standardized padding with DS tokens
-//  - Added pressFeedback for tactile response
-//  - Left accent line on profile rows for visual hierarchy
+//  Updates v3.0:
+//  - Flat rows on warm cream background matching HomeView
+//  - Removed card chrome and shadows
+//  - Consistent section headers with accent bars
+//  - DS.screenPadding everywhere
 //
 
 import SwiftUI
@@ -31,44 +30,38 @@ struct ProfileView: View {
                 VStack(spacing: 0) {
                     sectionHeader("Profiles")
                     
-                    VStack(spacing: 0) {
-                        ForEach(Array(appState.profiles.enumerated()), id: \.element.id) { idx, profile in
-                            if idx > 0 { thinDivider }
-                            profileRow(profile)
-                        }
-                        
-                        Button {
-                            showAddProfile = true
-                        } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(Color.accent)
-                                    .frame(width: 46, height: 46)
-                                
-                                Text("Add Profile")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.accent)
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, DS.screenPadding)
-                            .padding(.vertical, 12)
-                            .background(Color.appBackground)
-                        }
-                        .buttonStyle(.plain)
-                        .pressFeedback()
+                    ForEach(Array(appState.profiles.enumerated()), id: \.element.id) { idx, profile in
+                        if idx > 0 { thinDivider }
+                        profileRow(profile)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: DS.cardRadius)
-                            .fill(Color.appBackground)
-                            .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
-                    )
-                    .padding(.horizontal, DS.screenPadding)
+                    
+                    thinDivider
+
+                    Button {
+                        showAddProfile = true
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(Color.accent)
+                                .frame(width: 22)
+                            
+                            Text("Add Profile")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(Color.accent)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, DS.screenPadding)
+                        .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .pressFeedback()
                 }
-                .padding(.top, 8)
+                .padding(.bottom, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Profiles")
             .sheet(isPresented: $showAddProfile) {
                 ProfileEditorView(profile: nil)
@@ -91,13 +84,8 @@ struct ProfileView: View {
                     .fill(profile.isActive ? Color.accent : Color.clear)
                     .frame(width: 3, height: 40)
                 
-                ZStack {
-                    Circle()
-                        .fill(profile.isActive ? Color.accent.opacity(0.12) : Color.secondary.opacity(0.08))
-                        .frame(width: 46, height: 46)
-                    Text(profile.avatarEmoji)
-                        .font(.title2)
-                }
+                Text(profile.avatarEmoji)
+                    .font(.title2)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
@@ -117,31 +105,28 @@ struct ProfileView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 10)
-            .background(Color.appBackground)
             .contentShape(Rectangle())
         }
         .foregroundStyle(.primary)
         .buttonStyle(.plain)
         .pressFeedback()
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                appState.deleteProfile(profile.id)
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            
+        .contextMenu {
             Button {
                 editingProfile = profile
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
-            .tint(.orange)
+            Button(role: .destructive) {
+                appState.deleteProfile(profile.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
     
     private var thinDivider: some View {
         Divider()
-            .padding(.leading, 66)
+            .padding(.leading, 54)
     }
 
     // MARK: - Section Header
@@ -199,14 +184,35 @@ struct ProfileEditorView: View {
     ]
     
     var isEditing: Bool { profile != nil }
+
+    private func editorSectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
     
     var body: some View {
         NavigationStack {
-            Form {
-                basicInfoSection
-                physiologySection
-                tolerancesSection
+            ScrollView {
+                VStack(spacing: 0) {
+                    basicInfoSection
+                    physiologySection
+                    tolerancesSection
+                }
+                .padding(.bottom, 20)
             }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle(isEditing ? "Edit Profile" : "New Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -223,14 +229,30 @@ struct ProfileEditorView: View {
     }
     
     private var basicInfoSection: some View {
-        Section("Basic Info") {
-            TextField("Name", text: $name)
-            
+        VStack(spacing: 0) {
+            editorSectionHeader("Basic Info", color: Color.accent)
+
+            // Name field
+            HStack {
+                Text("Name")
+                    .font(.subheadline)
+                Spacer()
+                TextField("Name", text: $name)
+                    .multilineTextAlignment(.trailing)
+                    .font(.subheadline)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+
+            Divider().padding(.leading, 54)
+
+            // Avatar picker
             Button {
                 showEmojiPicker = true
             } label: {
                 HStack {
                     Text("Avatar")
+                        .font(.subheadline)
                         .foregroundStyle(.primary)
                     Spacer()
                     Text(avatarEmoji)
@@ -239,7 +261,11 @@ struct ProfileEditorView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 8)
             }
+            .buttonStyle(.plain)
+            .pressFeedback()
             .sheet(isPresented: $showEmojiPicker) {
                 emojiPickerSheet
             }
@@ -255,7 +281,7 @@ struct ProfileEditorView: View {
                             Text(category.name)
                                 .font(.subheadline.bold())
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal)
+                                .padding(.horizontal, DS.screenPadding)
                             
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 12) {
                                 ForEach(category.emojis, id: \.self) { emoji in
@@ -268,7 +294,7 @@ struct ProfileEditorView: View {
                                             .frame(width: 48, height: 48)
                                             .background(
                                                 avatarEmoji == emoji 
-                                                    ? Color.accent.opacity(0.2) 
+                                                    ? Color.accent.opacity(0.15) 
                                                     : Color.clear,
                                                 in: RoundedRectangle(cornerRadius: 10)
                                             )
@@ -276,12 +302,13 @@ struct ProfileEditorView: View {
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.horizontal)
+                            .padding(.horizontal, DS.screenPadding)
                         }
                     }
                 }
                 .padding(.vertical)
             }
+            .background(Color.appBackground)
             .navigationTitle("Choose Avatar")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -294,57 +321,128 @@ struct ProfileEditorView: View {
     }
     
     private var physiologySection: some View {
-        Section("Physiology") {
-            HStack {
-                Text("Age")
-                Spacer()
-                Text("\(age) years")
-                    .foregroundStyle(.secondary)
-            }
-            Slider(value: Binding(
-                get: { Double(age) },
-                set: { age = Int($0) }
-            ), in: 16...80, step: 1)
-            
-            HStack {
-                Text("Weight")
-                Spacer()
-                Text("\(Int(weightKg)) kg")
-                    .foregroundStyle(.secondary)
-            }
-            Slider(value: $weightKg, in: 40...150, step: 1)
-            
-            Picker("Sex", selection: $sex) {
-                ForEach(BiologicalSex.allCases, id: \.self) { s in
-                    Text(s.displayName).tag(s)
-                }
-            }
-            
-            Toggle("Has ADHD", isOn: $hasADHD)
+        VStack(spacing: 0) {
+            editorSectionHeader("Physiology", color: Color.accent)
 
+            // Age
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Age")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(age) years")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: Binding(
+                    get: { Double(age) },
+                    set: { age = Int($0) }
+                ), in: 16...80, step: 1)
+                .tint(Color.accent)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+
+            Divider().padding(.leading, 54)
+
+            // Weight
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Weight")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(Int(weightKg)) kg")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: $weightKg, in: 40...150, step: 1)
+                    .tint(Color.accent)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+
+            Divider().padding(.leading, 54)
+
+            // Sex
+            HStack {
+                Text("Sex")
+                    .font(.subheadline)
+                Spacer()
+                Picker("Sex", selection: $sex) {
+                    ForEach(BiologicalSex.allCases, id: \.self) { s in
+                        Text(s.displayName).tag(s)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+            }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+
+            Divider().padding(.leading, 54)
+
+            // ADHD
+            Toggle(isOn: $hasADHD) {
+                Text("Has ADHD")
+                    .font(.subheadline)
+            }
+            .tint(Color.accent)
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
+
+            Divider().padding(.leading, 54)
+
+            // SSRIs
             VStack(alignment: .leading, spacing: 2) {
-                Toggle("Takes SSRIs", isOn: $takeSSRI)
+                Toggle(isOn: $takeSSRI) {
+                    Text("Takes SSRIs")
+                        .font(.subheadline)
+                }
+                .tint(Color.accent)
                 Text("Increases serotonin syndrome risk with MDMA/LSD")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
 
-            HStack {
-                Text("Personal Limit")
-                Spacer()
-                Text("Level \(personalLimit)")
-                    .foregroundStyle(.secondary)
+            Divider().padding(.leading, 54)
+
+            // Personal Limit
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Personal Limit")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("Level \(personalLimit)")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.accent)
+                }
+                Slider(value: Binding(
+                    get: { Double(personalLimit) },
+                    set: { personalLimit = Int($0) }
+                ), in: 1...11, step: 1)
+                .tint(Color.accent)
             }
-            Slider(value: Binding(
-                get: { Double(personalLimit) },
-                set: { personalLimit = Int($0) }
-            ), in: 1...11, step: 1)
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
         }
     }
     
     private var tolerancesSection: some View {
-        Section(header: Text("Tolerances"), footer: Text("Tolerance decays over time with abstinence. Effective level shown when lower than peak.").font(.caption)) {
-            ForEach(Substances.all) { substance in
+        VStack(spacing: 0) {
+            editorSectionHeader("Tolerances", color: Color.accent)
+
+            Text("Tolerance decays over time with abstinence. Effective level shown when lower than peak.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.bottom, 8)
+
+            ForEach(Array(Substances.all.enumerated()), id: \.element.id) { idx, substance in
+                if idx > 0 { Divider().padding(.leading, 54) }
+
                 let peakLevel = tolerances[substance.id] ?? 5
                 let existing = existingTolerances.first { $0.substanceId == substance.id }
                 let effectiveLevel = existing.map { t -> Int in
@@ -356,13 +454,14 @@ struct ProfileEditorView: View {
                 HStack(alignment: .center, spacing: 8) {
                     Image(systemName: substance.category.icon)
                         .foregroundStyle(Color(hex: substance.category.color))
-                        .frame(width: 20)
+                        .frame(width: 22)
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(substance.shortName)
+                            .font(.subheadline)
                         if isDecaying {
                             HStack(spacing: 4) {
-                                Text("Peak: \(peakLevel) → Effective: \(effectiveLevel)")
+                                Text("Peak: \(peakLevel) → Eff: \(effectiveLevel)")
                                     .font(.caption2)
                                     .foregroundStyle(.orange)
                                 Image(systemName: "arrow.down.circle.fill")
@@ -383,6 +482,8 @@ struct ProfileEditorView: View {
                         in: 0...11
                     )
                 }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 8)
             }
         }
     }

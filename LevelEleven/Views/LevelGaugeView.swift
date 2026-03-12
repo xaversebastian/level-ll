@@ -64,11 +64,11 @@ struct LevelGaugeView: View {
                 .rotationEffect(.degrees(-90))
                 .shadow(color: color.opacity(0.6), radius: 12, x: 0, y: 4)
             
-            // Inner glass circle
+            // Inner circle
             Circle()
-                .fill(.ultraThinMaterial)
+                .fill(Color.appBackground.opacity(0.85))
                 .padding(ringWidth + 12)
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
             
             // Inner subtle ring
             Circle()

@@ -22,20 +22,37 @@ struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let session: BallerSession
     
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    headerCard
+                VStack(spacing: 0) {
+                    headerSection
                     if !sessionDoses.isEmpty {
-                        levelChartCard
+                        levelChartSection
                     }
                     participantsSection
                     dosesSection
                     statsSection
                 }
-                .padding()
+                .padding(.bottom, 20)
             }
+            .scrollIndicators(.hidden)
             .background(Color.appBackground)
             .navigationTitle(session.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -55,40 +72,35 @@ struct SessionDetailView: View {
         }
     }
     
-    private var headerCard: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: [Color.accent.opacity(0.3), .pink.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 80, height: 80)
-                Image(systemName: "person.3.fill")
-                    .font(.title)
-                    .foregroundStyle(Color.accent)
-            }
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "person.3.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(Color.accent)
+                .padding(.top, 20)
             
-            VStack(spacing: 4) {
-                Text(session.name)
-                    .font(.title2.bold())
-                Text(session.dateFormatted)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            Text(session.name)
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+            Text(session.dateFormatted)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             
             HStack(spacing: 32) {
                 statItem(value: "\(session.allParticipantIds.count)", label: "Participants")
                 statItem(value: session.durationFormatted, label: "Duration")
                 statItem(value: "\(sessionDoses.count)", label: "Doses")
             }
+            .padding(.top, 4)
+            .padding(.bottom, 8)
         }
-        .padding(24)
         .frame(maxWidth: .infinity)
-        .background(.background, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal, DS.screenPadding)
     }
     
     private func statItem(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.title3.bold())
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(Color.accent)
             Text(label)
                 .font(.caption)
@@ -97,19 +109,16 @@ struct SessionDetailView: View {
     }
     
     private var participantsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Participants")
-                .font(.headline)
+        VStack(spacing: 0) {
+            sectionHeader("Participants", color: Color.accent)
             
-            ForEach(session.participants) { participant in
+            ForEach(Array(session.participants.enumerated()), id: \.element.id) { idx, participant in
                 if let profile = appState.profiles.first(where: { $0.id == participant.profileId }) {
+                    if idx > 0 { Divider().padding(.leading, 54) }
                     participantRow(profile, participant: participant)
                 }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func participantRow(_ profile: Profile, participant: SessionParticipant) -> some View {
@@ -117,10 +126,10 @@ struct SessionDetailView: View {
         let peakLevel = calculatePeakLevel(for: profile)
         let totalAmount = calculateTotalAmount(for: profile)
         
-        return VStack(spacing: 8) {
-            HStack(spacing: 12) {
+        return VStack(spacing: 6) {
+            HStack(spacing: 14) {
                 Text(profile.avatarEmoji)
-                    .font(.title2)
+                    .font(.title3)
                     .opacity(participant.isActive ? 1.0 : 0.5)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -140,11 +149,11 @@ struct SessionDetailView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 2) {
+                HStack(alignment: .lastTextBaseline, spacing: 2) {
                     Text(String(format: "%.1f", peakLevel))
-                        .font(.title3.bold())
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundStyle(appState.levelColor(for: peakLevel))
-                    Text("Peak")
+                    Text("peak")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -168,7 +177,8 @@ struct SessionDetailView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 10)
         .opacity(participant.isActive ? 1.0 : 0.7)
     }
     
@@ -181,38 +191,39 @@ struct SessionDetailView: View {
     }
     
     private var dosesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Timeline")
-                .font(.headline)
+        VStack(spacing: 0) {
+            sectionHeader("Timeline", color: .secondary)
             
             if sessionDoses.isEmpty {
-                HStack {
+                HStack(spacing: 14) {
                     Image(systemName: "tray")
                         .foregroundStyle(.secondary)
+                        .frame(width: 22)
                     Text("No doses in this session")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    Spacer()
                 }
-                .padding(.vertical, 8)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 10)
             } else {
-                ForEach(sessionDoses.sorted(by: { $0.timestamp < $1.timestamp })) { dose in
+                ForEach(Array(sessionDoses.sorted(by: { $0.timestamp < $1.timestamp }).enumerated()), id: \.element.id) { idx, dose in
+                    if idx > 0 { Divider().padding(.leading, 54) }
                     doseRow(dose)
                 }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func doseRow(_ dose: Dose) -> some View {
         let profile = appState.profiles.first(where: { $0.id == dose.profileId })
         let substance = Substances.byId[dose.substanceId]
         
-        return HStack(spacing: 12) {
+        return HStack(spacing: 14) {
             Circle()
                 .fill(Color(hex: substance?.category.color ?? "888888"))
                 .frame(width: 8, height: 8)
+                .frame(width: 22)
             
             Text(profile?.avatarEmoji ?? "👤")
                 .font(.body)
@@ -237,28 +248,24 @@ struct SessionDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 8)
     }
     
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Statistics")
-                .font(.headline)
+        VStack(spacing: 0) {
+            sectionHeader("Statistics", color: Color.accent)
             
             overviewStatsGrid
-            
-            Divider()
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.bottom, 16)
             
             substanceStatsSection
             
             if !sessionDoses.isEmpty {
-                Divider()
                 hourlyFrequencySection
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private var overviewStatsGrid: some View {
@@ -295,19 +302,19 @@ struct SessionDetailView: View {
     }
     
     private var substanceStatsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Substances")
-                .font(.subheadline.bold())
-                .foregroundStyle(.secondary)
-            
+        VStack(spacing: 0) {
             let substanceAmounts = totalSubstanceAmounts
             
-            ForEach(substanceAmounts.sorted(by: { $0.value > $1.value }), id: \.key) { substanceId, amount in
+            ForEach(Array(substanceAmounts.sorted(by: { $0.value > $1.value }).enumerated()), id: \.element.key) { idx, item in
+                let substanceId = item.key
+                let amount = item.value
                 if let substance = Substances.byId[substanceId] {
-                    HStack {
+                    if idx > 0 { Divider().padding(.leading, 54) }
+                    HStack(spacing: 14) {
                         Circle()
                             .fill(Color(hex: substance.category.color))
                             .frame(width: 10, height: 10)
+                            .frame(width: 22)
                         Text(substance.name)
                             .font(.subheadline)
                         Spacer()
@@ -316,25 +323,30 @@ struct SessionDetailView: View {
                             .foregroundStyle(.secondary)
                         Text(String(format: "%.0f%@", amount, substance.unit.symbol))
                             .font(.subheadline.bold())
-                            .foregroundStyle(.primary)
                     }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
                 }
             }
             
             if substanceAmounts.isEmpty {
-                Text("No substances")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 14) {
+                    Image(systemName: "pills")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22)
+                    Text("No substances")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 8)
             }
         }
     }
     
     private var hourlyFrequencySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Doses per Hour")
-                .font(.subheadline.bold())
-                .foregroundStyle(.secondary)
-            
             let hourlyData = calculateHourlyFrequency()
             
             Chart(hourlyData, id: \.hour) { item in
@@ -349,65 +361,66 @@ struct SessionDetailView: View {
             .chartXAxisLabel("Session Hour")
             .chartYAxisLabel("Doses")
         }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 12)
     }
     
-    private var levelChartCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Level History")
-                .font(.headline)
-            
-            let levelData = calculateLevelTimeline()
-            
-            Chart {
-                ForEach(levelData, id: \.profileId) { profileData in
-                    ForEach(profileData.points) { point in
-                        LineMark(
-                            x: .value("Time", point.time),
-                            y: .value("Level", point.level)
-                        )
-                        .foregroundStyle(by: .value("Profile", profileData.name))
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                        .interpolationMethod(.catmullRom)
-                    }
-                }
+    private var levelChartSection: some View {
+        VStack(spacing: 0) {
+            sectionHeader("Level History", color: Color.accent)
+
+            VStack(alignment: .leading, spacing: 12) {
+                let levelData = calculateLevelTimeline()
                 
-                ForEach(sessionDoses) { dose in
-                    if let profile = appState.profiles.first(where: { $0.id == dose.profileId }) {
-                        PointMark(
-                            x: .value("Time", dose.timestamp),
-                            y: .value("Level", appState.currentLevel(for: profile, at: dose.timestamp))
-                        )
-                        .foregroundStyle(by: .value("Profile", profile.name))
-                        .symbolSize(30)
+                Chart {
+                    ForEach(levelData, id: \.profileId) { profileData in
+                        ForEach(profileData.points) { point in
+                            LineMark(
+                                x: .value("Time", point.time),
+                                y: .value("Level", point.level)
+                            )
+                            .foregroundStyle(by: .value("Profile", profileData.name))
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .interpolationMethod(.catmullRom)
+                        }
+                    }
+                    
+                    ForEach(sessionDoses) { dose in
+                        if let profile = appState.profiles.first(where: { $0.id == dose.profileId }) {
+                            PointMark(
+                                x: .value("Time", dose.timestamp),
+                                y: .value("Level", appState.currentLevel(for: profile, at: dose.timestamp))
+                            )
+                            .foregroundStyle(by: .value("Profile", profile.name))
+                            .symbolSize(30)
+                        }
+                    }
+                }
+                .frame(height: 200)
+                .chartYScale(domain: 0...11)
+                .chartLegend(position: .bottom)
+                
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .stroke(lineWidth: 2)
+                            .frame(width: 8, height: 8)
+                        Text("Line = Level")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill()
+                            .frame(width: 6, height: 6)
+                        Text("Dot = Dose")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
-            .frame(height: 200)
-            .chartYScale(domain: 0...11)
-            .chartLegend(position: .bottom)
-            
-            HStack(spacing: 16) {
-                HStack(spacing: 4) {
-                    Circle()
-                        .stroke(lineWidth: 2)
-                        .frame(width: 8, height: 8)
-                    Text("Line = Level")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill()
-                        .frame(width: 6, height: 6)
-                    Text("Dot = Dose")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            .padding(.horizontal, DS.screenPadding)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
     }
     
     // MARK: - Helpers

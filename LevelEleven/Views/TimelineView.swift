@@ -53,39 +53,57 @@ struct TimelineView: View {
         }
     }
     
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    timeRangePicker
+                VStack(spacing: 0) {
+                    // Time range picker
+                    Picker("Time Range", selection: $timeRange) {
+                        ForEach(TimeRange.allCases, id: \.self) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.top, 12)
+
+                    // Chart
+                    sectionHeader("Level Over Time", color: Color.accent)
                     levelChart
+
                     if let profile = appState.activeProfile {
                         activeSubstancesSection(profile)
                         sobrietyEstimate(profile)
                     }
                 }
-                .padding()
+                .padding(.bottom, 20)
             }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Timeline")
         }
-    }
-    
-    private var timeRangePicker: some View {
-        Picker("Time Range", selection: $timeRange) {
-            ForEach(TimeRange.allCases, id: \.self) { range in
-                Text(range.rawValue).tag(range)
-            }
-        }
-        .pickerStyle(.segmented)
     }
     
     private var levelChart: some View {
         let data = generateTimelineData()
         
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Level Over Time")
-                .font(.headline)
-            
             Chart(data) { point in
                 AreaMark(
                     x: .value("Time", point.minutesFromNow),
@@ -124,7 +142,6 @@ struct TimelineView: View {
             }
             .frame(height: 200)
             
-            // Current time indicator
             HStack {
                 Circle()
                     .fill(Color.accent)
@@ -138,27 +155,36 @@ struct TimelineView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, DS.screenPadding)
     }
     
     private func activeSubstancesSection(_ profile: Profile) -> some View {
         let active = appState.activeDoses(for: profile.id)
         let substanceIds = Set(active.map { $0.substanceId })
         
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Active Substances")
-                .font(.headline)
+        return VStack(spacing: 0) {
+            sectionHeader("Active Substances", color: Color.accent)
             
             if substanceIds.isEmpty {
-                Text("No active substances")
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 14) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .frame(width: 22)
+                    Text("No active substances")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 10)
             } else {
-                ForEach(Array(substanceIds), id: \.self) { id in
+                ForEach(Array(substanceIds.enumerated()), id: \.element) { idx, id in
                     if let substance = Substances.byId[id] {
-                        HStack {
+                        if idx > 0 { Divider().padding(.leading, 54) }
+                        HStack(spacing: 14) {
                             Image(systemName: substance.category.icon)
                                 .foregroundStyle(Color(hex: substance.category.color))
+                                .frame(width: 22)
                             
                             Text(substance.name)
                                 .font(.subheadline)
@@ -170,12 +196,12 @@ struct TimelineView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+                        .padding(.horizontal, DS.screenPadding)
+                        .padding(.vertical, 10)
                     }
                 }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func sobrietyEstimate(_ profile: Profile) -> some View {
@@ -192,38 +218,43 @@ struct TimelineView: View {
             }
         }
         
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Sobriety Estimate")
-                .font(.headline)
+        return VStack(spacing: 0) {
+            sectionHeader("Sobriety Estimate", color: .secondary)
             
-            if maxEndTime <= 0 {
-                HStack {
+            HStack(spacing: 14) {
+                if maxEndTime <= 0 {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
+                        .frame(width: 22)
                     Text("You should be sober now")
-                }
-            } else {
-                HStack {
+                        .font(.subheadline)
+                } else {
                     Image(systemName: "clock.fill")
                         .foregroundStyle(.orange)
+                        .frame(width: 22)
                     
-                    let hours = Int(maxEndTime) / 60
-                    let mins = Int(maxEndTime) % 60
-                    
-                    if hours > 0 {
-                        Text("Approximately \(hours)h \(mins)m until baseline")
-                    } else {
-                        Text("Approximately \(mins) minutes until baseline")
+                    VStack(alignment: .leading, spacing: 2) {
+                        let hours = Int(maxEndTime) / 60
+                        let mins = Int(maxEndTime) % 60
+                        
+                        if hours > 0 {
+                            Text("~\(hours)h \(mins)m until baseline")
+                                .font(.subheadline.bold())
+                        } else {
+                            Text("~\(mins) minutes until baseline")
+                                .font(.subheadline.bold())
+                        }
+                        
+                        Text("This is an estimate. Individual responses vary.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                
-                Text("This is an estimate. Individual responses vary.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Spacer()
             }
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 10)
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func generateTimelineData() -> [TimelinePoint] {

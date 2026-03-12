@@ -31,13 +31,23 @@ struct SessionHistoryView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if appState.sessionHistory.isEmpty {
-                    emptyState
-                } else {
-                    sessionList
+            ScrollView {
+                VStack(spacing: 0) {
+                    if appState.sessionHistory.isEmpty {
+                        emptyState
+                    } else {
+                        sectionHeader("Sessions", color: Color.accent)
+
+                        ForEach(Array(filteredHistory.enumerated()), id: \.element.id) { idx, session in
+                            if idx > 0 { Divider().padding(.leading, 54) }
+                            sessionRow(session)
+                        }
+                    }
                 }
+                .padding(.bottom, 20)
             }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Session History")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search sessions")
@@ -52,90 +62,90 @@ struct SessionHistoryView: View {
             }
         }
     }
+
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.top, 22)
+        .padding(.bottom, 8)
+    }
     
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 48))
+                .font(.system(size: 44))
                 .foregroundStyle(.secondary)
             Text("No Past Sessions")
-                .font(.headline)
+                .font(.system(size: 20, weight: .bold, design: .rounded))
             Text("When you end a Baller Mode session,\nit will appear here.")
                 .multilineTextAlignment(.center)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(40)
-    }
-    
-    private var sessionList: some View {
-        List {
-            ForEach(filteredHistory) { session in
-                Button {
-                    selectedSession = session
-                } label: {
-                    sessionRow(session)
-                }
-                .foregroundStyle(.primary)
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button(role: .destructive) {
-                        appState.deleteSession(session.id)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    Button {
-                        appState.resumeSession(session)
-                        dismiss()
-                    } label: {
-                        Label("Continue", systemImage: "play.fill")
-                    }
-                    .tint(Color.accent)
-                }
-            }
-        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
     
     private func sessionRow(_ session: BallerSession) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: [Color.accent.opacity(0.3), .pink.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 44, height: 44)
+        Button {
+            selectedSession = session
+        } label: {
+            HStack(spacing: 14) {
                 Image(systemName: "person.3.fill")
                     .font(.body)
                     .foregroundStyle(Color.accent)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(session.name)
-                    .font(.headline)
+                    .frame(width: 22)
                 
-                HStack(spacing: 8) {
-                    Label(session.dateFormatted, systemImage: "calendar")
-                    Label(session.durationFormatted, systemImage: "clock")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(session.allParticipantIds.count)")
-                    .font(.title3.bold())
-                    .foregroundStyle(Color.accent)
-                Text("Participants")
-                    .font(.caption2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.name)
+                        .font(.subheadline.bold())
+                    
+                    HStack(spacing: 8) {
+                        Label(session.dateFormatted, systemImage: "calendar")
+                        Label(session.durationFormatted, systemImage: "clock")
+                    }
+                    .font(.caption)
                     .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                Text("\(session.allParticipantIds.count)")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.accent)
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
-            
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            .padding(.horizontal, DS.screenPadding)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
+        .pressFeedback()
+        .contextMenu {
+            Button {
+                appState.resumeSession(session)
+                dismiss()
+            } label: {
+                Label("Continue Session", systemImage: "play.fill")
+            }
+            Button(role: .destructive) {
+                appState.deleteSession(session.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }
 
