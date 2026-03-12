@@ -18,9 +18,6 @@
 //  4. NSSupportsLiveActivities = YES in der App-Info.plist
 //  5. BallerActivityAttributes.swift BEIDEN Targets (App + Widget) zuordnen
 //
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 #if canImport(ActivityKit) && canImport(WidgetKit)
 import ActivityKit

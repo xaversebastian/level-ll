@@ -11,6 +11,7 @@
 //  persönliches Limit (1–11) und Toleranzwerte je Substanz (Stepper 0–11).
 //
 //  HINWEIS: Löschen eines Profils entfernt auch alle zugehörigen Doses (AppState.deleteProfile).
+//
 
 import SwiftUI
 

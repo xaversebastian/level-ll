@@ -12,9 +12,6 @@
 //  Linienbreite: lineWidth = min((amount / substance.commonDose) * 180, 300)
 //  Referenzlinie: 180pt = commonDose (typisch ~50mg für Kokain)
 //
-//  Author: Silja & Xaver
-//  Created: 2026-03-12
-//
 
 import SwiftUI
 

@@ -7,6 +7,7 @@
 //  Gemeinsamer Service für Level-Timeline-Berechnung.
 //  Vorher dupliziert in BallerModeView (LiveProfileLevelData / calculateLiveLevelTimeline)
 //  und SessionDetailView (ProfileLevelData / calculateLevelTimeline).
+//
 
 import Foundation
 

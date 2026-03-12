@@ -11,9 +11,6 @@
 //  Segmented Picker oben wechselt mit withAnimation zwischen den Modi.
 //  "Help someone" behält GCS-Rechner und Overdose-Checkliste.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 //  HINWEIS: localEmergencyNumber() nutzt Locale.current.region – funktioniert offline.
 //  Der Notruf-Link öffnet die Telefon-App (tel:-URL-Schema).
 

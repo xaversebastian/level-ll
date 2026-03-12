@@ -12,6 +12,7 @@
 //  HINWEIS: Negative Dosen und Zukunft-Timestamps werden im Init abgefangen.
 //  DoseRoute-Enum ist in Substance.swift definiert.
 //  Doses werden gesammelt in AppState.doses persistiert (Codable + UserDefaults).
+//
 
 import Foundation
 

@@ -15,6 +15,7 @@
 //
 //  HINWEIS: Wird über MoreView → "Quick Dose" aufgerufen.
 //  Für Gruppen-Dosing: GroupDoseView in BallerModeView.swift.
+//
 
 import SwiftUI
 

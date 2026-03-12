@@ -6,9 +6,6 @@
 //
 //  Unit tests for AppState: cache invalidation, tolerance decay, warnings, minutesUntilBaseline.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-03-11
-//
 
 import Testing
 import Foundation

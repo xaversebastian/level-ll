@@ -11,6 +11,7 @@
 //  Leerer Zustand zeigt Placeholder-Illustration.
 //
 //  HINWEIS: Wird als Sheet aus BallerModeView geöffnet.
+//
 
 import SwiftUI
 

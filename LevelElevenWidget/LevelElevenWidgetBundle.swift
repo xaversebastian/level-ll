@@ -11,9 +11,6 @@
 //  HINWEIS: Neue Widgets hier in body { … } ergänzen.
 //  Datei muss im Target "LevelElevenWidget" sein, nicht im Haupt-App-Target.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import WidgetKit
 import SwiftUI

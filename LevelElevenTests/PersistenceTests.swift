@@ -6,9 +6,6 @@
 //
 //  Codable roundtrip tests for core model types.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-03-11
-//
 
 import Testing
 import Foundation

@@ -13,9 +13,6 @@
 //  Placeholder-Test vorhanden. Hier echte UI-Flows (Tab-Navigation,
 //  Profil erstellen, Dose loggen) als Tests ausbauen.
 //
-//  Author: Xaver Freytag
-//  Created: 2026-01-04
-//
 
 import XCTest
 

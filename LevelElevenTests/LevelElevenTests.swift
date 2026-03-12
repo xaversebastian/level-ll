@@ -12,8 +12,6 @@
 //  IntoxEngine, AppState, Profile, Dose, WarningSystem ergänzen.
 //  Zum Ausführen: Cmd+U in Xcode oder über xcodebuild test.
 //
-//  Author: Xaver Freytag
-//  Created: 2026-01-04
 //
 
 import Testing

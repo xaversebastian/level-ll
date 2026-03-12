@@ -11,6 +11,7 @@
 //
 //  HINWEIS: Beide Views erfordern AppState über @Environment.
 //  Wird in HomeView als Sheet und als eingebettete Card genutzt.
+//
 
 import SwiftUI
 

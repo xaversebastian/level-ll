@@ -13,9 +13,6 @@
 //  Info.plist-Dateien (App + Widget) setzen.
 //  Diese Datei muss BEIDEN Targets (App + Widget) zugeordnet sein.
 //
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 #if canImport(ActivityKit)
 import ActivityKit

@@ -12,9 +12,6 @@
 //  HINWEIS: Screenshots werden im Xcode-Test-Reporter gespeichert.
 //  Nützlich für automatische Regression von Launch-Screens nach UI-Änderungen.
 //
-//  Author: Xaver Freytag
-//  Created: 2026-01-04
-//
 
 import XCTest
 

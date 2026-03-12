@@ -13,6 +13,7 @@
 //
 //  HINWEIS: Alle Sub-Views (Setup, GroupDose, AddParticipant) sind in dieser Datei definiert.
 //  calculateLiveLevelTimeline() iteriert in 10-Minuten-Schritten – bei langen Sessions ggf. optimieren.
+//
 
 import SwiftUI
 import Combine
