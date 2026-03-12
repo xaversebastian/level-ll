@@ -187,7 +187,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 50)
             iconCircle("waveform.path.ecg", color: .levelCopper)
-            Text("Level Eleven")
+            Text("level ll")
                 .font(.system(size: 32, weight: .black, design: .rounded))
                 .padding(.bottom, 12)
             Text("Real-time intoxication tracking.\nHarm reduction, not judgement.")
