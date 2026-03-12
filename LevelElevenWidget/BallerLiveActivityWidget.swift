@@ -72,7 +72,7 @@ struct BallerLiveActivityWidget: Widget {
                     Text("\(context.state.participantCount)")
                         .font(.caption.bold())
                 }
-                .foregroundStyle(Color.levelViolet)
+                .foregroundStyle(Color.levelCopper)
             } compactTrailing: {
                 Text(String(format: "%.0f", context.state.highestLevel))
                     .font(.caption.bold())
@@ -146,14 +146,14 @@ struct BallerLiveActivityWidget: Widget {
             }
         }
         .padding(16)
-        .background(Color.levelDarkBlue.opacity(0.9))
+        .background(Color.heroBackground.opacity(0.9))
     }
     
     private func miniLevelBar(level: Double) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(.gray.opacity(0.3))
+                    .fill(.white.opacity(0.2))
                 RoundedRectangle(cornerRadius: 2)
                     .fill(levelColor(level))
                     .frame(width: geo.size.width * min(level / 11.0, 1.0))
@@ -164,13 +164,13 @@ struct BallerLiveActivityWidget: Widget {
     
     private func levelColor(_ level: Double) -> Color {
         switch Int(level.rounded()) {
-        case 0: return .gray
-        case 1...2: return .green
-        case 3...4: return .yellow
-        case 5...6: return .orange
-        case 7...8: return .red
+        case 0:     return .secondary
+        case 1...2: return Color.levelGreen
+        case 3...4: return Color.levelAmber
+        case 5...6: return Color.levelOrange
+        case 7...8: return Color.levelWarm
         case 9...11: return Color.levelMagenta
-        default: return .gray
+        default:    return .secondary
         }
     }
 }
