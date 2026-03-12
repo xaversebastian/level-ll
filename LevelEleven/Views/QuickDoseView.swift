@@ -115,15 +115,23 @@ struct QuickDoseView: View {
                     }
                 }
             }
-            // BANNER FIX: Overlay auf NavigationStack-Ebene (nicht auf Group/Form)
+            // Sticky bottom: confirmation banner + Log Dose CTA
             .overlay(alignment: .bottom) {
-                if showConfirmation, let s = confirmedSubstance {
-                    confirmationBanner(s)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .padding(.bottom, 24)
+                VStack(spacing: 10) {
+                    if showConfirmation, let s = confirmedSubstance {
+                        confirmationBanner(s)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    if let substance = selectedSubstance, !showConfirmation {
+                        stickyLogButton(for: substance)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
             .animation(.spring(duration: 0.3), value: showConfirmation)
+            .animation(.spring(duration: 0.25), value: selectedSubstance?.id)
         }
     }
 
@@ -322,22 +330,8 @@ struct QuickDoseView: View {
                 }
             }
 
-            Section {
-                Button { tappedLogDose(substance) } label: {
-                    HStack {
-                        Spacer()
-                        if selectedRoute == .nasal {
-                            Label("Log Dose", systemImage: "eye.fill")
-                                .font(.headline)
-                        } else {
-                            Text("Log Dose").font(.headline)
-                        }
-                        Spacer()
-                    }
-                }
-                .disabled(amount <= 0)
-            }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 88) }
     }
 
     // MARK: - Dose Flow (Interaction → Redose → Nasal Guide → Log)
@@ -444,6 +438,27 @@ struct QuickDoseView: View {
         case .puffs: return 1
         case .g: return 0.5
         }
+    }
+
+    // MARK: - Sticky Log Dose Button
+
+    private func stickyLogButton(for substance: Substance) -> some View {
+        Button { tappedLogDose(substance) } label: {
+            HStack(spacing: 8) {
+                if selectedRoute == .nasal {
+                    Image(systemName: "eye.fill")
+                }
+                Text("Log Dose")
+                    .font(.headline)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(amount > 0 ? Color.accent : Color.secondary.opacity(0.3),
+                        in: RoundedRectangle(cornerRadius: DS.cardRadius))
+            .foregroundStyle(.white)
+            .shadow(color: amount > 0 ? Color.accent.opacity(0.3) : .clear, radius: 10, y: 4)
+        }
+        .disabled(amount <= 0)
     }
 
     // MARK: - Confirmation Banner

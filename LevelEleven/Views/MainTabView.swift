@@ -70,9 +70,12 @@ struct MainTabView: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .shadow(color: .primary.opacity(0.12), radius: 6, y: 3)
-                
+                    .fill(Color(.systemBackground))
+                    .shadow(color: Color.accent.opacity(0.25), radius: 12, y: 4)
+                    .overlay(
+                        Circle().stroke(Color.accent.opacity(0.35), lineWidth: 1.5)
+                    )
+
                 Image("ll-logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)

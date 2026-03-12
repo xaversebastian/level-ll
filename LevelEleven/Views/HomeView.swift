@@ -320,9 +320,9 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.12), lineWidth: 1))
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+        .background(.background, in: RoundedRectangle(cornerRadius: DS.cardRadius))
+        .overlay(RoundedRectangle(cornerRadius: DS.cardRadius).strokeBorder(.primary.opacity(DS.borderOpacity), lineWidth: 1))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     // MARK: - Active Substances Card
@@ -366,8 +366,8 @@ struct HomeView: View {
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.1), lineWidth: 1))
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+        .overlay(RoundedRectangle(cornerRadius: DS.cardRadius).strokeBorder(.primary.opacity(DS.borderOpacity), lineWidth: 1))
+        .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
     }
 
     // MARK: - Compact Dose Row
@@ -490,12 +490,12 @@ struct HomeView: View {
                     }
                 }
                 .padding(14)
-                .background(.background, in: RoundedRectangle(cornerRadius: 16))
+                .background(.background, in: RoundedRectangle(cornerRadius: DS.cardRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(Color.accent.opacity(0.25), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DS.cardRadius)
+                        .strokeBorder(Color.accent.opacity(0.3), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+                .shadow(color: DS.shadowColor, radius: DS.shadowRadius, y: DS.shadowY)
             }
             .buttonStyle(.plain)
         }
