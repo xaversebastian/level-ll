@@ -22,7 +22,16 @@ struct SessionHistoryView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSession: BallerSession?
-    
+    @State private var searchText = ""
+
+    var filteredHistory: [BallerSession] {
+        if searchText.isEmpty { return appState.sessionHistory }
+        return appState.sessionHistory.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            $0.dateFormatted.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -34,6 +43,7 @@ struct SessionHistoryView: View {
             }
             .navigationTitle("Session History")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, prompt: "Search sessions")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -63,7 +73,7 @@ struct SessionHistoryView: View {
     
     private var sessionList: some View {
         List {
-            ForEach(appState.sessionHistory) { session in
+            ForEach(filteredHistory) { session in
                 Button {
                     selectedSession = session
                 } label: {

@@ -25,6 +25,9 @@ struct HomeView: View {
     @State private var showWarnings = false
     @State private var showProfilePicker = false
     @State private var showTimeline = false
+    @State private var showBallerMode = false
+    // Snooze: [warningTitle: snoozeUntil]
+    @State private var snoozedWarnings: [String: Date] = [:]
 
     let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
@@ -64,6 +67,10 @@ struct HomeView: View {
                     }
             }
         }
+        .sheet(isPresented: $showBallerMode) {
+            BallerModeView()
+                .environment(appState)
+        }
     }
 
     private func mainContent(_ profile: Profile, topInset: CGFloat = 0) -> some View {
@@ -78,6 +85,9 @@ struct HomeView: View {
             VStack(spacing: 12) {
                 lastDoseCard(profile)
                 warningsCard(profile)
+                if appState.activeSession != nil {
+                    sessionOverviewCard()
+                }
                 activeSubstancesCard(profile)
                 liveStatusCard(profile)
             }
@@ -101,9 +111,15 @@ struct HomeView: View {
 
                 Spacer()
 
-                // Profile pill - tappable to switch profile
+                // Profile pill - tappable to switch profile (1-tap toggle for 2 profiles)
                 Button {
-                    showProfilePicker = true
+                    if appState.profiles.count == 2,
+                       let other = appState.profiles.first(where: { $0.id != appState.activeProfile?.id }) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        appState.setActiveProfile(other)
+                    } else {
+                        showProfilePicker = true
+                    }
                 } label: {
                     HStack(spacing: 10) {
                         Text(profile.avatarEmoji)
@@ -196,7 +212,11 @@ struct HomeView: View {
     private func warningsCard(_ profile: Profile) -> some View {
         let active = appState.activeDoses(for: profile.id, at: currentTime)
         let allDoses = appState.recentDoses(for: profile.id, hours: 8)
-        let warnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile, now: currentTime)
+        let allWarnings = WarningSystem.checkInteractions(activeDoses: active, allDoses: allDoses, profile: profile, now: currentTime)
+        let warnings = allWarnings.filter { warning in
+            guard let snoozeUntil = snoozedWarnings[warning.title] else { return true }
+            return currentTime > snoozeUntil
+        }
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -211,33 +231,47 @@ struct HomeView: View {
             }
 
             if let topWarning = warnings.first {
-                Button {
-                    showWarnings = true
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: topWarning.severity.icon)
-                            .font(.title3)
-                            .foregroundStyle(topWarning.severity.color)
+                HStack(spacing: 12) {
+                    Button {
+                        showWarnings = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: topWarning.severity.icon)
+                                .font(.title3)
+                                .foregroundStyle(topWarning.severity.color)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(topWarning.title)
-                                .font(.subheadline.bold())
-                            if warnings.count > 1 {
-                                Text("+\(warnings.count - 1) more")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(topWarning.title)
+                                    .font(.subheadline.bold())
+                                if warnings.count > 1 {
+                                    Text("+\(warnings.count - 1) more")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
                         }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
+                    .buttonStyle(.plain)
+
+                    // Snooze Button
+                    Button {
+                        snoozedWarnings[topWarning.title] = currentTime.addingTimeInterval(30 * 60)
+                    } label: {
+                        Image(systemName: "bell.slash")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(8)
+                            .background(.secondary.opacity(0.1), in: Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             } else {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
@@ -323,6 +357,73 @@ struct HomeView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .trailing)
+        }
+        .contextMenu {
+            Button(role: .destructive) {
+                appState.deleteDose(dose.id)
+            } label: {
+                Label("Delete Dose", systemImage: "trash")
+            }
+        }
+    }
+
+    // MARK: - Session Overview Card
+
+    @ViewBuilder
+    private func sessionOverviewCard() -> some View {
+        if let session = appState.activeSession {
+            Button {
+                showBallerMode = true
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Label(session.name, systemImage: "person.3.fill")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.accent)
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 6, height: 6)
+                            Text("Live")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.green)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    HStack(spacing: 12) {
+                        ForEach(session.participantIds, id: \.self) { profileId in
+                            if let profile = appState.profiles.first(where: { $0.id == profileId }) {
+                                let level = appState.currentLevel(for: profile, at: currentTime)
+                                let color = appState.levelColor(for: level)
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(color.opacity(0.15))
+                                            .frame(width: 36, height: 36)
+                                        Text(profile.avatarEmoji)
+                                            .font(.body)
+                                    }
+                                    Text(String(format: "%.1f", level))
+                                        .font(.caption.bold())
+                                        .foregroundStyle(color)
+                                }
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+                .padding(14)
+                .background(.background, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.accent.opacity(0.25), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
