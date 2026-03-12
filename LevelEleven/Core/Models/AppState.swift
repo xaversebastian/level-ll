@@ -345,8 +345,10 @@ final class AppState {
     private func migrateAvatarEmojis() {
         // Known problematic emojis → safe replacements
         let emojiReplacements: [String: String] = [
-            "\u{1F9D1}": "😎",   // 🧑 (Person) → 😎
-            "\u{1F469}": "🥰",   // 👩 (Woman) → 🥰
+            "\u{1F9D1}": "😎",   // 🧑 (Person, no skin tone) → 😎
+            "\u{1F469}": "🥰",   // 👩 (Woman, no skin tone) → 🥰
+            "\u{1F468}": "😎",   // 👨 (Man, no skin tone) → 😎
+            "\u{1FAF1}": "🤝",   // 🫱 (newer gesture) → 🤝
         ]
 
         var needsSave = false
@@ -639,25 +641,15 @@ final class AppState {
     }
 
     func levelColor(for level: Double, calmMode: Bool) -> Color {
-        if calmMode {
-            switch Int(level.rounded()) {
-            case 0: return .gray
-            case 1...2: return .green
-            case 3...4: return .yellow
-            case 5...6: return .orange
-            case 7...8: return Color(hex: "C47A5A")   // muted terracotta
-            case 9...11: return Color(hex: "9B4D6E")  // muted mauve
-            default: return .gray
-            }
-        }
+        // Unified palette — calm mode only softens, no longer changes hue
         switch Int(level.rounded()) {
-        case 0: return .gray
-        case 1...2: return .green
-        case 3...4: return .yellow
-        case 5...6: return .orange
-        case 7...8: return .red
-        case 9...11: return .levelMagenta
-        default: return .gray
+        case 0:     return .gray
+        case 1...2: return .levelGreen
+        case 3...4: return Color(hex: "B5973A")   // muted gold
+        case 5...6: return .levelOrange
+        case 7...8: return .levelWarm             // terracotta
+        case 9...11: return calmMode ? .levelMauve : .levelMagenta
+        default:    return .gray
         }
     }
 

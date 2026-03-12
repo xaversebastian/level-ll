@@ -2,16 +2,12 @@
 //  HomeView.swift
 //  LevelEleven
 //
-//  Version: 1.2  |  2026-03-12
+//  Version: 2.0  |  2026-03-12
 //
-//  Hauptscreen mit Level-Gauge-Hero, Profil-Picker, Warnungs-Card, aktive-Substanzen-Card
-//  und Live-Status-Card (Level / Active / Phase).
-//  Ein Timer aktualisiert alle 10 Sekunden currentTime, damit Level-Berechnung live bleibt.
-//  Tipp auf Gauge öffnet Timeline-Sheet; Tipp auf Profil-Pill öffnet Profil-Wechsel-Sheet.
-//
-//  HINWEIS: Alle Level-Berechnungen laufen in AppState; HomeView ist rein deklarativ.
-//  Bei Performance-Problemen: Timer-Intervall erhöhen oder Berechnungen in Task auslagern.
-//
+//  Radikaler Umbau: dunkler Navy-Hero, floating „Log Dose" CTA, SOS-Chip,
+//  Sober-Time direkt im Hero. lastDoseCard und liveStatusCard entfernt (redundant).
+//  Warnings nur sichtbar wenn aktive Doses vorhanden.
+//  „Log Dose" öffnet BallerModeView bei aktiver Session, sonst QuickDoseView.
 
 import SwiftUI
 import Combine
@@ -23,35 +19,66 @@ struct HomeView: View {
     @State private var showProfilePicker = false
     @State private var showTimeline = false
     @State private var showBallerMode = false
+    @State private var showQuickDose = false
+    @State private var showEmergency = false
     // Snooze: [warningTitle: snoozeUntil]
     @State private var snoozedWarnings: [String: Date] = [:]
 
     let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        GeometryReader { geo in
-            ScrollView {
-                if let profile = appState.activeProfile {
-                    mainContent(profile, topInset: geo.safeAreaInsets.top)
-                } else {
-                    noProfileView
+        ZStack(alignment: .bottom) {
+            GeometryReader { geo in
+                ScrollView {
+                    if let profile = appState.activeProfile {
+                        mainContent(profile, topInset: geo.safeAreaInsets.top)
+                    } else {
+                        noProfileView
+                    }
                 }
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
             }
-            .scrollContentBackground(.hidden)
-            .scrollIndicators(.hidden)
+            .ignoresSafeArea(edges: .top)
+            .background(Color.appBackground.ignoresSafeArea())
+
+            // Floating Log Dose CTA
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                if appState.activeSession != nil {
+                    showBallerMode = true
+                } else {
+                    showQuickDose = true
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: appState.activeSession != nil ? "person.3.fill" : "plus")
+                        .font(.body.bold())
+                    Text(appState.activeSession != nil ? "Open Session" : "Log Dose")
+                        .font(.headline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(.white)
+                .shadow(color: Color.accent.opacity(0.35), radius: 12, y: 6)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 104)
         }
-        .ignoresSafeArea(edges: .top)
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
-        .onReceive(timer) { _ in
-            currentTime = Date()
+        .onReceive(timer) { _ in currentTime = Date() }
+        .sheet(isPresented: $showQuickDose) {
+            QuickDoseView()
+                .environment(appState)
+        }
+        .sheet(isPresented: $showEmergency) {
+            EmergencyView()
         }
         .sheet(isPresented: $showWarnings) {
-            warningsSheet
-                .environment(appState)
+            warningsSheet.environment(appState)
         }
         .sheet(isPresented: $showProfilePicker) {
-            profilePickerSheet
-                .environment(appState)
+            profilePickerSheet.environment(appState)
         }
         .sheet(isPresented: $showTimeline) {
             NavigationStack {
@@ -70,45 +97,76 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Main Content
+
     private func mainContent(_ profile: Profile, topInset: CGFloat = 0) -> some View {
         let level = appState.currentLevel(for: profile, at: currentTime)
         let color = appState.levelColor(for: level)
+        let activeDoses = appState.activeDoses(for: profile.id, at: currentTime)
 
         return VStack(spacing: 0) {
-            // Hero Section - Level Display
             heroSection(profile: profile, level: level, color: color, topInset: topInset)
 
-            // Content Cards
             VStack(spacing: 12) {
-                lastDoseCard(profile)
-                warningsCard(profile)
+                // Warnings: only when doses are active
+                if !activeDoses.isEmpty {
+                    warningsCard(profile)
+                }
+
+                // Session overview
                 if appState.activeSession != nil {
                     sessionOverviewCard()
                 }
+
+                // Active substances
                 activeSubstancesCard(profile)
-                liveStatusCard(profile)
             }
             .padding(.horizontal, 16)
-            .padding(.top, -40)
-            .padding(.bottom, 100)
+            .padding(.top, -32)
+            .padding(.bottom, 180)
         }
     }
 
-    private func heroSection(profile: Profile, level: Double, color: Color, topInset: CGFloat = 0) -> some View {
-        VStack(spacing: 16) {
-            // Safe area spacer
-            Color.clear.frame(height: topInset + 60)
+    // MARK: - Hero Section (dark navy)
 
-            // Header Row: Logo left, Profile right
-            HStack {
+    private func heroSection(profile: Profile, level: Double, color: Color, topInset: CGFloat = 0) -> some View {
+        let minutesToSober = appState.minutesUntilBaseline(for: profile, from: currentTime)
+
+        let soberText: String = {
+            guard let min = minutesToSober, min > 0 else { return "✓ Sober" }
+            let h = Int(min) / 60
+            let m = Int(min) % 60
+            return h > 0 ? "Sober in ~\(h)h \(m > 0 ? "\(m)m" : "")" : "Sober in ~\(m)m"
+        }()
+        let soberColor: Color = minutesToSober == nil ? Color(hex: "5CB87A") : (minutesToSober! > 120 ? .white.opacity(0.7) : Color(hex: "C4863C"))
+
+        return VStack(spacing: 14) {
+            // Safe area padding
+            Color.clear.frame(height: topInset + 8)
+
+            // Header row: logo | SOS | profile pill
+            HStack(spacing: 10) {
                 Image("level-logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 70)
+                    .frame(height: 52)
+                    .colorMultiply(.white)
 
                 Spacer()
 
-                // Profile pill - tappable to switch profile (1-tap toggle for 2 profiles)
+                // SOS emergency shortcut
+                Button {
+                    showEmergency = true
+                } label: {
+                    Text("SOS")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.red.gradient, in: Capsule())
+                }
+
+                // Profile pill
                 Button {
                     if appState.profiles.count == 2,
                        let other = appState.profiles.first(where: { $0.id != appState.activeProfile?.id }) {
@@ -118,51 +176,49 @@ struct HomeView: View {
                         showProfilePicker = true
                     }
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Text(profile.avatarEmoji)
-                            .font(.title2)
+                            .font(.body)
                         Text(profile.name)
-                            .font(.headline)
+                            .font(.subheadline.bold())
                         Image(systemName: "chevron.down")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.5))
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.white.opacity(0.12), in: Capsule())
                 }
-                .foregroundStyle(.primary)
             }
             .padding(.horizontal, 20)
 
-            // Level Gauge - tappable to show timeline
+            // Level Gauge — tappable → timeline
             Button {
                 showTimeline = true
             } label: {
                 ZStack {
                     Circle()
-                        .fill(color.opacity(0.1))
-                        .frame(width: 220, height: 220)
-                        .blur(radius: 30)
-
+                        .fill(color.opacity(0.12))
+                        .frame(width: 200, height: 200)
+                        .blur(radius: 24)
                     LevelGaugeView(level: level, color: color)
                 }
             }
             .buttonStyle(.plain)
 
-            Spacer()
-            // Description
-            VStack(spacing: 4) {
+            // Level description + sober time
+            VStack(spacing: 6) {
                 Text(appState.levelDescription(for: level))
                     .font(.title2.bold())
                     .foregroundStyle(color)
 
-                Text("Limit: \(profile.personalLimit)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(soberText)
+                    .font(.subheadline)
+                    .foregroundStyle(soberColor)
             }
 
-            // Limit Warning
+            // Limit warning
             if level >= Double(profile.personalLimit) {
                 Label("Personal limit reached", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.bold())
@@ -173,39 +229,13 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.bottom, 60)
-        .background(
-            LinearGradient(
-                colors: [color.opacity(0.15), Color(.systemGroupedBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .padding(.bottom, 48)
+        .background(Color.heroBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .ignoresSafeArea(edges: .top)
     }
 
-    private func lastDoseCard(_ profile: Profile) -> some View {
-        let summary = appState.lastDoseSummary(for: profile.id, now: currentTime)
-        let last = appState.lastDose(for: profile.id, at: currentTime)
-
-        return VStack(alignment: .leading, spacing: 12) {
-            // Header row: "Last dose" left, "Substance • elapsed" right
-            HStack {
-                Label("Last dose", systemImage: "hourglass")
-                    .font(.subheadline.bold())
-
-                Spacer()
-
-                Text("\(summary.substance) • \(summary.elapsed)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
-    }
+    // MARK: - Warnings Card
 
     private func warningsCard(_ profile: Profile) -> some View {
         let active = appState.activeDoses(for: profile.id, at: currentTime)
@@ -215,8 +245,7 @@ struct HomeView: View {
             guard let snoozeUntil = snoozedWarnings[warning.title] else { return true }
             return currentTime > snoozeUntil
         }
-        let hasActiveDoses = !active.isEmpty
-        let calm = appState.calmMode && hasActiveDoses
+        let calm = appState.calmMode
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -239,19 +268,10 @@ struct HomeView: View {
                         showWarnings = true
                     } label: {
                         HStack(spacing: 12) {
-                            // Calm mode: soften non-danger warnings
-                            let displayColor: Color = {
-                                if calm && topWarning.severity < .danger {
-                                    return Color(hex: "7B9BB5")
-                                }
-                                return topWarning.severity.color
-                            }()
-                            let displayIcon: String = {
-                                if calm && topWarning.severity < .danger {
-                                    return "info.circle.fill"
-                                }
-                                return topWarning.severity.icon
-                            }()
+                            let displayColor: Color = calm && topWarning.severity < .danger
+                                ? Color(hex: "7B9BB5") : topWarning.severity.color
+                            let displayIcon: String = calm && topWarning.severity < .danger
+                                ? "info.circle.fill" : topWarning.severity.icon
 
                             Image(systemName: displayIcon)
                                 .font(.title3)
@@ -277,7 +297,6 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Snooze Button
                     Button {
                         snoozedWarnings[topWarning.title] = currentTime.addingTimeInterval(30 * 60)
                     } label: {
@@ -292,7 +311,7 @@ struct HomeView: View {
             } else {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.levelGreen)
                     Text(calm ? "All good" : "No interaction warnings")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -302,12 +321,11 @@ struct HomeView: View {
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.secondary.opacity(0.12), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.12), lineWidth: 1))
         .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
+
+    // MARK: - Active Substances Card
 
     private func activeSubstancesCard(_ profile: Profile) -> some View {
         let active = appState.activeDoses(for: profile.id, at: currentTime)
@@ -327,8 +345,8 @@ struct HomeView: View {
             if active.isEmpty {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("No active substances")
+                        .foregroundStyle(.levelGreen)
+                    Text("Nothing active")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -348,12 +366,11 @@ struct HomeView: View {
         }
         .padding(16)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.secondary.opacity(0.1), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.secondary.opacity(0.1), lineWidth: 1))
         .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
     }
+
+    // MARK: - Compact Dose Row
 
     private func compactDoseRow(dose: Dose, substance: Substance) -> some View {
         let minutesAgo = dose.minutesAgo(from: currentTime)
@@ -376,7 +393,6 @@ struct HomeView: View {
 
             Spacer()
 
-            // Progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.secondary.opacity(0.15))
@@ -441,9 +457,7 @@ struct HomeView: View {
                             .foregroundStyle(Color.accent)
                         Spacer()
                         HStack(spacing: 4) {
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 6, height: 6)
+                            Circle().fill(.green).frame(width: 6, height: 6)
                             Text("Live")
                                 .font(.caption2.bold())
                                 .foregroundStyle(.green)
@@ -455,20 +469,20 @@ struct HomeView: View {
 
                     HStack(spacing: 12) {
                         ForEach(session.participantIds, id: \.self) { profileId in
-                            if let profile = appState.profiles.first(where: { $0.id == profileId }) {
-                                let level = appState.currentLevel(for: profile, at: currentTime)
-                                let color = appState.levelColor(for: level)
+                            if let p = appState.profiles.first(where: { $0.id == profileId }) {
+                                let lvl = appState.currentLevel(for: p, at: currentTime)
+                                let col = appState.levelColor(for: lvl)
                                 VStack(spacing: 4) {
                                     ZStack {
                                         Circle()
-                                            .fill(color.opacity(0.15))
+                                            .fill(col.opacity(0.15))
                                             .frame(width: 36, height: 36)
-                                        Text(profile.avatarEmoji)
+                                        Text(p.avatarEmoji)
                                             .font(.body)
                                     }
-                                    Text(String(format: "%.1f", level))
+                                    Text(String(format: "%.1f", lvl))
                                         .font(.caption.bold())
-                                        .foregroundStyle(color)
+                                        .foregroundStyle(col)
                                 }
                             }
                         }
@@ -481,102 +495,13 @@ struct HomeView: View {
                     RoundedRectangle(cornerRadius: 16)
                         .strokeBorder(Color.accent.opacity(0.25), lineWidth: 1)
                 )
+                .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
             }
             .buttonStyle(.plain)
         }
     }
 
-    private func liveStatusCard(_ profile: Profile) -> some View {
-        let active = appState.activeDoses(for: profile.id, at: currentTime)
-        let level = appState.currentLevel(for: profile, at: currentTime)
-        let color = appState.levelColor(for: level)
-
-        var maxEndTime: Double = 0
-        var strongestPhase = "Idle"
-        var strongestIntensity: Double = 0
-
-        for dose in active {
-            if let substance = Substances.byId[dose.substanceId] {
-                let minutesAgo = dose.minutesAgo(from: currentTime)
-                let remaining = substance.durationMinutes - minutesAgo
-                if remaining > maxEndTime { maxEndTime = remaining }
-
-                let ratio = minutesAgo / substance.durationMinutes
-                let intensity = 1.0 - ratio
-                if intensity > strongestIntensity {
-                    strongestIntensity = intensity
-                    if minutesAgo < substance.onsetMinutes {
-                        strongestPhase = "Onset"
-                    } else if minutesAgo < substance.peakMinutes {
-                        strongestPhase = "Coming Up"
-                    } else if minutesAgo < substance.peakMinutes + (substance.durationMinutes - substance.peakMinutes) * 0.3 {
-                        strongestPhase = "Peak"
-                    } else if minutesAgo < substance.durationMinutes * 0.7 {
-                        strongestPhase = "Plateau"
-                    } else {
-                        strongestPhase = "Coming Down"
-                    }
-                }
-            }
-        }
-
-        // Sobriety countdown via AppState (pharmacokinetically accurate)
-        let minutesToSober = appState.minutesUntilBaseline(for: profile, from: currentTime)
-        let soberText: String = {
-            guard let min = minutesToSober, min > 0 else { return "✓ Sober" }
-            let h = Int(min) / 60
-            let m = Int(min) % 60
-            return h > 0 ? "~\(h)h \(m)m" : "~\(m)m"
-        }()
-        let soberColor: Color = minutesToSober == nil ? .green : (minutesToSober! > 120 ? .primary : .orange)
-
-        return Button {
-            showTimeline = true
-        } label: {
-            HStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    Text(String(format: "%.1f", level))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(color)
-                    Text("Level")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                Divider().frame(height: 40)
-
-                VStack(spacing: 4) {
-                    Text("\(active.count)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                    Text("Active")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                Divider().frame(height: 40)
-
-                VStack(spacing: 4) {
-                    Text(soberText)
-                        .font(.system(size: minutesToSober == nil ? 28 : 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(soberColor)
-                    Text(active.isEmpty ? "Sober" : strongestPhase)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .buttonStyle(.plain)
-        .padding(16)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.secondary.opacity(0.1), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
-    }
+    // MARK: - No Profile View
 
     private var noProfileView: some View {
         VStack(spacing: 16) {
@@ -592,11 +517,12 @@ struct HomeView: View {
         .padding(60)
     }
 
+    // MARK: - Sheets
+
     private var warningsSheet: some View {
         NavigationStack {
             ScrollView {
-                WarningsView()
-                    .padding()
+                WarningsView().padding()
             }
             .navigationTitle("Warnings")
             .navigationBarTitleDisplayMode(.inline)
@@ -617,14 +543,11 @@ struct HomeView: View {
                         showProfilePicker = false
                     } label: {
                         HStack {
-                            Text(profile.avatarEmoji)
-                                .font(.title2)
-                            Text(profile.name)
-                                .font(.body)
+                            Text(profile.avatarEmoji).font(.title2)
+                            Text(profile.name).font(.body)
                             Spacer()
                             if profile.id == appState.activeProfile?.id {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(Color.accent)
+                                Image(systemName: "checkmark").foregroundStyle(Color.accent)
                             }
                         }
                     }

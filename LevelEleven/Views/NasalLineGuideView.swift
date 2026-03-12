@@ -102,7 +102,7 @@ struct NasalLineGuideView: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Text(profile.avatarEmoji)
-                    .font(.title3)
+                    .font(.body)   // .title3 causes rendering issues on some iOS versions
                 Text(profile.name)
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)
@@ -154,7 +154,7 @@ struct NasalLineGuideView: View {
                 Image(systemName: "arrow.left.and.right")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
-                Text("180pt ≈ common dose (\(Int(substance.commonDose.rounded())) \(substance.unit.symbol))")
+                Text("≈ 3cm on screen · common dose (\(Int(substance.commonDose.rounded())) \(substance.unit.symbol))")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
             }
