@@ -29,21 +29,22 @@ enum IntoxEngine {
     // MARK: - Tolerance Dose Multiplier (non-linear, realistic)
 
     /// Wie viel mehr Substanz bei diesem Toleranzlevel nötig ist, um den gleichen Effekt zu erzielen.
-    /// Level 0 = naiv → weniger als Common. Level 11 = extrem tolerant → 5.5× mehr.
+    /// Level 0 = naiv → konservativ 0.50×. Level 11 = sehr hohe Toleranz → max 2.2×.
+    /// Flachere, sicherere Kurve: oberes Ende drastisch reduziert.
     static func toleranceDoseMultiplier(for level: Int) -> Double {
         switch level {
-        case 0:  return 0.60
-        case 1:  return 0.75
-        case 2:  return 0.90
-        case 3:  return 1.10
-        case 4:  return 1.40
-        case 5:  return 1.70
-        case 6:  return 2.10
-        case 7:  return 2.60
-        case 8:  return 3.20
-        case 9:  return 3.80
-        case 10: return 4.50
-        case 11: return 5.50
+        case 0:  return 0.50   // keine Toleranz: stark konservativ
+        case 1:  return 0.65
+        case 2:  return 0.80
+        case 3:  return 0.95
+        case 4:  return 1.10
+        case 5:  return 1.25
+        case 6:  return 1.40
+        case 7:  return 1.55
+        case 8:  return 1.70
+        case 9:  return 1.85
+        case 10: return 2.00
+        case 11: return 2.20   // maximale Toleranz: max 2.2×, nicht 5.5×
         default: return 1.00
         }
     }
@@ -177,10 +178,11 @@ enum IntoxEngine {
         }
 
         // --- 9. Hard clamps ---
+        // Max = strongDose × toleranceMult, Strong darf nicht über den Clamp hinausgehen
         let maxAllowed = substance.strongDose * max(1.0, toleranceMult)
         adjLight  = max(0.1, min(adjLight,  maxAllowed))
         adjCommon = max(0.1, min(adjCommon, maxAllowed))
-        adjStrong = max(0.1, min(adjStrong, maxAllowed * 1.3))
+        adjStrong = max(0.1, min(adjStrong, maxAllowed))
 
         // --- 10. Suggested dose: conservative (slightly below adjusted common) ---
         let suggested = min(adjCommon * 0.80, adjCommon)
