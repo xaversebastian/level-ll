@@ -54,7 +54,7 @@ struct ProfileView: View {
             HStack {
                 Text(profile.avatarEmoji)
                     .font(.title)
-                
+
                 VStack(alignment: .leading) {
                     Text(profile.name)
                         .font(.headline)
@@ -62,14 +62,22 @@ struct ProfileView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 if profile.isActive {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accent)
                 }
             }
+            .padding(.vertical, 2)
+            .padding(.horizontal, profile.isActive ? 8 : 0)
+            .background(
+                profile.isActive
+                    ? Color.accent.opacity(0.08)
+                    : Color.clear,
+                in: RoundedRectangle(cornerRadius: 10)
+            )
         }
         .foregroundStyle(.primary)
         .swipeActions(edge: .trailing) {
