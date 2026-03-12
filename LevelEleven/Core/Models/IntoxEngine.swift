@@ -179,14 +179,25 @@ enum IntoxEngine {
             }
         }
 
-        // --- 9. Hard clamps ---
+        // --- 9. Pro Level safety factor ---
+        if profile.proLevel <= 2 {
+            adjLight  *= 0.85
+            adjCommon *= 0.85
+            adjStrong *= 0.85
+            factors.append("Beginner safety: -15%")
+            if profile.proLevel == 1 {
+                warnings.append("Low experience — start with the light dose and wait for full effects")
+            }
+        }
+
+        // --- 10. Hard clamps ---
         // Max = strongDose × toleranceMult, strong must not exceed clamp
         let maxAllowed = substance.strongDose * max(1.0, toleranceMult)
         adjLight  = max(0.1, min(adjLight,  maxAllowed))
         adjCommon = max(0.1, min(adjCommon, maxAllowed))
         adjStrong = max(0.1, min(adjStrong, maxAllowed))
 
-        // --- 10. Suggested dose: conservative (slightly below adjusted common) ---
+        // --- 11. Suggested dose: conservative (slightly below adjusted common) ---
         let suggested = min(adjCommon * 0.80, adjCommon)
 
         // Final range warnings

@@ -463,7 +463,7 @@ struct ProfileEditorView: View {
                     set: { proLevel = Int($0) }
                 ), in: 1...5, step: 1)
                 .tint(Color.accent)
-                Text("Affects default safety prompts and recommendations")
+                Text("Adjusts warning sensitivity, dose safety margins, and default limits")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
