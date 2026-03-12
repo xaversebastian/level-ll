@@ -12,10 +12,6 @@
 //
 //  HINWEIS: Alle Views sollen Color.accent / Color.accentHighlight statt
 //  Hardcoded-Farben verwenden, damit Theme-Änderungen zentral greifen.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

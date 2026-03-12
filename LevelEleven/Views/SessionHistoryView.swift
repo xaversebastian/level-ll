@@ -11,10 +11,6 @@
 //  Leerer Zustand zeigt Placeholder-Illustration.
 //
 //  HINWEIS: Wird als Sheet aus BallerModeView geöffnet.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

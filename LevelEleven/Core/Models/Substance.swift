@@ -12,10 +12,6 @@
 //
 //  HINWEIS: Neue Substanzen nur in Substances.all eintragen – kein Backend nötig.
 //  Daten basieren auf Literaturwerten (PsychonautWiki, TripSit); keine medizinische Garantie.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import Foundation
 

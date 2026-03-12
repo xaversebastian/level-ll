@@ -14,6 +14,8 @@
 //  Author: Silja & Xaver
 //  Created: 2026-01-04
 //
+//  HINWEIS: localEmergencyNumber() nutzt Locale.current.region – funktioniert offline.
+//  Der Notruf-Link öffnet die Telefon-App (tel:-URL-Schema).
 
 import SwiftUI
 

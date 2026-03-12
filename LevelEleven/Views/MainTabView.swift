@@ -11,10 +11,6 @@
 //
 //  HINWEIS: AppState wird per .environment(appState) in alle Child-Views injiziert.
 //  Neue Top-Level-Tabs hier registrieren.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 

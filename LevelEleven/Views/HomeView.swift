@@ -11,10 +11,6 @@
 //
 //  HINWEIS: Alle Level-Berechnungen laufen in AppState; HomeView ist rein deklarativ.
 //  Bei Performance-Problemen: Timer-Intervall erhöhen oder Berechnungen in Task auslagern.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import SwiftUI
 import Combine

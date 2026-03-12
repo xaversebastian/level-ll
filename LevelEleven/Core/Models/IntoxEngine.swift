@@ -12,10 +12,6 @@
 //  HINWEIS: Die eigentliche Level-Berechnung (currentLevel, calculateIntensity) liegt in AppState.
 //  Dieses Enum ist zustandslos (nur statische Methoden).
 //  Für klinische oder forensische Zwecke NICHT geeignet – vereinfachtes Modell.
-//
-//  Author: Silja & Xaver
-//  Created: 2026-01-04
-//
 
 import Foundation
 
