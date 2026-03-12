@@ -163,6 +163,7 @@ struct ProfileView: View {
         .padding(.top, 22)
         .padding(.bottom, 8)
     }
+}
 
 struct ProfileEditorView: View {
     @Environment(AppState.self) private var appState

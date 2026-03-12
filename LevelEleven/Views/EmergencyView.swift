@@ -373,13 +373,19 @@ struct EmergencyView: View {
                     Text("Normal Response").font(.subheadline.bold()).foregroundStyle(.green)
                 }
                 Text("GCS 13-15: Person is responsive. Continue monitoring.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            Text("GCS ≤ 8: Unconsciousness – recovery position, monitor breathing.")
-                .font(.caption).foregroundStyle(.secondary)
-        } else if gcsTotal <= 12 {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
-                Text("Close Monitoring Required").font(.subheadline.bold()).foregroundStyle(.orange)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(gcsColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var gcsInfoSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("The Glasgow Coma Scale (GCS) is a standard method for assessing consciousness used by emergency services worldwide.")
                         .font(.subheadline)
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Score Meaning").font(.headline)
@@ -391,13 +397,12 @@ struct EmergencyView: View {
                     }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Important Notes").font(.headline)
-                        Text("• GCS ≤ 8 means coma – call \(localEmergencyNumber) immediately")
-                        Text("• Substance intoxication can cause GCS to drop rapidly")
-                        Text("• Opioid overdose: Naloxone can help")
-                        Text("• GHB/Alcohol: Recovery position, monitor breathing")
-                        Text("• Stimulants: Watch for seizures")
+                        Text("• GCS ≤ 8 means coma – call \(localEmergencyNumber) immediately").font(.subheadline)
+                        Text("• Substance intoxication can cause GCS to drop rapidly").font(.subheadline)
+                        Text("• Opioid overdose: Naloxone can help").font(.subheadline)
+                        Text("• GHB/Alcohol: Recovery position, monitor breathing").font(.subheadline)
+                        Text("• Stimulants: Watch for seizures").font(.subheadline)
                     }
-                    .font(.subheadline)
                 }
                 .padding()
             }
@@ -409,6 +414,22 @@ struct EmergencyView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, color: Color = .secondary) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 4, height: 16)
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.bottom, 8)
     }
 
     private func scoreExplanation(range: String, description: String, color: Color) -> some View {
