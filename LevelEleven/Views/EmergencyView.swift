@@ -73,11 +73,11 @@ struct EmergencyView: View {
             VStack(spacing: 10) {
                 Image(systemName: "heart.circle.fill")
                     .font(.system(size: 52))
-                    .foregroundStyle(Color(hex: "7B9BB5"))
+                    .foregroundStyle(Color.levelCalm)
 
                 Text("You are safe.")
                     .font(.title.bold())
-                    .foregroundStyle(Color(hex: "7B9BB5"))
+                    .foregroundStyle(Color.levelCalm)
 
                 Text("What you're feeling is temporary.\nThe substance will pass through.")
                     .font(.subheadline)
@@ -86,7 +86,7 @@ struct EmergencyView: View {
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color(hex: "7B9BB5").opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.levelCalm.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
 
             // Breathing exercise
             breathingSection
@@ -103,12 +103,12 @@ struct EmergencyView: View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Breathing Exercise", systemImage: "wind")
                 .font(.headline)
-                .foregroundStyle(Color(hex: "9B8FCC"))
+                .foregroundStyle(Color.levelCopper)
 
             VStack(spacing: 10) {
-                breathingStep(number: "4", label: "Breathe in slowly", color: Color(hex: "7B9BB5"))
-                breathingStep(number: "7", label: "Hold your breath", color: Color(hex: "9B8FCC"))
-                breathingStep(number: "8", label: "Breathe out completely", color: Color(hex: "7BC4B5"))
+                breathingStep(number: "4", label: "Breathe in slowly", color: Color.levelCalm)
+                breathingStep(number: "7", label: "Hold your breath", color: Color.levelCopper)
+                breathingStep(number: "8", label: "Breathe out completely", color: Color.levelTeal)
             }
 
             Text("Repeat 3–4 times. This activates your parasympathetic nervous system.")
@@ -144,7 +144,7 @@ struct EmergencyView: View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Grounding – 5-4-3-2-1", systemImage: "hand.raised.fill")
                 .font(.headline)
-                .foregroundStyle(Color(hex: "9B8FCC"))
+                .foregroundStyle(Color.levelCopper)
 
             groundingItem(count: "5", sense: "things you can see")
             groundingItem(count: "4", sense: "things you can touch")
@@ -165,7 +165,7 @@ struct EmergencyView: View {
         HStack(spacing: 10) {
             Text(count)
                 .font(.headline.bold())
-                .foregroundStyle(Color(hex: "9B8FCC"))
+                .foregroundStyle(Color.levelCopper)
                 .frame(width: 24)
             Text(sense)
                 .font(.subheadline)
@@ -188,8 +188,8 @@ struct EmergencyView: View {
                     .font(.subheadline.bold())
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color(hex: "7B9BB5").opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(Color(hex: "7B9BB5"))
+                    .background(Color.levelCalm.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(Color.levelCalm)
             }
 
             // Emergency (less prominent in self mode)

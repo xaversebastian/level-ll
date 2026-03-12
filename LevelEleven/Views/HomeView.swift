@@ -138,7 +138,7 @@ struct HomeView: View {
             let m = Int(min) % 60
             return h > 0 ? "Sober in ~\(h)h \(m > 0 ? "\(m)m" : "")" : "Sober in ~\(m)m"
         }()
-        let soberColor: Color = minutesToSober == nil ? Color(hex: "5CB87A") : (minutesToSober! > 120 ? .white.opacity(0.7) : Color(hex: "C4863C"))
+        let soberColor: Color = minutesToSober == nil ? Color.levelGreen : (minutesToSober! > 120 ? .white.opacity(0.7) : Color.levelOrange)
 
         return VStack(spacing: 14) {
             // Safe area padding
@@ -269,7 +269,7 @@ struct HomeView: View {
                     } label: {
                         HStack(spacing: 12) {
                             let displayColor: Color = calm && topWarning.severity < .danger
-                                ? Color(hex: "7B9BB5") : topWarning.severity.color
+                                ? Color.levelCalm : topWarning.severity.color
                             let displayIcon: String = calm && topWarning.severity < .danger
                                 ? "info.circle.fill" : topWarning.severity.icon
 
