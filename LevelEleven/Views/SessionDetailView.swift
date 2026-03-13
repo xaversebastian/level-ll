@@ -36,6 +36,9 @@ struct SessionDetailView: View {
                     if !sessionDoses.isEmpty {
                         levelChartSection
                     }
+                    if session.hasFeedback {
+                        feedbackSection
+                    }
                     participantsSection
                     dosesSection
                     statsSection
@@ -98,6 +101,88 @@ struct SessionDetailView: View {
         }
     }
     
+    private var feedbackSection: some View {
+        VStack(spacing: 0) {
+            sectionHeader("Feedback", color: .orange)
+
+            if let feedback = session.feedback {
+                // Rating + Mood
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        ForEach(1...5, id: \.self) { star in
+                            Image(systemName: star <= feedback.overallRating ? "star.fill" : "star")
+                                .font(.caption)
+                                .foregroundStyle(star <= feedback.overallRating ? .orange : .secondary.opacity(0.3))
+                        }
+                    }
+                    Text(feedback.mood)
+                        .font(.title3)
+                    Spacer()
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 8)
+
+                // Side effects
+                if !feedback.sideEffects.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(feedback.sideEffects, id: \.self) { effect in
+                            Text(effect)
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.secondary.opacity(0.1), in: Capsule())
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.bottom, 6)
+                }
+
+                // Notes
+                if !feedback.notes.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "note.text")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(feedback.notes)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .italic()
+                        Spacer()
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 6)
+                }
+
+                // Tolerance adjustments applied
+                if let adjustments = feedback.toleranceAdjustments, !adjustments.isEmpty {
+                    Divider().padding(.leading, 54)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Tolerance adjusted:")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.blue)
+                        ForEach(adjustments.sorted(by: { $0.key < $1.key }), id: \.key) { substanceId, delta in
+                            if let substance = Substances.byId[substanceId] {
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(Color(hex: substance.category.color))
+                                        .frame(width: 6, height: 6)
+                                    Text(substance.shortName)
+                                        .font(.caption)
+                                    Text(delta > 0 ? "▲ +1" : "▼ −1")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(delta > 0 ? .green : .orange)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+    }
+
     private var participantsSection: some View {
         VStack(spacing: 0) {
             sectionHeader("Participants", color: Color.accent)

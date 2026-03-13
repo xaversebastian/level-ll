@@ -278,6 +278,20 @@ final class AppState {
         if let idx = sessionHistory.firstIndex(where: { $0.id == sessionId }) {
             sessionHistory[idx].feedback = feedback
             saveSessionHistory()
+
+            // Apply tolerance adjustments to participant profiles
+            if let adjustments = feedback.toleranceAdjustments, !adjustments.isEmpty {
+                let session = sessionHistory[idx]
+                for participant in session.participants {
+                    guard let pIdx = profiles.firstIndex(where: { $0.id == participant.profileId }) else { continue }
+                    for (substanceId, delta) in adjustments {
+                        if let tIdx = profiles[pIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
+                            profiles[pIdx].tolerances[tIdx].level = max(0, min(11, profiles[pIdx].tolerances[tIdx].level + delta))
+                        }
+                    }
+                }
+                saveProfiles()
+            }
         }
         if pendingFeedbackSessionId == sessionId {
             pendingFeedbackSessionId = nil
