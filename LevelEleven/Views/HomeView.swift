@@ -172,14 +172,15 @@ struct HomeView: View {
                 .padding(.horizontal, DS.screenPadding)
                 .padding(.vertical, 14)
             } else {
-                ForEach(Array(activeDoses.enumerated()), id: \.element.id) { idx, dose in
+                let sorted = activeDoses.sorted { $0.timestamp > $1.timestamp }
+                ForEach(Array(sorted.enumerated()), id: \.element.id) { idx, dose in
                     if let substance = Substances.byId[dose.substanceId] {
                         if idx > 0 { thinDivider }
                         doseRow(dose: dose, substance: substance)
                             .transition(.asymmetric(insertion: .slide.combined(with: .opacity), removal: .scale.combined(with: .opacity)))
                     }
                 }
-                .animation(.spring(duration: 0.3), value: activeDoses.map(\.id))
+                .animation(.spring(duration: 0.3), value: sorted.map(\.id))
             }
 
             Color.clear.frame(height: 20) // bottom breathing room
@@ -201,7 +202,7 @@ struct HomeView: View {
 
             // Top bar
             HStack(spacing: 10) {
-                Text("LEVEL")
+                Text("level ll")
                     .font(.system(size: 11, weight: .black))
                     .tracking(3)
                     .foregroundStyle(.white.opacity(0.3))
@@ -420,10 +421,15 @@ struct HomeView: View {
                 .fill(catColor)
                 .frame(width: 3, height: 32)
 
-            // Name + amount
+            // Name + amount + timestamp
             VStack(alignment: .leading, spacing: 2) {
-                Text(substance.shortName)
-                    .font(.subheadline.bold())
+                HStack(spacing: 6) {
+                    Text(substance.shortName)
+                        .font(.subheadline.bold())
+                    Text(doseTimestamp(dose))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
                 Text("\(formatDoseAmount(dose.amount, substance: substance)) · \(dose.route.displayName)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -502,6 +508,17 @@ struct HomeView: View {
     }
 
     // MARK: - Helpers
+
+    private func doseTimestamp(_ dose: Dose) -> String {
+        let hoursAgo = dose.minutesAgo(from: currentTime) / 60
+        let formatter = DateFormatter()
+        if hoursAgo >= 12 {
+            formatter.dateFormat = "EEE HH:mm"
+        } else {
+            formatter.dateFormat = "HH:mm"
+        }
+        return formatter.string(from: dose.timestamp)
+    }
 
     private func formatDoseAmount(_ amount: Double, substance: Substance) -> String {
         let unit = substance.unit.symbol

@@ -12,6 +12,7 @@ struct LevelElevenApp: App {
     @State private var appState = AppState()
     @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @State private var showSplash = true
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -29,6 +30,12 @@ struct LevelElevenApp: App {
                     }
                     .transition(.opacity)
                     .zIndex(1)
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    appState.invalidateCache()
+                    appState.updateLiveActivity()
                 }
             }
         }

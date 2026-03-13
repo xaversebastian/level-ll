@@ -35,7 +35,7 @@ struct BallerLiveActivityWidget: Widget {
                 // MARK: Expanded Trailing – Peak Level + Warning badge
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text(String(format: "%.1f", context.state.highestLevel))
+                        Text("\(Int(floor(context.state.highestLevel)))")
                             .font(.title2.bold())
                             .foregroundStyle(levelColor(context.state.highestLevel))
                         if context.state.warningCount > 0 {
@@ -81,12 +81,12 @@ struct BallerLiveActivityWidget: Widget {
 
             } compactTrailing: {
                 // Highest level in level color
-                Text(String(format: "%.0f", context.state.highestLevel))
+                Text("\(Int(floor(context.state.highestLevel)))")
                     .font(.caption.bold())
                     .foregroundStyle(levelColor(context.state.highestLevel))
 
             } minimal: {
-                Text(String(format: "%.0f", context.state.highestLevel))
+                Text("\(Int(floor(context.state.highestLevel)))")
                     .font(.caption2.bold())
                     .foregroundStyle(levelColor(context.state.highestLevel))
             }
@@ -182,7 +182,7 @@ struct BallerLiveActivityWidget: Widget {
             .frame(height: 6)
 
             // Level number
-            Text(String(format: "%.1f", participant.level))
+            Text("\(Int(floor(participant.level)))")
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundStyle(levelColor(participant.level))
                 .frame(width: 28, alignment: .trailing)
@@ -218,7 +218,7 @@ struct BallerLiveActivityWidget: Widget {
             }
             .frame(width: 32, height: 3)
 
-            Text(String(format: "%.0f", participant.level))
+            Text("\(Int(floor(participant.level)))")
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(levelColor(participant.level))
         }
