@@ -172,7 +172,7 @@ struct QuickDoseView: View {
         Button {
             selectedSubstance = substance
             selectedRoute = substance.primaryRoute
-            amount = substance.commonDose
+            amount = substance.unit == .drinks ? 1 : substance.commonDose
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: substance.category.icon)
@@ -289,24 +289,44 @@ struct QuickDoseView: View {
                 .frame(minHeight: 110)
 
                 // ── Stepper buttons ─────────────────────────────────────
-                HStack(spacing: 10) {
-                    stepperButton("−\(formatIncrement(bigStep, substance: substance))", color: .secondary) {
-                        amount = max(0, amount - bigStep)
+                if substance.unit == .drinks {
+                    // Alcohol: drink type buttons
+                    HStack(spacing: 10) {
+                        stepperButton("−1", color: .secondary) {
+                            amount = max(0, amount - 1)
+                        }
+                        drinkTypeButton("🍺", label: "Beer", detail: "0.5L", color: catColor) {
+                            amount = min(substance.strongDose * 3.0, amount + 1)
+                        }
+                        drinkTypeButton("🍷", label: "Wine", detail: "0.2L", color: catColor) {
+                            amount = min(substance.strongDose * 3.0, amount + 1)
+                        }
+                        drinkTypeButton("🥃", label: "Shot", detail: "2cl", color: catColor) {
+                            amount = min(substance.strongDose * 3.0, amount + 1)
+                        }
                     }
-                    stepperButton("−\(formatIncrement(smallStep, substance: substance))", color: .secondary) {
-                        amount = max(0, amount - smallStep)
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.top, 16)
+                } else {
+                    HStack(spacing: 10) {
+                        stepperButton("−\(formatIncrement(bigStep, substance: substance))", color: .secondary) {
+                            amount = max(0, amount - bigStep)
+                        }
+                        stepperButton("−\(formatIncrement(smallStep, substance: substance))", color: .secondary) {
+                            amount = max(0, amount - smallStep)
+                        }
+                        stepperButton("+\(formatIncrement(smallStep, substance: substance))", color: catColor) {
+                            let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
+                            amount = min(maxAmount, amount + smallStep)
+                        }
+                        stepperButton("+\(formatIncrement(bigStep, substance: substance))", color: catColor) {
+                            let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
+                            amount = min(maxAmount, amount + bigStep)
+                        }
                     }
-                    stepperButton("+\(formatIncrement(smallStep, substance: substance))", color: catColor) {
-                        let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
-                        amount = min(maxAmount, amount + smallStep)
-                    }
-                    stepperButton("+\(formatIncrement(bigStep, substance: substance))", color: catColor) {
-                        let maxAmount = substance.strongDose * 3.0 // Safety limit: max 3x strong dose
-                        amount = min(maxAmount, amount + bigStep)
-                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.top, 16)
                 }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.top, 16)
 
                 // ── Preset row ──────────────────────────────────────────
                 let lightVal  = rec?.adjustedLight  ?? substance.lightDose
@@ -407,6 +427,23 @@ struct QuickDoseView: View {
                 .frame(height: 48)
                 .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
                 .foregroundStyle(color == .secondary ? .primary : color)
+        }
+        .buttonStyle(.plain)
+        .pressFeedback()
+    }
+
+    // MARK: - Drink Type Button (Alcohol)
+
+    private func drinkTypeButton(_ emoji: String, label: String, detail: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Text(emoji).font(.title3)
+                Text(label).font(.system(size: 10, weight: .bold))
+                Text(detail).font(.system(size: 9)).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+            .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .pressFeedback()

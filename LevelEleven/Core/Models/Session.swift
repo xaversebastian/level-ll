@@ -42,6 +42,8 @@ struct SessionFeedback: Codable, Hashable {
     var sideEffects: [String]
     var notes: String
     var submittedAt: Date
+    /// Per-substance tolerance adjustments applied after feedback (substanceId → delta)
+    var toleranceAdjustments: [String: Int]?
 
     static let moodOptions = ["😊", "😐", "😵‍💫", "🤢", "😴", "🥳", "😰"]
     static let sideEffectOptions = [
@@ -49,6 +51,37 @@ struct SessionFeedback: Codable, Hashable {
         "Sweating", "Heart racing", "Insomnia", "Comedown",
         "Memory gaps", "Dehydration", "Paranoia", "None"
     ]
+
+    /// Side effects that indicate the experience was too intense
+    static let intenseSideEffects: Set<String> = [
+        "Nausea", "Anxiety", "Heart racing", "Memory gaps", "Paranoia"
+    ]
+
+    /// Compute tolerance suggestions based on rating + side effects + peak levels
+    static func suggestToleranceAdjustments(
+        rating: Int,
+        sideEffects: Set<String>,
+        substancesUsed: [String],
+        peakLevelPerSubstance: [String: Double]
+    ) -> [String: Int] {
+        var adjustments: [String: Int] = [:]
+        let hasIntenseSideEffects = !sideEffects.isDisjoint(with: intenseSideEffects)
+        let noneSelected = sideEffects.contains("None")
+
+        for substanceId in substancesUsed {
+            let peak = peakLevelPerSubstance[substanceId] ?? 0
+
+            if rating <= 2 && (hasIntenseSideEffects || peak >= 7) {
+                // Too intense → suggest lowering tolerance (means lower future doses)
+                adjustments[substanceId] = -1
+            } else if rating >= 4 && !hasIntenseSideEffects && (noneSelected || sideEffects.isEmpty) && peak <= 5 {
+                // Comfortable, low peak, no bad effects → suggest raising tolerance
+                adjustments[substanceId] = 1
+            }
+            // Rating 3 or mixed signals → no suggestion
+        }
+        return adjustments
+    }
 }
 
 // MARK: - Baller Session

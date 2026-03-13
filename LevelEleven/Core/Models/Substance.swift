@@ -7,7 +7,7 @@
 import Foundation
 
 enum SubstanceCategory: String, Codable, CaseIterable {
-    case alcohol, entactogen, stimulant, depressant, psychedelic, dissociative, opioid, cannabinoid
+    case alcohol, entactogen, stimulant, psychedelic, dissociative, cannabinoid, opioid, depressant
     
     var icon: String {
         switch self {

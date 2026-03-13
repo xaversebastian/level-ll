@@ -17,9 +17,55 @@ struct SessionFeedbackView: View {
     @State private var selectedMood = "😊"
     @State private var selectedSideEffects: Set<String> = []
     @State private var notes = ""
+    @State private var acceptedAdjustments: [String: Int] = [:]
 
     private var session: BallerSession? {
         appState.sessionHistory.first { $0.id == sessionId }
+    }
+
+    private var substancesUsed: [String] {
+        guard let session else { return [] }
+        let sDoses = appState.sessionDoses(for: session)
+        return Array(Set(sDoses.map { $0.substanceId }))
+    }
+
+    private var peakLevelPerSubstance: [String: Double] {
+        guard let session else { return [:] }
+        let sDoses = appState.sessionDoses(for: session)
+        var peaks: [String: Double] = [:]
+        let endTime = session.endedAt ?? Date()
+
+        for substanceId in substancesUsed {
+            let substanceDoses = sDoses.filter { $0.substanceId == substanceId }
+            guard let substance = Substances.byId[substanceId] else { continue }
+            var maxLevel: Double = 0
+            // Sample across the session to find peak per substance
+            var time = session.startedAt
+            while time <= endTime {
+                var level: Double = 0
+                for dose in substanceDoses {
+                    let minutesAgo = time.timeIntervalSince(dose.timestamp) / 60
+                    guard minutesAgo >= 0 else { continue }
+                    let profile = appState.profiles.first { $0.id == dose.profileId }
+                    if let profile {
+                        level += appState.calculateIntensity(dose: dose, substance: substance, minutesAgo: minutesAgo, profile: profile)
+                    }
+                }
+                maxLevel = max(maxLevel, level)
+                time = time.addingTimeInterval(5 * 60)
+            }
+            peaks[substanceId] = min(11, maxLevel)
+        }
+        return peaks
+    }
+
+    private var suggestedAdjustments: [String: Int] {
+        SessionFeedback.suggestToleranceAdjustments(
+            rating: rating,
+            sideEffects: selectedSideEffects,
+            substancesUsed: substancesUsed,
+            peakLevelPerSubstance: peakLevelPerSubstance
+        )
     }
 
     var body: some View {
@@ -30,6 +76,7 @@ struct SessionFeedbackView: View {
                     ratingSection
                     moodSection
                     sideEffectsSection
+                    toleranceSuggestionSection
                     notesSection
                 }
                 .padding(.bottom, 20)
@@ -177,6 +224,76 @@ struct SessionFeedbackView: View {
         }
     }
 
+    // MARK: - Tolerance Suggestions
+
+    private var toleranceSuggestionSection: some View {
+        let suggestions = suggestedAdjustments
+        return Group {
+            if !suggestions.isEmpty {
+                VStack(spacing: 0) {
+                    sectionHeader("Tolerance Adjustment", color: .blue)
+
+                    Text("Based on your feedback, we suggest adjusting your tolerance for future sessions:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DS.screenPadding)
+                        .padding(.bottom, 8)
+
+                    ForEach(suggestions.sorted(by: { $0.key < $1.key }), id: \.key) { substanceId, delta in
+                        if let substance = Substances.byId[substanceId] {
+                            let isAccepted = acceptedAdjustments[substanceId] != nil
+                            Button {
+                                if isAccepted {
+                                    acceptedAdjustments.removeValue(forKey: substanceId)
+                                } else {
+                                    acceptedAdjustments[substanceId] = delta
+                                }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: isAccepted ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(isAccepted ? .blue : .secondary)
+                                    Circle()
+                                        .fill(Color(hex: substance.category.color))
+                                        .frame(width: 8, height: 8)
+                                    Text(substance.shortName)
+                                        .font(.subheadline.bold())
+                                    Spacer()
+                                    Text(delta > 0 ? "▲ Raise" : "▼ Lower")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(delta > 0 ? .green : .orange)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(
+                                            (delta > 0 ? Color.green : Color.orange).opacity(0.12),
+                                            in: Capsule()
+                                        )
+                                }
+                                .padding(.horizontal, DS.screenPadding)
+                                .padding(.vertical, 8)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    Text("Accepting changes your tolerance level by 1, which affects future dose recommendations.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, DS.screenPadding)
+                        .padding(.top, 6)
+                }
+                .onChange(of: suggestedAdjustments) { _, newSuggestions in
+                    // Auto-accept all suggestions by default
+                    acceptedAdjustments = newSuggestions
+                }
+                .onAppear {
+                    acceptedAdjustments = suggestedAdjustments
+                }
+            }
+        }
+    }
+
     // MARK: - Notes
 
     private var notesSection: some View {
@@ -216,7 +333,8 @@ struct SessionFeedbackView: View {
             mood: selectedMood,
             sideEffects: Array(selectedSideEffects),
             notes: notes.trimmingCharacters(in: .whitespaces),
-            submittedAt: Date()
+            submittedAt: Date(),
+            toleranceAdjustments: acceptedAdjustments.isEmpty ? nil : acceptedAdjustments
         )
         appState.submitFeedback(feedback, for: sessionId)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
