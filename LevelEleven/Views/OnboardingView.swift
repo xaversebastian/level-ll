@@ -106,7 +106,7 @@ struct OnboardingView: View {
 
     private var topBar: some View {
         HStack {
-            Text("LEVEL")
+            Text("level ll")
                 .font(.system(size: 11, weight: .black))
                 .tracking(3)
                 .foregroundStyle(.white.opacity(0.3))

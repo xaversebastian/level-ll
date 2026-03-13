@@ -224,8 +224,16 @@ struct QuickDoseView: View {
                 lastDoseDate: lastDoseDate
             )
         }
-        let smallStep = max(0.5, substance.commonDose / 20.0)
-        let bigStep   = max(1.0, substance.commonDose / 10.0)
+        let smallStep: Double
+        let bigStep: Double
+        if substance.unit == .drinks {
+            smallStep = 1; bigStep = 1
+        } else if substance.unit == .ml {
+            smallStep = 0.1; bigStep = 0.5
+        } else {
+            smallStep = max(0.5, substance.commonDose / 20.0)
+            bigStep   = max(1.0, substance.commonDose / 10.0)
+        }
         let catColor  = Color(hex: substance.category.color)
 
         return ScrollView {

@@ -412,7 +412,7 @@ struct MoreView: View {
             let note = dose.note?.replacingOccurrences(of: ",", with: ";") ?? ""
             csv += "\(date),\(profile),\(substance),\(route),\(amount),\(unit),\(note)\n"
         }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("LevelEleven-Export.csv")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("level-ll-Export.csv")
         try? csv.write(to: url, atomically: true, encoding: .utf8)
         return appState.doses.isEmpty ? nil : url
     }
@@ -633,21 +633,20 @@ struct SubstanceDetailView: View {
                     .padding(.vertical, 8)
                 }
 
-                // Drug Checking (MDMA only)
-                if substance.id == "mdma" {
+                // Drug Checking
+                if let info = substance.drugCheckingInfo {
                     detailSectionHeader("Drug Checking", color: .blue)
-                    drugCheckLink("checkdrugs.at", url: "https://checkdrugs.at")
-                    Divider().padding(.leading, 54)
-                    drugCheckLink("eve-rave.ch", url: "https://eve-rave.ch")
-                    Divider().padding(.leading, 54)
-                    drugCheckLink("energy-control.org", url: "https://energy-control.org")
 
-                    Text("Get your MDMA tested before use. Street pills vary widely in purity and content.")
+                    Text(info)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, DS.screenPadding)
                         .padding(.vertical, 8)
+
+                    drugCheckLink("drugsdata.org", url: "https://drugsdata.org")
+                    Divider().padding(.leading, 54)
+                    drugCheckLink("saferparty.ch", url: "https://saferparty.ch")
                 }
             }
             .padding(.bottom, 20)

@@ -84,6 +84,7 @@ struct BallerModeView: View {
                 }
             }
             .onAppear {
+                currentTime = Date()
                 timerCancellable = Timer.publish(every: 30, on: .main, in: .common)
                     .autoconnect()
                     .sink { _ in currentTime = Date() }

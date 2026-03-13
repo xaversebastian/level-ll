@@ -7,16 +7,16 @@
 import Foundation
 
 enum SubstanceCategory: String, Codable, CaseIterable {
-    case alcohol, stimulant, depressant, psychedelic, dissociative, entactogen, opioid, cannabinoid
+    case alcohol, entactogen, stimulant, depressant, psychedelic, dissociative, opioid, cannabinoid
     
     var icon: String {
         switch self {
         case .alcohol: return "drop.fill"
+        case .entactogen: return "heart.fill"
         case .stimulant: return "bolt.fill"
         case .depressant: return "moon.fill"
         case .psychedelic: return "sparkles"
         case .dissociative: return "cube.transparent"
-        case .entactogen: return "heart.fill"
         case .opioid: return "pills.fill"
         case .cannabinoid: return "leaf.fill"
         }
@@ -25,11 +25,11 @@ enum SubstanceCategory: String, Codable, CaseIterable {
     var color: String {
         switch self {
         case .alcohol: return "FFB347"
+        case .entactogen: return "E91E63"
         case .stimulant: return "FF6B6B"
         case .depressant: return "4ECDC4"
         case .psychedelic: return "9B59B6"
         case .dissociative: return "3498DB"
-        case .entactogen: return "E91E63"
         case .opioid: return "607D8B"
         case .cannabinoid: return "7CB342"
         }
@@ -74,7 +74,7 @@ enum DoseRoute: String, Codable, CaseIterable {
 }
 
 enum DoseUnit: String, Codable {
-    case mg, ml, drinks, ug, puffs, g
+    case mg, ml, drinks, ug, puffs, g, pills
     
     var symbol: String { rawValue }
 }
@@ -143,7 +143,7 @@ struct Substances {
             lightDose: 1,
             commonDose: 3,
             strongDose: 6,
-            description: "Central nervous system depressant. Disinhibiting, relaxing, and euphoric at low doses.",
+            description: "Central nervous system depressant. Disinhibiting, relaxing, and euphoric at low doses.\n\n1 drink = 1 beer (0.5L), 1 glass of wine (0.2L), or 1 shot (4cl spirits).",
             risks: ["Respiratory depression at high doses", "Liver damage with chronic use", "High addiction potential", "Dangerous with other depressants"],
             saferUse: ["Drink slowly", "Drink water between drinks", "Do not mix with GHB/benzos", "Eat beforehand"]
         ),
@@ -235,7 +235,28 @@ struct Substances {
             description: "Entactogen that releases serotonin. Produces empathy, euphoria, and connectedness. Popular party drug.",
             risks: ["Serotonin syndrome with other serotonergics", "Hyperthermia", "Hyponatremia (drinking too much water)", "Neurotoxicity", "Comedown/hangover"],
             saferUse: ["Max 1.5mg/kg body weight", "At least 3 months between uses", "Do not redose", "Electrolytes, not just water", "Stay cool", "Always test your pills/powder before use"],
-            drugCheckingInfo: "Ecstasy pills vary wildly in MDMA content (50–300mg+). Always check your pills at a drug checking service before use.\n\n• drugsdata.org — Lab-tested pill results worldwide\n• pillreports.net — Community pill reports\n• DIMS (NL) — Dutch drug checking service\n• Saferparty.ch (CH) — Swiss drug checking\n• miraculix-lab.de — Reagent test kits\n\nUse reagent test kits (Marquis, Mecke, Simon's) to verify MDMA at home. A full lab test is always better."
+            drugCheckingInfo: "MDMA powder/crystal purity varies. Always test before use.\n\n• drugsdata.org — Lab-tested results worldwide\n• Saferparty.ch (CH) — Swiss drug checking\n• miraculix-lab.de — Reagent test kits (Marquis, Mecke, Simon's)\n\nA full lab test is always better than reagent testing alone."
+        ),
+
+        // ECSTASY (pill form)
+        Substance(
+            id: "ecstasy",
+            name: "Ecstasy",
+            shortName: "Ecstasy",
+            category: .entactogen,
+            routes: [.oral],
+            onsetMinutes: 30,
+            peakMinutes: 90,
+            durationMinutes: 360,
+            halfLifeMinutes: 480,
+            unit: .pills,
+            lightDose: 0.5,
+            commonDose: 1,
+            strongDose: 1.5,
+            description: "MDMA in pill form. Pills contain unknown amounts of MDMA (typically 50–300mg) and may include other active substances, fillers, or dangerous adulterants. Never assume pill content — always test before use.",
+            risks: ["Unknown MDMA content per pill (50–300mg+)", "May contain other substances (PMA, methamphetamine, cathinones)", "Serotonin syndrome with other serotonergics", "Hyperthermia", "Hyponatremia", "Neurotoxicity", "Comedown/hangover"],
+            saferUse: ["Always test your pills at a drug checking service", "Start with half a pill and wait 2 hours", "At least 3 months between uses", "Do not redose", "Electrolytes, not just water", "Stay cool", "Use reagent test kits at minimum"],
+            drugCheckingInfo: "Ecstasy pills vary wildly in MDMA content (50–300mg+) and frequently contain dangerous adulterants. ALWAYS test your pills before use.\n\n• drugsdata.org — Lab-tested pill results worldwide\n• pillreports.net — Community pill reports\n• DIMS (NL) — Dutch drug checking service\n• Saferparty.ch (CH) — Swiss drug checking\n• miraculix-lab.de — Reagent test kits\n\nUse reagent test kits (Marquis, Mecke, Simon's) to verify MDMA content. A full lab test is always better. Never trust pill logos or colors alone."
         ),
         
         // KETAMINE
@@ -330,11 +351,11 @@ struct Substances {
             durationByRoute: [.smoked: 120, .oral: 360]
         ),
         
-        // 3-MMC
+        // 3-MMC (Metaphedrone)
         Substance(
             id: "3mmc",
-            name: "3-MMC",
-            shortName: "Metaphedrone",
+            name: "Metaphedrone",
+            shortName: "3-MMC",
             category: .stimulant,
             routes: [.oral, .nasal],
             onsetMinutes: 20,
@@ -347,13 +368,14 @@ struct Substances {
             strongDose: 90,
             description: "Synthetic cathinone. Stimulating with mild entactogenic effects. High addiction potential, strong urge to redose.",
             risks: ["Extreme urge to redose", "Cardiovascular strain", "Overheating", "Insomnia", "Severe comedown"],
-            saferUse: ["Pre-weigh your dose", "Lock away remaining supply", "Set a time limit", "Stay hydrated"]
+            saferUse: ["Pre-weigh your dose", "Lock away remaining supply", "Set a time limit", "Stay hydrated"],
+            drugCheckingInfo: "3-MMC is frequently mislabeled or adulterated with other cathinones. Test before use.\n\n• drugsdata.org — Lab-tested results\n• saferparty.ch — Swiss drug checking\n• miraculix-lab.de — Reagent test kits"
         ),
         
         // MEPHEDRONE (4-MMC)
         Substance(
             id: "4mmc",
-            name: "Mephedrone (4-MMC)",
+            name: "Mephedrone",
             shortName: "4-MMC",
             category: .stimulant,
             routes: [.oral, .nasal],

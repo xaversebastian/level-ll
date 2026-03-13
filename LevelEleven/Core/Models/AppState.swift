@@ -44,7 +44,7 @@ final class AppState {
 
     @ObservationIgnored private var liveActivityTimer: Timer?
 
-    private func invalidateCache() {
+    func invalidateCache() {
         cacheQueue.async(flags: .barrier) {
             self.levelCache.removeAll()
             self.activeDosesCache.removeAll()
@@ -688,17 +688,17 @@ final class AppState {
     func levelDescription(for level: Double) -> String {
         switch Int(level.rounded()) {
         case 0: return "Sober"
-        case 1: return "Threshold"
-        case 2: return "Light"
-        case 3: return "Light+"
-        case 4: return "Moderate"
-        case 5: return "Moderate+"
-        case 6: return "Strong"
-        case 7: return "Strong+"
-        case 8: return "Heavy"
-        case 9: return "Very Heavy"
-        case 10: return "Extreme"
-        case 11: return "Maximum"
+        case 1: return "Tickle"
+        case 2: return "Buzzy"
+        case 3: return "Toasty"
+        case 4: return "Floaty"
+        case 5: return "Vibing"
+        case 6: return "Lit"
+        case 7: return "Wonky"
+        case 8: return "Zooted"
+        case 9: return "Cooked"
+        case 10: return "Fried"
+        case 11: return "Gone"
         default: return "Unknown"
         }
     }
