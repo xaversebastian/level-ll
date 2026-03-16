@@ -41,8 +41,7 @@ struct OnboardingView: View {
 
     private var skippedPhases: Set<OnboardingPhase> {
         isReviewMode
-            ? [.disclaimer, .welcome, .featureTracking, .featureGroup, .featureSafety, .featureCare,
-               .profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
+            ? [.profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
             : []
     }
 
@@ -118,11 +117,6 @@ struct OnboardingView: View {
         }
         .foregroundStyle(.white)
         .sheet(isPresented: $showEmojiPicker) { emojiPickerSheet }
-        .onAppear {
-            if isReviewMode {
-                phase = .toleranceAssessment
-            }
-        }
     }
 
     // MARK: - Top Bar

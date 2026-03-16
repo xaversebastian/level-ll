@@ -6,13 +6,14 @@
 
 import SwiftUI
 
-private enum EmergencyMode: String, CaseIterable {
+enum EmergencyMode: String, CaseIterable {
     case self_ = "I need help"
     case other = "Help someone"
 }
 
 struct EmergencyView: View {
-    @State private var mode: EmergencyMode = .other
+    var initialMode: EmergencyMode = .self_
+    @State private var mode: EmergencyMode = .self_
     @State private var eyeScore: Int = 4
     @State private var verbalScore: Int = 5
     @State private var motorScore: Int = 6
@@ -56,6 +57,7 @@ struct EmergencyView: View {
             .background(Color.appBackground)
             .navigationTitle("Emergency")
             .sheet(isPresented: $showGCSInfo) { gcsInfoSheet }
+            .onAppear { mode = initialMode }
         }
     }
 

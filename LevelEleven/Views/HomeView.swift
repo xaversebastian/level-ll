@@ -47,7 +47,7 @@ struct HomeView: View {
             QuickDoseView().environment(appState)
         }
         .sheet(isPresented: $showEmergency) {
-            EmergencyView()
+            EmergencyView(initialMode: .other)
         }
         .sheet(isPresented: $showWarnings) {
             warningsSheet.environment(appState)
