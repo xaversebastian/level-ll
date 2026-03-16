@@ -94,6 +94,8 @@ struct BallerSession: Identifiable, Codable {
     var endedAt: Date?
     var isActive: Bool
     var feedback: SessionFeedback?
+    var checkIns: [SessionCheckIn]
+    var isManual: Bool
 
     var participantIds: [String] {
         participants.filter { $0.isActive }.map { $0.profileId }
@@ -115,6 +117,36 @@ struct BallerSession: Identifiable, Codable {
         self.endedAt = nil
         self.isActive = true
         self.feedback = nil
+        self.checkIns = []
+        self.isManual = false
+    }
+
+    /// Init for manually created past sessions
+    init(id: String = UUID().uuidString, name: String, participantIds: [String],
+         startedAt: Date, endedAt: Date, substanceIds: [String] = []) {
+        self.id = id
+        self.name = name
+        self.participants = participantIds.map { SessionParticipant(profileId: $0) }
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.isActive = false
+        self.feedback = nil
+        self.checkIns = []
+        self.isManual = true
+    }
+
+    // Backward-compatible decoder
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        participants = try container.decode([SessionParticipant].self, forKey: .participants)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endedAt = try container.decodeIfPresent(Date.self, forKey: .endedAt)
+        isActive = try container.decode(Bool.self, forKey: .isActive)
+        feedback = try container.decodeIfPresent(SessionFeedback.self, forKey: .feedback)
+        checkIns = try container.decodeIfPresent([SessionCheckIn].self, forKey: .checkIns) ?? []
+        isManual = try container.decodeIfPresent(Bool.self, forKey: .isManual) ?? false
     }
 
     var isArchived: Bool {

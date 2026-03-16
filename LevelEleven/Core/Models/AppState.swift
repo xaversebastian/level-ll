@@ -23,6 +23,7 @@ final class AppState {
     var activeSession: BallerSession?
     var sessionHistory: [BallerSession] = []
     var liveActivityEnabled: Bool = true
+    var aftercareState: AftercareState = AftercareState()
 
     var calmMode: Bool = false {
         didSet { UserDefaults.standard.set(calmMode, forKey: "calmMode") }
@@ -65,6 +66,13 @@ final class AppState {
         static let activeSession = "activeSession"
         static let liveActivityEnabled = "liveActivityEnabled"
         static let pendingFeedbackSessionId = "pendingFeedbackSessionId"
+        static let aftercareState = "aftercareState"
+    }
+
+    // MARK: - Primary User
+
+    var primaryProfile: Profile? {
+        profiles.first { $0.isPrimaryUser }
     }
 
     // MARK: - Init
@@ -84,9 +92,11 @@ final class AppState {
         }
 
         migrateAvatarEmojis()
+        migrateTakeSSRIToMedications()
         loadSessionHistory()
         loadActiveSession()
         loadLiveActivityEnabled()
+        loadAftercareState()
         calmMode = UserDefaults.standard.bool(forKey: "calmMode")
         pendingFeedbackSessionId = UserDefaults.standard.string(forKey: StorageKey.pendingFeedbackSessionId)
     }
@@ -214,6 +224,7 @@ final class AppState {
         activeSession = BallerSession(name: name, participantIds: participantIds)
         saveActiveSession()
         startLiveActivity()
+        NotificationManager.shared.scheduleInSessionReminder(afterMinutes: 120)
     }
 
     /// Ends the active session, bumps tolerances for substances used, and stores the session.
@@ -233,6 +244,7 @@ final class AppState {
         activeSession = nil
         saveActiveSession()
         endLiveActivity()
+        NotificationManager.shared.cancelInSessionReminders()
 
         // Mark for deferred feedback
         pendingFeedbackSessionId = sessionId
@@ -253,23 +265,46 @@ final class AppState {
             let substancesUsed = Set(participantDoses.map { $0.substanceId })
 
             for substanceId in substancesUsed {
+                let doseCount = participantDoses.filter { $0.substanceId == substanceId }.count
                 let totalAmount = participantDoses.filter { $0.substanceId == substanceId }.reduce(0.0) { $0 + $1.amount }
                 guard let substance = Substances.byId[substanceId] else { continue }
 
-                // Bump = 1 level per commonDose consumed, capped at +2 per session
-                let bump = min(2, max(1, Int((totalAmount / substance.commonDose).rounded())))
+                // Bump computed level: 1 per commonDose consumed, capped at +2 per session
+                let bump = session.isManual ? 0 : min(2, max(1, Int((totalAmount / substance.commonDose).rounded())))
 
                 if let tIdx = profiles[pIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
-                    profiles[pIdx].tolerances[tIdx].level = min(11, profiles[pIdx].tolerances[tIdx].level + bump)
+                    profiles[pIdx].tolerances[tIdx].computedLevel = min(11, profiles[pIdx].tolerances[tIdx].computedLevel + bump)
                     profiles[pIdx].tolerances[tIdx].lastUsedDate = Date()
+                    profiles[pIdx].tolerances[tIdx].totalLifetimeDoses += doseCount
                 } else {
                     profiles[pIdx].tolerances.append(
-                        Tolerance(substanceId: substanceId, level: bump, lastUsedDate: Date())
+                        Tolerance(substanceId: substanceId, subjectiveLevel: 3, computedLevel: bump,
+                                  lastUsedDate: Date(), totalLifetimeDoses: doseCount)
                     )
                 }
             }
         }
         saveProfiles()
+
+        // Activate aftercare if criteria met
+        let allSubstanceIds = Set(sDoses.map { $0.substanceId })
+        if AftercareEngine.shouldActivateAftercare(
+            sessionDurationMinutes: session.durationMinutes,
+            doseCount: sDoses.count,
+            substanceIds: allSubstanceIds
+        ) {
+            let endDate = session.endedAt ?? Date()
+            aftercareState.lastSessionEndDate = endDate
+            aftercareState.lastSessionSubstances = Array(allSubstanceIds)
+            saveAftercareState()
+
+            // Schedule push notifications for aftercare + check-ins
+            NotificationManager.shared.scheduleAftercareNotifications(
+                sessionEndDate: endDate,
+                substanceIds: Array(allSubstanceIds)
+            )
+            NotificationManager.shared.scheduleCheckInReminders(sessionEndDate: endDate)
+        }
     }
 
     // MARK: - Session Feedback
@@ -279,14 +314,14 @@ final class AppState {
             sessionHistory[idx].feedback = feedback
             saveSessionHistory()
 
-            // Apply tolerance adjustments to participant profiles
+            // Apply tolerance adjustments to participant profiles (adjusts computed layer)
             if let adjustments = feedback.toleranceAdjustments, !adjustments.isEmpty {
                 let session = sessionHistory[idx]
                 for participant in session.participants {
                     guard let pIdx = profiles.firstIndex(where: { $0.id == participant.profileId }) else { continue }
                     for (substanceId, delta) in adjustments {
                         if let tIdx = profiles[pIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
-                            profiles[pIdx].tolerances[tIdx].level = max(0, min(11, profiles[pIdx].tolerances[tIdx].level + delta))
+                            profiles[pIdx].tolerances[tIdx].computedLevel = max(0, min(11, profiles[pIdx].tolerances[tIdx].computedLevel + delta))
                         }
                     }
                 }
@@ -394,6 +429,58 @@ final class AppState {
                   dose.timestamp >= session.startedAt else { return false }
             if let endedAt = session.endedAt, dose.timestamp > endedAt { return false }
             return true
+        }
+    }
+
+    // MARK: - Aftercare Persistence
+
+    private func saveAftercareState() {
+        do {
+            let data = try JSONEncoder().encode(aftercareState)
+            UserDefaults.standard.set(data, forKey: StorageKey.aftercareState)
+        } catch {
+            #if DEBUG
+            print("[AppState] saveAftercareState failed: \(error)")
+            #endif
+        }
+    }
+
+    private func loadAftercareState() {
+        guard let data = UserDefaults.standard.data(forKey: StorageKey.aftercareState) else { return }
+        do {
+            aftercareState = try JSONDecoder().decode(AftercareState.self, from: data)
+        } catch {
+            #if DEBUG
+            print("[AppState] loadAftercareState decode failed: \(error)")
+            #endif
+        }
+    }
+
+    // MARK: - SSRI → Medications Migration
+
+    private func migrateTakeSSRIToMedications() {
+        var needsSave = false
+        for i in profiles.indices {
+            if profiles[i].takeSSRI && profiles[i].medications.isEmpty {
+                // Migrate legacy takeSSRI flag → generic SSRI medication entry
+                let ssriEntry = MedicationEntry(
+                    id: "ssri_generic",
+                    name: "SSRI (migrated)",
+                    category: .antidepressants,
+                    isActive: true,
+                    interactionInfo: "SSRI antidepressant. Serotonin syndrome risk with MDMA, LSD, psilocybin."
+                )
+                profiles[i].medications.append(ssriEntry)
+                needsSave = true
+            }
+            // Ensure first profile created is primary user if none set
+            if i == 0 && !profiles.contains(where: { $0.isPrimaryUser }) {
+                profiles[i].isPrimaryUser = true
+                needsSave = true
+            }
+        }
+        if needsSave {
+            saveProfiles()
         }
     }
 
@@ -546,7 +633,7 @@ final class AppState {
         if let tolIdx = profiles[profileIdx].tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
             profiles[profileIdx].tolerances[tolIdx].lastUsedDate = Date()
         } else {
-            profiles[profileIdx].tolerances.append(Tolerance(substanceId: substanceId, level: 0, lastUsedDate: Date()))
+            profiles[profileIdx].tolerances.append(Tolerance(substanceId: substanceId, subjectiveLevel: 3, computedLevel: 0, lastUsedDate: Date()))
         }
         invalidateCache()
         saveDoses()

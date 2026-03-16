@@ -32,10 +32,14 @@ struct LevelElevenApp: App {
                     .zIndex(1)
                 }
             }
+            .onAppear {
+                NotificationManager.shared.requestPermission()
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     appState.invalidateCache()
                     appState.updateLiveActivity()
+                    NotificationManager.shared.checkPermission()
                 }
             }
         }

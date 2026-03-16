@@ -500,8 +500,8 @@ struct ProfileEditorView: View {
                 let peakLevel = tolerances[substance.id] ?? 3
                 let existing = existingTolerances.first { $0.substanceId == substance.id }
                 let effectiveLevel = existing.map { t -> Int in
-                    // Use current edited level as base for decay calculation
-                    var copy = t; copy.level = peakLevel; return copy.effectiveLevel
+                    // Use current edited subjective level for decay/blend preview
+                    var copy = t; copy.subjectiveLevel = peakLevel; return copy.effectiveLevel
                 } ?? peakLevel
                 let isDecaying = effectiveLevel < peakLevel
 
@@ -555,15 +555,21 @@ struct ProfileEditorView: View {
         proLevel = p.proLevel
         existingTolerances = p.tolerances
         for t in p.tolerances {
-            tolerances[t.substanceId] = t.level
+            tolerances[t.substanceId] = t.subjectiveLevel
         }
     }
 
     private func saveProfile() {
-        // Preserve lastUsedDate from existing tolerances
+        // Preserve existing tolerance data, only update subjective level from editor
         let toleranceArray = tolerances.map { substanceId, level -> Tolerance in
             let existing = existingTolerances.first { $0.substanceId == substanceId }
-            return Tolerance(substanceId: substanceId, level: level, lastUsedDate: existing?.lastUsedDate)
+            return Tolerance(
+                substanceId: substanceId,
+                subjectiveLevel: level,
+                computedLevel: existing?.computedLevel ?? level,
+                lastUsedDate: existing?.lastUsedDate,
+                totalLifetimeDoses: existing?.totalLifetimeDoses ?? 0
+            )
         }
 
         if let existing = profile {

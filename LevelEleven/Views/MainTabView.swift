@@ -18,10 +18,10 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house.fill")
                 }
 
-            ProfileView()
+            CareView()
                 .tag(1)
                 .tabItem {
-                    Label("Profiles", systemImage: "person.2.fill")
+                    Label("Care", systemImage: "heart.text.clipboard.fill")
                 }
 
             BallerModeView()
@@ -51,6 +51,7 @@ struct MainTabView: View {
 struct MoreView: View {
     @Environment(AppState.self) private var appState
     @State private var exportURL: URL?
+    @State private var showOnboardingReview = false
 
     var body: some View {
         NavigationStack {
@@ -79,6 +80,10 @@ struct MoreView: View {
             .scrollIndicators(.hidden)
             .background(Color.appBackground)
             .navigationTitle("More")
+            .fullScreenCover(isPresented: $showOnboardingReview) {
+                OnboardingView()
+                    .environment(appState)
+            }
         }
     }
     
@@ -104,6 +109,28 @@ struct MoreView: View {
     
     private var quickActionsSection: some View {
         VStack(spacing: 0) {
+            NavigationLink {
+                ProfileView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "person.2.fill")
+                        .foregroundStyle(.teal)
+                        .frame(width: 28)
+                    Text("Profiles")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+
+            Divider().padding(.leading, 54)
+
             NavigationLink {
                 QuickDoseView()
             } label: {
@@ -291,6 +318,33 @@ struct MoreView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
+
+            Divider().padding(.leading, 54)
+
+            Button {
+                showOnboardingReview = true
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .foregroundStyle(Color.accent)
+                        .frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Review Onboarding")
+                            .font(.subheadline.bold())
+                        Text("Re-view the walkthrough and update your profile")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
         }
     }
     

@@ -135,12 +135,12 @@ enum IntoxEngine {
             factors.append("Female metabolism: -10%")
         }
 
-        // --- 6. SSRI interaction ---
-        if profile.takeSSRI && serotonergicIds.contains(substance.id) {
+        // --- 6. SSRI / serotonergic medication interaction ---
+        if profile.hasSSRI && serotonergicIds.contains(substance.id) {
             adjLight  *= 0.60
             adjCommon *= 0.60
             adjStrong *= 0.60
-            warnings.append("⚠ SSRI + \(substance.shortName): serotonin syndrome risk. Strongly consider avoiding.")
+            warnings.append("⚠ SSRI/SNRI + \(substance.shortName): serotonin syndrome risk. Strongly consider avoiding.")
             factors.append("SSRI interaction: -40%")
         }
 

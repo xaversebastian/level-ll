@@ -20,13 +20,16 @@ private enum OnboardingPhase: Int, CaseIterable {
     case profileBasic = 5
     case profilePhysiology = 6
     case profileHealth = 7
-    case experienceAssessment = 8
-    case ready = 9
+    case profileMedications = 8
+    case toleranceAssessment = 9
+    case experienceAssessment = 10
+    case featureCare = 11
+    case ready = 12
 
     var totalCount: Int { Self.allCases.count }
 
     var isWalkthrough: Bool { rawValue <= 4 }
-    var isProfileCreation: Bool { rawValue >= 5 && rawValue <= 7 }
+    var isProfileCreation: Bool { rawValue >= 5 && rawValue <= 9 }
 }
 
 struct OnboardingView: View {
@@ -43,6 +46,8 @@ struct OnboardingView: View {
     @State private var isNeurodivergent = false
     @State private var takeSSRI = false
     @State private var personalLimit = 7
+    @State private var selectedMedications: Set<String> = []
+    @State private var toleranceLevels: [String: Int] = [:]
 
     // Pro-level assessment state
     @State private var yearsExperience = 0
@@ -126,6 +131,11 @@ struct OnboardingView: View {
                     .font(.system(size: 9, weight: .bold))
                     .tracking(2)
                     .foregroundStyle(.white.opacity(0.2))
+            } else if phase == .featureCare {
+                Text("CARE & RECOVERY")
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.2))
             }
             Spacer()
             Text("\(phase.rawValue + 1) / \(phase.totalCount)")
@@ -158,7 +168,10 @@ struct OnboardingView: View {
         case 3: return .red.opacity(0.8)
         case 4: return .orange
         case 5...7: return .levelCopper
-        case 8: return .levelTeal
+        case 8: return .levelAmber       // medications
+        case 9: return .levelOrange       // tolerance
+        case 10: return .levelTeal        // assessment
+        case 11: return .levelGreen       // care
         default: return .levelGreen
         }
     }
@@ -168,16 +181,19 @@ struct OnboardingView: View {
     @ViewBuilder
     private var phaseContent: some View {
         switch phase {
-        case .welcome:          welcomePage
-        case .featureTracking:  featureTrackingPage
-        case .featureGroup:     featureGroupPage
-        case .featureSafety:    featureSafetyPage
-        case .disclaimer:       disclaimerPage
-        case .profileBasic:     profileBasicPage
-        case .profilePhysiology: profilePhysiologyPage
-        case .profileHealth:    profileHealthPage
+        case .welcome:              welcomePage
+        case .featureTracking:      featureTrackingPage
+        case .featureGroup:         featureGroupPage
+        case .featureSafety:        featureSafetyPage
+        case .disclaimer:           disclaimerPage
+        case .profileBasic:         profileBasicPage
+        case .profilePhysiology:    profilePhysiologyPage
+        case .profileHealth:        profileHealthPage
+        case .profileMedications:   profileMedicationsPage
+        case .toleranceAssessment:  toleranceAssessmentPage
         case .experienceAssessment: assessmentPage
-        case .ready:            readyPage
+        case .featureCare:          featureCarePage
+        case .ready:                readyPage
         }
     }
 
@@ -412,12 +428,6 @@ struct OnboardingView: View {
                     icon: "brain",
                     isOn: $isNeurodivergent
                 )
-                onboardingToggle(
-                    "Takes SSRIs",
-                    subtitle: "Increases serotonin syndrome risk with MDMA/LSD",
-                    icon: "pills.fill",
-                    isOn: $takeSSRI
-                )
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("PERSONAL LIMIT")
@@ -440,6 +450,241 @@ struct OnboardingView: View {
                 .padding(14)
                 .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
             }
+
+            Spacer(minLength: 120)
+        }
+    }
+
+    // MARK: - Medications Page
+
+    private var profileMedicationsPage: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 20)
+            Text("Medications")
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .padding(.bottom, 6)
+            Text("Select medications you take regularly.\nThis enables critical interaction warnings.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.bottom, 20)
+
+            VStack(spacing: 12) {
+                ForEach(MedicationCategory.allCases, id: \.self) { category in
+                    let meds = MedicationData.medications(for: category)
+                    if !meds.isEmpty {
+                        medicationCategorySection(category: category, medications: meds)
+                    }
+                }
+            }
+
+            if selectedMedications.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green.opacity(0.6))
+                    Text("No medications — skip to continue")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .padding(.top, 16)
+            }
+
+            Spacer(minLength: 120)
+        }
+    }
+
+    @State private var expandedMedCategory: MedicationCategory?
+
+    private func medicationCategorySection(category: MedicationCategory, medications: [MedicationEntry]) -> some View {
+        let selectedInCategory = medications.filter { selectedMedications.contains($0.id) }.count
+        let isExpanded = expandedMedCategory == category
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedMedCategory = isExpanded ? nil : category
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: category.icon)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.accent)
+                        .frame(width: 24)
+                    Text(category.displayName)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Spacer()
+                    if selectedInCategory > 0 {
+                        Text("\(selectedInCategory)")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.accent, in: Capsule())
+                    }
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.3))
+                }
+                .padding(14)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                VStack(spacing: 0) {
+                    ForEach(medications, id: \.id) { med in
+                        Divider().background(Color.white.opacity(0.06)).padding(.leading, 50)
+                        Button {
+                            if selectedMedications.contains(med.id) {
+                                selectedMedications.remove(med.id)
+                            } else {
+                                selectedMedications.insert(med.id)
+                                // Auto-set takeSSRI flag for backward compat
+                                if MedicationData.serotonergicMedIds.contains(med.id) {
+                                    takeSSRI = true
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: selectedMedications.contains(med.id) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(selectedMedications.contains(med.id) ? Color.accent : .white.opacity(0.2))
+                                    .frame(width: 24)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(med.name)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white)
+                                    if let info = med.interactionInfo {
+                                        Text(info)
+                                            .font(.caption2)
+                                            .foregroundStyle(.white.opacity(0.35))
+                                            .lineLimit(2)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Tolerance Assessment Page
+
+    private var toleranceAssessmentPage: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 20)
+            Text("Your Tolerance")
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .padding(.bottom, 6)
+            Text("Estimate your current tolerance.\n3 = neutral (no tolerance). Adjust only substances you use.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.bottom, 20)
+
+            VStack(spacing: 0) {
+                ForEach(Array(Substances.all.enumerated()), id: \.element.id) { idx, substance in
+                    if idx > 0 { Divider().background(Color.white.opacity(0.06)).padding(.leading, 50) }
+
+                    let level = toleranceLevels[substance.id] ?? 3
+
+                    HStack(spacing: 10) {
+                        Image(systemName: substance.category.icon)
+                            .foregroundStyle(Color(hex: substance.category.color))
+                            .frame(width: 22)
+
+                        Text(substance.shortName)
+                            .font(.subheadline)
+                            .frame(minWidth: 60, alignment: .leading)
+
+                        Spacer()
+
+                        Text(toleranceLabel(level))
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.4))
+                            .frame(width: 52, alignment: .trailing)
+
+                        Stepper(
+                            "\(level)",
+                            value: Binding(
+                                get: { toleranceLevels[substance.id] ?? 3 },
+                                set: { toleranceLevels[substance.id] = $0 }
+                            ),
+                            in: 0...11
+                        )
+                        .fixedSize()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                }
+            }
+            .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.3))
+                Text("The app also tracks a computed tolerance from your usage. The final value blends both.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+            .padding(.top, 12)
+
+            Spacer(minLength: 120)
+        }
+    }
+
+    private func toleranceLabel(_ level: Int) -> String {
+        switch level {
+        case 0:    return "None"
+        case 1...2: return "Low"
+        case 3:    return "Neutral"
+        case 4...5: return "Medium"
+        case 6...7: return "High"
+        case 8...9: return "Very High"
+        case 10...11: return "Max"
+        default:   return ""
+        }
+    }
+
+    // MARK: - Care & Recovery Explanation
+
+    private var featureCarePage: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 40)
+            iconCircle("heart.text.clipboard.fill", color: .levelGreen)
+            Text("Care & Recovery")
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .padding(.bottom, 12)
+            Text("Your companion before, during, and after a session.")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.6))
+                .lineSpacing(4)
+                .padding(.bottom, 20)
+
+            detailCard([
+                ("leaf.fill", "Normalization tips if effects get too strong"),
+                ("clock.badge.checkmark.fill", "Timed aftercare hints for recovery"),
+                ("chart.bar.doc.horizontal.fill", "Wellbeing tracking scores your experience"),
+                ("exclamationmark.triangle.fill", "Combination warnings for mixed substances"),
+                ("bell.badge.fill", "Check-in reminders to monitor your state")
+            ])
+
+            HStack(spacing: 8) {
+                Image(systemName: "star.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange.opacity(0.5))
+                Text("Premium tips include substance-specific normalization techniques.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.top, 16)
 
             Spacer(minLength: 120)
         }
@@ -579,8 +824,9 @@ struct OnboardingView: View {
     private var buttonLabel: String {
         switch phase {
         case .ready: return "Get Started"
-        case .experienceAssessment: return "Finish Setup"
-        case .profileBasic, .profilePhysiology, .profileHealth: return "Next"
+        case .featureCare: return "Almost Done"
+        case .profileBasic, .profilePhysiology, .profileHealth,
+             .profileMedications, .toleranceAssessment, .experienceAssessment: return "Next"
         default: return "Continue"
         }
     }
@@ -601,16 +847,27 @@ struct OnboardingView: View {
     }
 
     private func finishOnboarding() {
+        // Build medications from selection
+        let medications = selectedMedications.compactMap { MedicationData.byId[$0] }
+
+        // Build tolerances from assessment (subjective = user input, computed starts at same value)
+        let tolerances = toleranceLevels.map { substanceId, level in
+            Tolerance(substanceId: substanceId, level: level)
+        }
+
         let newProfile = Profile(
             name: profileName.trimmingCharacters(in: .whitespaces),
             isActive: true,
+            isPrimaryUser: true,
             avatarEmoji: avatarEmoji,
             age: age,
             weightKg: weightKg,
             sex: sex,
             isNeurodivergent: isNeurodivergent,
             takeSSRI: takeSSRI,
+            medications: medications,
             proLevel: computedProLevel,
+            tolerances: tolerances,
             personalLimit: personalLimit
         )
 

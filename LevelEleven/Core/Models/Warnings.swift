@@ -82,10 +82,11 @@ struct WarningSystem {
     ) -> [Warning] {
         var warnings: [Warning] = []
         let activeIds = Set(activeDoses.map { $0.substanceId })
-
-        // ── DANGER: Respiratory depression – Opioids + Depressants ─────────────
         let opioids     = Set(["morphine"])
         let depressants = Set(["alcohol", "ghb", "gbl", "alprazolam"])
+        let stimulants  = Set(["cocaine", "amphetamine", "methamphetamine", "3mmc", "4mmc", "mdma"])
+
+        // ── DANGER: Respiratory depression – Opioids + Depressants ─────────────
         if !opioids.isDisjoint(with: activeIds) && !depressants.isDisjoint(with: activeIds) {
             warnings.append(Warning(
                 severity: .danger,
@@ -116,15 +117,82 @@ struct WarningSystem {
             ))
         }
 
-        // ── DANGER: SSRI + Serotonergics ─────────────────────────────────────────
-        if profile.takeSSRI {
+        // ── DANGER: SSRI/SNRI + Serotonergics ────────────────────────────────────
+        if profile.hasSSRI {
             let serotonergics = Set(["mdma", "lsd", "psilocybin"])
             if !serotonergics.isDisjoint(with: activeIds) {
                 warnings.append(Warning(
                     severity: .danger,
                     title: "Serotonin Syndrome Risk",
-                    message: "SSRIs combined with serotonergic substances significantly increase serotonin syndrome risk.",
+                    message: "SSRIs/SNRIs combined with serotonergic substances significantly increase serotonin syndrome risk.",
                     advice: "Symptoms: hyperthermia, agitation, tremor, rapid heart rate. Seek emergency help immediately."
+                ))
+            }
+        }
+
+        // ── DANGER: MAOI + Nearly Everything ──────────────────────────────────────
+        if profile.hasMAOI && !activeIds.isEmpty {
+            warnings.append(Warning(
+                severity: .danger,
+                title: "MAOI: Lethal Interactions",
+                message: "MAOIs interact dangerously with nearly all recreational substances. Hypertensive crisis, serotonin syndrome, and death are possible.",
+                advice: "Do NOT use recreational substances with MAOIs. Seek emergency help if you experience severe headache, chest pain, or confusion."
+            ))
+        }
+
+        // ── DANGER: Opioid Prescription + Any Depressant ──────────────────────────
+        if profile.hasOpioidPrescription && !depressants.isDisjoint(with: activeIds) {
+            warnings.append(Warning(
+                severity: .danger,
+                title: "Opioid Rx + Depressant: Fatal Risk",
+                message: "Your opioid prescription combined with depressants (alcohol, GHB, benzos) can cause fatal respiratory depression.",
+                advice: "This combination kills. Do NOT mix. Have naloxone available. Never use alone."
+            ))
+        }
+
+        // ── DANGER: Serotonergic Painkillers + Serotonergics ──────────────────────
+        if profile.hasSerotonergicPainkillers {
+            let serotonergics = Set(["mdma", "lsd", "psilocybin"])
+            if !serotonergics.isDisjoint(with: activeIds) {
+                warnings.append(Warning(
+                    severity: .danger,
+                    title: "Tramadol/Tilidin + Serotonergics",
+                    message: "Tramadol and tilidin have serotonergic properties. Combined with MDMA, LSD, or psilocybin this can cause serotonin syndrome.",
+                    advice: "Symptoms: hyperthermia, agitation, seizures. Seek emergency help immediately."
+                ))
+            }
+        }
+
+        // ── WARNING: Heart Medication + Stimulants ────────────────────────────────
+        if profile.hasHeartMedication && !stimulants.isDisjoint(with: activeIds) {
+            let severity: WarningSeverity = activeIds.contains("cocaine") ? .danger : .warning
+            warnings.append(Warning(
+                severity: severity,
+                title: "Heart Medication + Stimulants",
+                message: activeIds.contains("cocaine")
+                    ? "Cocaine with heart medication (especially beta-blockers) can cause paradoxical hypertension and cardiac emergency."
+                    : "Stimulants counteract your heart medication and increase cardiovascular strain significantly.",
+                advice: "Monitor heart rate closely. Chest pain or irregular heartbeat = call emergency services."
+            ))
+        }
+
+        // ── WARNING: Blood Thinners + Nasal Route ─────────────────────────────────
+        if profile.hasBloodThinners {
+            let nasalDoses = activeDoses.filter { $0.route == .nasal }
+            if !nasalDoses.isEmpty {
+                warnings.append(Warning(
+                    severity: .warning,
+                    title: "Blood Thinners + Nasal Use",
+                    message: "Blood thinners significantly increase nosebleed risk with nasal drug use. Bleeding may be prolonged and hard to stop.",
+                    advice: "Consider a different route of administration. If nosebleed occurs, apply pressure for 15+ minutes."
+                ))
+            }
+            if activeIds.contains("alcohol") {
+                warnings.append(Warning(
+                    severity: .warning,
+                    title: "Blood Thinners + Alcohol",
+                    message: "Alcohol increases bleeding risk when on blood thinners. Internal bleeding risk is elevated.",
+                    advice: "Minimize alcohol consumption. Be careful with physical activity. Seek help for any unusual bruising or bleeding."
                 ))
             }
         }
@@ -141,13 +209,23 @@ struct WarningSystem {
         }
 
         // ── WARNING: Stimulant Stacking ─────────────────────────────────────────
-        let stimulants = Set(["cocaine", "amphetamine", "methamphetamine", "3mmc", "4mmc", "mdma"])
         if activeIds.intersection(stimulants).count >= 2 {
             warnings.append(Warning(
                 severity: .warning,
                 title: "Cardiovascular Strain",
                 message: "Multiple stimulants increase heart rate and blood pressure significantly.",
                 advice: "Stay hydrated (not too much), take breaks, cool down regularly."
+            ))
+        }
+
+        // ── WARNING: Bupropion + Stimulants (seizure threshold) ───────────────────
+        let hasBupropion = profile.medications.contains { $0.isActive && $0.id == "bupropion" }
+        if hasBupropion && !stimulants.isDisjoint(with: activeIds) {
+            warnings.append(Warning(
+                severity: .warning,
+                title: "Bupropion + Stimulants: Seizure Risk",
+                message: "Bupropion lowers the seizure threshold. Stimulants increase this risk further.",
+                advice: "Avoid stimulants while on bupropion. Seek help immediately if you experience a seizure."
             ))
         }
 
