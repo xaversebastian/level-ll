@@ -141,6 +141,28 @@ final class AppState {
         return remH == 0 ? "\(days)d" : "\(days)d \(remH)h"
     }
 
+    // MARK: - Full Reset
+
+    func resetAllData() {
+        profiles = []
+        doses = []
+        activeProfileId = nil
+        activeSession = nil
+        sessionHistory = []
+        aftercareState = AftercareState()
+        pendingFeedbackSessionId = nil
+        calmMode = false
+
+        // Persist everything
+        saveCoreState()
+        saveSessionHistory()
+        saveActiveSession()
+        saveAftercareState()
+        UserDefaults.standard.removeObject(forKey: StorageKey.pendingFeedbackSessionId)
+        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+        UserDefaults.standard.removeObject(forKey: "calmMode")
+    }
+
     // MARK: - Core State Persistence (Profiles / Doses / Active Profile)
 
     private func saveCoreState() {

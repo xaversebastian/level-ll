@@ -12,24 +12,24 @@ import SwiftUI
 // MARK: - Onboarding Phase
 
 private enum OnboardingPhase: Int, CaseIterable {
-    case welcome = 0
-    case featureTracking = 1
-    case featureGroup = 2
-    case featureSafety = 3
-    case disclaimer = 4
-    case profileBasic = 5
-    case profilePhysiology = 6
-    case profileHealth = 7
-    case profileMedications = 8
-    case toleranceAssessment = 9
-    case experienceAssessment = 10
-    case featureCare = 11
+    case disclaimer = 0
+    case welcome = 1
+    case featureTracking = 2
+    case featureGroup = 3
+    case featureSafety = 4
+    case featureCare = 5
+    case profileBasic = 6
+    case profilePhysiology = 7
+    case profileHealth = 8
+    case profileMedications = 9
+    case toleranceAssessment = 10
+    case experienceAssessment = 11
     case ready = 12
 
     var totalCount: Int { Self.allCases.count }
 
-    var isWalkthrough: Bool { rawValue <= 4 }
-    var isProfileCreation: Bool { rawValue >= 5 && rawValue <= 9 }
+    var isWalkthrough: Bool { rawValue >= 1 && rawValue <= 5 }
+    var isProfileCreation: Bool { rawValue >= 6 && rawValue <= 10 }
 }
 
 struct OnboardingView: View {
@@ -37,11 +37,12 @@ struct OnboardingView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
-    @State private var phase: OnboardingPhase = .welcome
+    @State private var phase: OnboardingPhase = .disclaimer
 
     private var skippedPhases: Set<OnboardingPhase> {
         isReviewMode
-            ? [.profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
+            ? [.disclaimer, .welcome, .featureTracking, .featureGroup, .featureSafety, .featureCare,
+               .profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
             : []
     }
 
@@ -117,6 +118,11 @@ struct OnboardingView: View {
         }
         .foregroundStyle(.white)
         .sheet(isPresented: $showEmojiPicker) { emojiPickerSheet }
+        .onAppear {
+            if isReviewMode {
+                phase = .toleranceAssessment
+            }
+        }
     }
 
     // MARK: - Top Bar

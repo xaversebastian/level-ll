@@ -33,8 +33,10 @@ struct CareView: View {
                         inSessionSection
                     }
 
-                    // Normalization Section — always visible
-                    normalizationSection
+                    // Normalization Section — only when substances active
+                    if !activeSubstanceIds.isEmpty {
+                        normalizationSection
+                    }
 
                     // Aftercare Section
                     if aftercareState.isActive {

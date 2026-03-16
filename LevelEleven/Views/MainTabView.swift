@@ -61,9 +61,11 @@ struct MoreView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
+                    sectionHeader("Current Profile", color: Color.accent)
                     if let profile = appState.activeProfile {
-                        sectionHeader("Current Profile", color: Color.accent)
                         currentProfileSection(profile)
+                    } else {
+                        moreNavRow(icon: "person.2.fill", color: .teal, title: "Profiles") { ProfileView() }
                     }
                     sectionHeader("Activity", color: Color.levelTeal)
                     activitySection
@@ -192,7 +194,7 @@ struct MoreView: View {
         VStack(spacing: 0) {
             moreNavRow(icon: "book.fill", color: .blue, title: "Substance Info") { SubstanceInfoView() }
             Divider().padding(.leading, 54)
-            moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Interaction Guide") { InteractionGuideView() }
+            moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Drug Combinations") { DrugComboMatrixView() }
             Divider().padding(.leading, 54)
             moreNavRow(icon: "cross.case.fill", color: .green, title: "Harm Reduction Basics") { HarmReductionGuideView() }
             Divider().padding(.leading, 54)
@@ -416,13 +418,7 @@ struct MoreView: View {
     // MARK: - Full Reset
 
     private func performFullReset() {
-        appState.profiles = []
-        appState.doses = []
-        appState.activeProfileId = nil
-        appState.activeSession = nil
-        appState.sessionHistory = []
-        appState.aftercareState = AftercareState()
-        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+        appState.resetAllData()
         NotificationManager.shared.cancelAllAftercareNotifications()
     }
 }
