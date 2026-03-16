@@ -295,11 +295,16 @@ struct Profile: Identifiable, Codable, Hashable {
 
     static func sanitizeEmoji(_ emoji: String) -> String {
         if emoji.isEmpty || brokenEmojis.contains(emoji) { return "😎" }
-        // Check the string actually contains an emoji scalar
-        let hasEmoji = emoji.unicodeScalars.contains { scalar in
-            scalar.properties.isEmoji && scalar.value > 0x238C
-        }
-        return hasEmoji ? emoji : "😎"
+<<<<<<< HEAD
+        // Accept any non-empty string that isn't in the broken list — avoids
+        // overly strict Unicode checks that reject valid emojis on simulator.
+        return String(emoji.prefix(1).isEmpty ? "😎" : emoji.prefix(1))
+=======
+        // Use .first to get a full Character (preserves multi-scalar grapheme
+        // clusters like skin-tone variants) instead of prefix(1) which may split them.
+        guard let first = emoji.first else { return "😎" }
+        return String(first)
+>>>>>>> main
     }
 
     // Custom decoder to sanitize avatarEmoji from stored data + backward compat for new fields

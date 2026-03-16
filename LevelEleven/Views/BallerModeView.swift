@@ -23,6 +23,7 @@ struct BallerModeView: View {
     @State private var timerCancellable: AnyCancellable?
     @State private var feedbackSessionId: String?
     @State private var showFeedback = false
+    @State private var showManualSession = false
 
     var body: some View {
         NavigationStack {
@@ -82,6 +83,10 @@ struct BallerModeView: View {
                     SessionFeedbackView(sessionId: sessionId)
                         .environment(appState)
                 }
+            }
+            .sheet(isPresented: $showManualSession) {
+                ManualSessionSheet()
+                    .environment(appState)
             }
             .onAppear {
                 currentTime = Date()
@@ -164,6 +169,20 @@ struct BallerModeView: View {
                         .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 14))
                         .foregroundStyle(.white)
                         .shadow(color: Color.accent.opacity(0.2), radius: 8, y: 3)
+                    }
+
+                    Button {
+                        showManualSession = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar.badge.plus")
+                            Text("Log Past Session")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Color.surfaceSecondary, in: RoundedRectangle(cornerRadius: 14))
+                        .foregroundStyle(Color.accent)
                     }
 
                     if !appState.sessionHistory.isEmpty {

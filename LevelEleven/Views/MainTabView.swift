@@ -50,28 +50,34 @@ struct MainTabView: View {
 
 struct MoreView: View {
     @Environment(AppState.self) private var appState
-    @State private var exportURL: URL?
     @State private var showOnboardingReview = false
+    @State private var showExport = false
+    @State private var showClearDosesConfirm = false
+    @State private var showResetStep1 = false
+    @State private var showResetStep2 = false
+    @State private var resetConfirmText = ""
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Quick Actions
-                    sectionHeader("Quick Actions", color: Color.accent)
-                    quickActionsSection
-                    
-                    // Current Profile
+<<<<<<< HEAD
                     if let profile = appState.activeProfile {
-                        sectionHeader("Current Profile", color: Color.levelTeal)
+                        sectionHeader("Current Profile", color: Color.accent)
+=======
+                    sectionHeader("Current Profile", color: Color.accent)
+                    if let profile = appState.activeProfile {
+>>>>>>> main
                         currentProfileSection(profile)
+                    } else {
+                        moreNavRow(icon: "person.2.fill", color: .teal, title: "Profiles") { ProfileView() }
                     }
-                    
-                    // Settings
+                    sectionHeader("Activity", color: Color.levelTeal)
+                    activitySection
+                    sectionHeader("Infos", color: .blue)
+                    infosSection
                     sectionHeader("Settings", color: .secondary)
                     settingsSection
-                    
-                    // Legal
                     sectionHeader("Legal", color: .secondary)
                     legalSection
                 }
@@ -81,8 +87,37 @@ struct MoreView: View {
             .background(Color.appBackground)
             .navigationTitle("More")
             .fullScreenCover(isPresented: $showOnboardingReview) {
-                OnboardingView()
+                OnboardingView(isReviewMode: true)
                     .environment(appState)
+            }
+            .sheet(isPresented: $showExport) {
+                ExportView().environment(appState)
+            }
+            .alert("Clear All Doses", isPresented: $showClearDosesConfirm) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear Doses", role: .destructive) {
+                    if let profile = appState.activeProfile {
+                        appState.clearDoses(for: profile.id)
+                    }
+                }
+            } message: {
+                Text("This will permanently delete all doses for \(appState.activeProfile?.name ?? "this profile"). This cannot be undone.")
+            }
+            .alert("Reset App — Step 1", isPresented: $showResetStep1) {
+                Button("Cancel", role: .cancel) { }
+                Button("Continue", role: .destructive) { showResetStep2 = true }
+            } message: {
+                Text("This will delete ALL profiles, ALL doses, and reset the app to default. Are you sure?")
+            }
+            .alert("Reset App — Final Confirmation", isPresented: $showResetStep2) {
+                TextField("Type DELETE to confirm", text: $resetConfirmText)
+                Button("Cancel", role: .cancel) { resetConfirmText = "" }
+                Button("Reset Everything", role: .destructive) {
+                    if resetConfirmText.uppercased() == "DELETE" { performFullReset() }
+                    resetConfirmText = ""
+                }
+            } message: {
+                Text("Type DELETE to confirm. This action is irreversible.")
             }
         }
     }
@@ -105,129 +140,16 @@ struct MoreView: View {
         .padding(.bottom, 8)
     }
     
-    // MARK: - Quick Actions
-    
-    private var quickActionsSection: some View {
-        VStack(spacing: 0) {
-            NavigationLink {
-                ProfileView()
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "person.2.fill")
-                        .foregroundStyle(.teal)
-                        .frame(width: 28)
-                    Text("Profiles")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .pressFeedback()
-
-            Divider().padding(.leading, 54)
-
-            NavigationLink {
-                QuickDoseView()
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(Color.accent)
-                        .frame(width: 28)
-                    Text("Quick Dose")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .pressFeedback()
-            
-            Divider().padding(.leading, 54)
-            
-            NavigationLink {
-                SubstanceInfoView()
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "book.fill")
-                        .foregroundStyle(.blue)
-                        .frame(width: 28)
-                    Text("Substance Info")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .pressFeedback()
-            
-            Divider().padding(.leading, 54)
-            
-            NavigationLink {
-                TimelineView()
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "chart.xyaxis.line")
-                        .foregroundStyle(.teal)
-                        .frame(width: 28)
-                    Text("Timeline")
-                        .font(.subheadline.bold())
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .pressFeedback()
-            
-            if let url = buildExportURL() {
-                Divider().padding(.leading, 54)
-                
-                ShareLink(item: url) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundStyle(.orange)
-                            .frame(width: 28)
-                        Text("Export Dose History")
-                            .font(.subheadline.bold())
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.horizontal, DS.screenPadding)
-                    .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .pressFeedback()
-            }
-        }
-    }
-    
     // MARK: - Current Profile
-    
+
     private func currentProfileSection(_ profile: Profile) -> some View {
-        VStack(spacing: 0) {
+        NavigationLink {
+            ProfileView()
+        } label: {
             HStack(spacing: 14) {
                 Text(profile.avatarEmoji)
                     .font(.title2)
                     .frame(width: 46, height: 46)
-                
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
                         .font(.subheadline.bold())
@@ -241,38 +163,58 @@ struct MoreView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                
                 Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            
+        }
+        .buttonStyle(.plain)
+        .pressFeedback()
+    }
+
+    // MARK: - Activity
+
+    private var activitySection: some View {
+        VStack(spacing: 0) {
+            moreNavRow(icon: "chart.xyaxis.line", color: .teal, title: "Timeline") { TimelineView() }
             Divider().padding(.leading, 54)
-            
-            Button(role: .destructive) {
-                appState.clearDoses(for: profile.id)
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
-                        .frame(width: 28)
-                    Text("Clear All Doses")
-                        .font(.subheadline.bold())
-                    Spacer()
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
+            moreNavRow(icon: "bolt.fill", color: Color.accent, title: "Quick Dose") { QuickDoseView() }
+            Divider().padding(.leading, 54)
+            moreNavRow(icon: "clock.arrow.circlepath", color: .purple, title: "Session History") { SessionHistoryView() }
+            Divider().padding(.leading, 54)
+            Button { showExport = true } label: {
+                moreRowLabel(icon: "square.and.arrow.up", color: .orange, title: "Export Dose History")
             }
             .buttonStyle(.plain)
             .pressFeedback()
         }
     }
+
+    // MARK: - Infos
+
+    private var infosSection: some View {
+        VStack(spacing: 0) {
+            moreNavRow(icon: "book.fill", color: .blue, title: "Substance Info") { SubstanceInfoView() }
+            Divider().padding(.leading, 54)
+<<<<<<< HEAD
+            moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Interaction Guide") { InteractionGuideView() }
+=======
+            moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Drug Combinations") { DrugComboMatrixView() }
+>>>>>>> main
+            Divider().padding(.leading, 54)
+            moreNavRow(icon: "cross.case.fill", color: .green, title: "Harm Reduction Basics") { HarmReductionGuideView() }
+            Divider().padding(.leading, 54)
+            moreNavRow(icon: "flask.fill", color: .purple, title: "Drug Checking Services") { DrugCheckingView() }
+        }
+    }
     
     // MARK: - Settings
-    
+
     private var settingsSection: some View {
         VStack(spacing: 0) {
-            // Lock Screen Activity
             HStack(spacing: 14) {
                 Image(systemName: "lock.display")
                     .foregroundStyle(.secondary)
@@ -293,10 +235,9 @@ struct MoreView: View {
             }
             .padding(.horizontal, DS.screenPadding)
             .padding(.vertical, 12)
-            
+
             Divider().padding(.leading, 54)
-            
-            // Calm Mode
+
             HStack(spacing: 14) {
                 Image(systemName: "leaf.fill")
                     .foregroundStyle(Color.levelCalm)
@@ -304,7 +245,7 @@ struct MoreView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Calm Mode")
                         .font(.subheadline.bold())
-                    Text("Trip-safe UI — softer colors, supportive guidance instead of alarm")
+                    Text("Trip-safe UI — softer colors, supportive guidance")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -321,27 +262,27 @@ struct MoreView: View {
 
             Divider().padding(.leading, 54)
 
-            Button {
-                showOnboardingReview = true
-            } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(Color.accent)
-                        .frame(width: 28)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Review Onboarding")
-                            .font(.subheadline.bold())
-                        Text("Re-view the walkthrough and update your profile")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 12)
+            Button { showOnboardingReview = true } label: {
+                moreRowLabel(icon: "arrow.clockwise.circle.fill", color: Color.accent, title: "Review Onboarding",
+                             subtitle: "Re-view the walkthrough and update tolerances")
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+
+            Divider().padding(.leading, 54)
+
+            Button { showClearDosesConfirm = true } label: {
+                moreRowLabel(icon: "trash", color: .orange, title: "Clear Doses",
+                             subtitle: "Remove all doses for the active profile")
+            }
+            .buttonStyle(.plain)
+            .pressFeedback()
+
+            Divider().padding(.leading, 54)
+
+            Button { showResetStep1 = true } label: {
+                moreRowLabel(icon: "arrow.counterclockwise.circle.fill", color: .red, title: "Reset App",
+                             subtitle: "Delete all data and start fresh")
             }
             .buttonStyle(.plain)
             .pressFeedback()
@@ -450,25 +391,81 @@ struct MoreView: View {
         }
     }
 
-    private func buildExportURL() -> URL? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        var csv = "Date,Profile,Substance,Route,Amount,Unit,Note\n"
-        let profileMap = Dictionary(uniqueKeysWithValues: appState.profiles.map { ($0.id, $0.name) })
-        let sortedDoses = appState.doses.sorted { $0.timestamp < $1.timestamp }
-        for dose in sortedDoses {
-            let date = formatter.string(from: dose.timestamp)
-            let profile = profileMap[dose.profileId] ?? dose.profileId
-            let substance = Substances.byId[dose.substanceId]?.name ?? dose.substanceId
-            let route = dose.route.displayName
-            let amount = dose.amount
-            let unit = Substances.byId[dose.substanceId]?.unit.symbol ?? ""
-            let note = dose.note?.replacingOccurrences(of: ",", with: ";") ?? ""
-            csv += "\(date),\(profile),\(substance),\(route),\(amount),\(unit),\(note)\n"
+    // MARK: - Row Helpers
+
+    private func moreNavRow<Destination: View>(icon: String, color: Color, title: String, @ViewBuilder destination: @escaping () -> Destination) -> some View {
+        NavigationLink { destination() } label: {
+            moreRowLabel(icon: icon, color: color, title: title)
+<<<<<<< HEAD
         }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("level-ll-Export.csv")
-        try? csv.write(to: url, atomically: true, encoding: .utf8)
-        return appState.doses.isEmpty ? nil : url
+        .buttonStyle(.plain)
+        .pressFeedback()
+    }
+
+    private func moreRowLabel(icon: String, color: Color, title: String, subtitle: String? = nil) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.bold())
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+=======
+        }
+        .buttonStyle(.plain)
+        .pressFeedback()
+    }
+
+    private func moreRowLabel(icon: String, color: Color, title: String, subtitle: String? = nil) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.bold())
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+>>>>>>> main
+        .padding(.horizontal, DS.screenPadding)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Full Reset
+
+    private func performFullReset() {
+<<<<<<< HEAD
+        appState.profiles = []
+        appState.doses = []
+        appState.activeProfileId = nil
+        appState.activeSession = nil
+        appState.sessionHistory = []
+        appState.aftercareState = AftercareState()
+        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+=======
+        appState.resetAllData()
+>>>>>>> main
+        NotificationManager.shared.cancelAllAftercareNotifications()
     }
 }
 
