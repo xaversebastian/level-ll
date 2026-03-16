@@ -50,16 +50,6 @@ struct OnboardingView: View {
         OnboardingPhase.allCases.filter { !skippedPhases.contains($0) }
     }
 
-    private var skippedPhases: Set<OnboardingPhase> {
-        isReviewMode
-            ? [.profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
-            : []
-    }
-
-    private var visiblePhases: [OnboardingPhase] {
-        OnboardingPhase.allCases.filter { !skippedPhases.contains($0) }
-    }
-
     // Profile creation state
     @State private var profileName = ""
     @State private var avatarEmoji = "😎"

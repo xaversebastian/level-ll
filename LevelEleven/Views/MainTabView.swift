@@ -61,13 +61,8 @@ struct MoreView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-<<<<<<< HEAD
-                    if let profile = appState.activeProfile {
-                        sectionHeader("Current Profile", color: Color.accent)
-=======
                     sectionHeader("Current Profile", color: Color.accent)
                     if let profile = appState.activeProfile {
->>>>>>> main
                         currentProfileSection(profile)
                     } else {
                         moreNavRow(icon: "person.2.fill", color: .teal, title: "Profiles") { ProfileView() }
@@ -199,11 +194,7 @@ struct MoreView: View {
         VStack(spacing: 0) {
             moreNavRow(icon: "book.fill", color: .blue, title: "Substance Info") { SubstanceInfoView() }
             Divider().padding(.leading, 54)
-<<<<<<< HEAD
-            moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Interaction Guide") { InteractionGuideView() }
-=======
             moreNavRow(icon: "exclamationmark.triangle.fill", color: .red, title: "Drug Combinations") { DrugComboMatrixView() }
->>>>>>> main
             Divider().padding(.leading, 54)
             moreNavRow(icon: "cross.case.fill", color: .green, title: "Harm Reduction Basics") { HarmReductionGuideView() }
             Divider().padding(.leading, 54)
@@ -396,7 +387,6 @@ struct MoreView: View {
     private func moreNavRow<Destination: View>(icon: String, color: Color, title: String, @ViewBuilder destination: @escaping () -> Destination) -> some View {
         NavigationLink { destination() } label: {
             moreRowLabel(icon: icon, color: color, title: title)
-<<<<<<< HEAD
         }
         .buttonStyle(.plain)
         .pressFeedback()
@@ -421,32 +411,6 @@ struct MoreView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
-=======
-        }
-        .buttonStyle(.plain)
-        .pressFeedback()
-    }
-
-    private func moreRowLabel(icon: String, color: Color, title: String, subtitle: String? = nil) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon)
-                .foregroundStyle(color)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.bold())
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
->>>>>>> main
         .padding(.horizontal, DS.screenPadding)
         .padding(.vertical, 12)
     }
@@ -454,17 +418,7 @@ struct MoreView: View {
     // MARK: - Full Reset
 
     private func performFullReset() {
-<<<<<<< HEAD
-        appState.profiles = []
-        appState.doses = []
-        appState.activeProfileId = nil
-        appState.activeSession = nil
-        appState.sessionHistory = []
-        appState.aftercareState = AftercareState()
-        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
-=======
         appState.resetAllData()
->>>>>>> main
         NotificationManager.shared.cancelAllAftercareNotifications()
     }
 }
