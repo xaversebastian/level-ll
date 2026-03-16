@@ -128,15 +128,23 @@ struct CareView: View {
             sectionHeader("Normalization Tips", icon: "arrow.down.heart.fill", color: .orange)
 
             VStack(spacing: 0) {
-                Text("What to do when effects are too strong")
+                let subtitle = proLevel <= 2
+                    ? "IMPORTANT: Read these BEFORE you use. Know what to do if effects get too strong."
+                    : "What to do when effects are too strong"
+                Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(proLevel <= 2 ? .orange : .secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, DS.screenPadding)
                     .padding(.top, 12)
                     .padding(.bottom, 6)
 
-                ForEach(Array(AftercareEngine.normalizationTips.enumerated()), id: \.element.id) { idx, tip in
+                // Active substances first, then rest
+                let activeTips = AftercareEngine.normalizationTips.filter { activeSubstanceIds.contains($0.id) }
+                let inactiveTips = AftercareEngine.normalizationTips.filter { !activeSubstanceIds.contains($0.id) }
+                let sortedTips = activeTips + inactiveTips
+
+                ForEach(Array(sortedTips.enumerated()), id: \.element.id) { idx, tip in
                     if idx > 0 { Divider().padding(.leading, 50) }
                     normalizationRow(tip, isActive: activeSubstanceIds.contains(tip.id))
                 }
@@ -181,7 +189,8 @@ struct CareView: View {
             }
             .buttonStyle(.plain)
 
-            if expandedNormTip == tip.id {
+            let shouldAutoExpand = isActive && proLevel <= 2
+            if expandedNormTip == tip.id || shouldAutoExpand {
                 Text(tip.tips)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -353,11 +362,12 @@ struct CareView: View {
         }
     }
 
-    // MARK: - Idle Section
+    // MARK: - Idle Section (pro-level adapted general tips)
+
+    private var proLevel: Int { profile?.proLevel ?? 3 }
 
     private var idleSection: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 40)
             VStack(spacing: 16) {
                 Image(systemName: "heart.text.clipboard.fill")
                     .font(.system(size: 44))
@@ -365,15 +375,88 @@ struct CareView: View {
                 Text("All Clear")
                     .font(.title2.bold())
                     .foregroundStyle(.primary)
-                Text("No active substances or recent sessions.\nNormalization tips are always available below.")
+                Text("No active substances or recent sessions.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
-                    .lineSpacing(3)
             }
             .padding(.horizontal, DS.screenPadding)
-            .padding(.vertical, 30)
+            .padding(.top, 30)
+            .padding(.bottom, 16)
+
+            sectionHeader("Tips for You", icon: "lightbulb.fill", color: Color.accent)
+
+            VStack(spacing: 0) {
+                ForEach(Array(idleTips.enumerated()), id: \.offset) { idx, tip in
+                    if idx > 0 { Divider().padding(.leading, 50) }
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: tip.icon)
+                            .foregroundStyle(Color.accent)
+                            .frame(width: 22)
+                            .padding(.top, 2)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tip.title)
+                                .font(.subheadline.bold())
+                            Text(tip.message)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineSpacing(3)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 10)
+                }
+            }
+            .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, DS.screenPadding)
         }
+    }
+
+    private struct IdleTip {
+        let icon: String
+        let title: String
+        let message: String
+    }
+
+    private var idleTips: [IdleTip] {
+        var tips: [IdleTip] = []
+
+        // Universal tips
+        tips.append(IdleTip(icon: "drop.fill", title: "Hydration",
+            message: "Staying hydrated is the simplest and most effective harm reduction step. Aim for regular water intake, especially on nights out."))
+
+        if proLevel <= 2 {
+            // Beginner / Casual
+            tips.append(IdleTip(icon: "scalemass.fill", title: "Always Weigh Your Doses",
+                message: "Never eyeball. A milligram scale costs less than a night out and can save your life. Dosage differences of 20mg can mean the difference between fun and hospital."))
+            tips.append(IdleTip(icon: "person.2.fill", title: "Never Use Alone",
+                message: "Always have someone sober nearby who knows what you've taken. Tell a friend, even by text. This is non-negotiable."))
+            tips.append(IdleTip(icon: "clock.fill", title: "Patience Saves Lives",
+                message: "Wait for the full onset before redosing. Redosing too early is the #1 cause of accidental overdose. Most substances take 30-90 minutes to peak."))
+            tips.append(IdleTip(icon: "flask.fill", title: "Test Your Substances",
+                message: "What you think you're taking may not be what it is. Reagent test kits are cheap and easy. Drug checking services are free in many countries."))
+        } else if proLevel == 3 {
+            // Intermediate
+            tips.append(IdleTip(icon: "heart.text.clipboard.fill", title: "Recovery is Part of the Experience",
+                message: "Plan for the day after. Stock up on healthy food, electrolytes, and vitamins beforehand. Your future self will thank you."))
+            tips.append(IdleTip(icon: "calendar", title: "Spacing Matters",
+                message: "MDMA: minimum 3 months. Psychedelics: 2 weeks. Stimulants: the longer the better. Frequent use reduces magic and increases harm."))
+            tips.append(IdleTip(icon: "exclamationmark.triangle.fill", title: "Know Your Combinations",
+                message: "Check the Interaction Guide before mixing substances. Some combinations that feel fine can be silently dangerous to your heart or brain."))
+        } else {
+            // Experienced / Very Experienced
+            tips.append(IdleTip(icon: "arrow.triangle.2.circlepath", title: "Tolerance Awareness",
+                message: "High tolerance doesn't mean high safety. Organ damage, neurotoxicity, and addiction risk increase with tolerance, even if subjective effects decrease."))
+            tips.append(IdleTip(icon: "brain.head.profile.fill", title: "Mental Health Check",
+                message: "Regular substance use affects baseline mood and cognition. If you notice changes in anxiety, motivation, or sleep patterns, consider taking a longer break."))
+            tips.append(IdleTip(icon: "hand.raised.fill", title: "Set Boundaries",
+                message: "Experience doesn't make you invincible. Stick to your personal limits. The most experienced users are the ones who know when to say no."))
+            tips.append(IdleTip(icon: "person.3.fill", title: "Be a Resource",
+                message: "Your experience is valuable. Help newer users with dosing, testing, and harm reduction. You can prevent harm just by sharing what you know."))
+        }
+
+        return tips
     }
 
     // MARK: - Helpers

@@ -33,9 +33,21 @@ private enum OnboardingPhase: Int, CaseIterable {
 }
 
 struct OnboardingView: View {
+    var isReviewMode: Bool = false
+
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @State private var phase: OnboardingPhase = .welcome
+
+    private var skippedPhases: Set<OnboardingPhase> {
+        isReviewMode
+            ? [.profileBasic, .profilePhysiology, .profileHealth, .profileMedications]
+            : []
+    }
+
+    private var visiblePhases: [OnboardingPhase] {
+        OnboardingPhase.allCases.filter { !skippedPhases.contains($0) }
+    }
 
     // Profile creation state
     @State private var profileName = ""
@@ -138,7 +150,8 @@ struct OnboardingView: View {
                     .foregroundStyle(.white.opacity(0.2))
             }
             Spacer()
-            Text("\(phase.rawValue + 1) / \(phase.totalCount)")
+            let currentIdx = (visiblePhases.firstIndex(of: phase) ?? 0) + 1
+            Text("\(currentIdx) / \(visiblePhases.count)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.white.opacity(0.3))
         }
@@ -150,9 +163,9 @@ struct OnboardingView: View {
 
     private var progressBar: some View {
         HStack(spacing: 4) {
-            ForEach(0..<OnboardingPhase.allCases.count, id: \.self) { i in
+            ForEach(Array(visiblePhases.enumerated()), id: \.element) { idx, p in
                 Capsule()
-                    .fill(i <= phase.rawValue ? barColor(i) : Color.white.opacity(0.08))
+                    .fill(p.rawValue <= phase.rawValue ? barColor(p.rawValue) : Color.white.opacity(0.08))
                     .frame(maxWidth: .infinity)
                     .frame(height: 4)
                     .animation(.easeInOut(duration: 0.25), value: phase)
@@ -750,12 +763,14 @@ struct OnboardingView: View {
                 .font(.system(size: 32, weight: .black, design: .rounded))
                 .padding(.bottom, 12)
 
-            Text("Welcome, \(profileName.trimmingCharacters(in: .whitespaces).isEmpty ? "User" : profileName)")
-                .font(.title3)
-                .foregroundStyle(.white.opacity(0.7))
-                .padding(.bottom, 8)
+            if !isReviewMode {
+                Text("Welcome, \(profileName.trimmingCharacters(in: .whitespaces).isEmpty ? "User" : profileName)")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.bottom, 8)
+            }
 
-            Text("Experience: \(proLevelLabel)")
+            Text(isReviewMode ? "Updated: \(proLevelLabel)" : "Experience: \(proLevelLabel)")
                 .font(.subheadline.bold())
                 .foregroundStyle(Color.accent)
                 .padding(.horizontal, 16)
@@ -823,7 +838,7 @@ struct OnboardingView: View {
 
     private var buttonLabel: String {
         switch phase {
-        case .ready: return "Get Started"
+        case .ready: return isReviewMode ? "Done" : "Get Started"
         case .featureCare: return "Almost Done"
         case .profileBasic, .profilePhysiology, .profileHealth,
              .profileMedications, .toleranceAssessment, .experienceAssessment: return "Next"
@@ -834,7 +849,11 @@ struct OnboardingView: View {
     // MARK: - Navigation
 
     private func advance() {
-        guard let next = OnboardingPhase(rawValue: phase.rawValue + 1) else { return }
+        var nextRaw = phase.rawValue + 1
+        while let candidate = OnboardingPhase(rawValue: nextRaw), skippedPhases.contains(candidate) {
+            nextRaw += 1
+        }
+        guard let next = OnboardingPhase(rawValue: nextRaw) else { return }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             phase = next
         }
@@ -847,6 +866,25 @@ struct OnboardingView: View {
     }
 
     private func finishOnboarding() {
+        if isReviewMode {
+            // In review mode, only update tolerances and pro level on existing profile
+            if var profile = appState.activeProfile,
+               let idx = appState.profiles.firstIndex(where: { $0.id == profile.id }) {
+                // Update tolerances from review
+                for (substanceId, level) in toleranceLevels {
+                    if let tIdx = profile.tolerances.firstIndex(where: { $0.substanceId == substanceId }) {
+                        profile.tolerances[tIdx] = Tolerance(substanceId: substanceId, level: level)
+                    } else {
+                        profile.tolerances.append(Tolerance(substanceId: substanceId, level: level))
+                    }
+                }
+                profile.proLevel = computedProLevel
+                appState.profiles[idx] = profile
+            }
+            dismiss()
+            return
+        }
+
         // Build medications from selection
         let medications = selectedMedications.compactMap { MedicationData.byId[$0] }
 
