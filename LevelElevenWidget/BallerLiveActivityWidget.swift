@@ -1,6 +1,6 @@
 // BallerLiveActivityWidget.swift — LevelElevenWidget
 // v3.0 | 2026-03-12 17:18
-// - Lock Screen + Dynamic Island live activity for Baller Mode sessions
+// - Lock Screen + Dynamic Island live activity for Session Mode sessions
 // - Stripped legacy comments, added structured header
 //
 

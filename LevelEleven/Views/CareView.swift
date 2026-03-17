@@ -33,11 +33,6 @@ struct CareView: View {
                         inSessionSection
                     }
 
-                    // Normalization Section — only when substances active
-                    if !activeSubstanceIds.isEmpty {
-                        normalizationSection
-                    }
-
                     // Aftercare Section
                     if aftercareState.isActive {
                         aftercareSection
@@ -120,87 +115,6 @@ struct CareView: View {
             }
             .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, DS.screenPadding)
-        }
-    }
-
-    // MARK: - Normalization Section
-
-    private var normalizationSection: some View {
-        VStack(spacing: 0) {
-            sectionHeader("Normalization Tips", icon: "arrow.down.heart.fill", color: .orange)
-
-            VStack(spacing: 0) {
-                let subtitle = proLevel <= 2
-                    ? "IMPORTANT: Read these BEFORE you use. Know what to do if effects get too strong."
-                    : "What to do when effects are too strong"
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(proLevel <= 2 ? .orange : .secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DS.screenPadding)
-                    .padding(.top, 12)
-                    .padding(.bottom, 6)
-
-                // Active substances first, then rest
-                let activeTips = AftercareEngine.normalizationTips.filter { activeSubstanceIds.contains($0.id) }
-                let inactiveTips = AftercareEngine.normalizationTips.filter { !activeSubstanceIds.contains($0.id) }
-                let sortedTips = activeTips + inactiveTips
-
-                ForEach(Array(sortedTips.enumerated()), id: \.element.id) { idx, tip in
-                    if idx > 0 { Divider().padding(.leading, 50) }
-                    normalizationRow(tip, isActive: activeSubstanceIds.contains(tip.id))
-                }
-            }
-            .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, DS.screenPadding)
-        }
-    }
-
-    @State private var expandedNormTip: String?
-
-    private func normalizationRow(_ tip: AftercareEngine.NormalizationTip, isActive: Bool) -> some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expandedNormTip = expandedNormTip == tip.id ? nil : tip.id
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    let substance = Substances.byId[tip.id]
-                    Image(systemName: substance?.category.icon ?? "pill.fill")
-                        .foregroundStyle(isActive ? Color.orange : Color(hex: substance?.category.color ?? "#888"))
-                        .frame(width: 22)
-                    Text(tip.substanceName)
-                        .font(.subheadline.bold())
-                        .foregroundStyle(isActive ? .primary : .secondary)
-                    Spacer()
-                    if isActive {
-                        Text("ACTIVE")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.orange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.15), in: Capsule())
-                    }
-                    Image(systemName: expandedNormTip == tip.id ? "chevron.up" : "chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, DS.screenPadding)
-                .padding(.vertical, 10)
-            }
-            .buttonStyle(.plain)
-
-            let shouldAutoExpand = isActive && proLevel <= 2
-            if expandedNormTip == tip.id || shouldAutoExpand {
-                Text(tip.tips)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(4)
-                    .padding(.horizontal, DS.screenPadding)
-                    .padding(.bottom, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
     }
 

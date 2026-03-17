@@ -1,6 +1,6 @@
 // BallerActivityAttributes.swift — LevelEleven
 // v2.0 | 2026-03-12 17:18
-// - ActivityKit types for Baller Mode live activity (iOS 16.2+)
+// - ActivityKit types for Session Mode live activity (iOS 16.2+)
 // - Stripped legacy comments, added structured header
 //
 

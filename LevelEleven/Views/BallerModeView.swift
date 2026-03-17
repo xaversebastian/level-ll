@@ -24,6 +24,7 @@ struct BallerModeView: View {
     @State private var feedbackSessionId: String?
     @State private var showFeedback = false
     @State private var showManualSession = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -34,7 +35,7 @@ struct BallerModeView: View {
                     noSessionView
                 }
             }
-            .navigationTitle("Baller Mode")
+            .navigationTitle("Session Mode")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -97,6 +98,11 @@ struct BallerModeView: View {
             .onDisappear {
                 timerCancellable?.cancel()
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    currentTime = Date()
+                }
+            }
         }
     }
 
@@ -134,7 +140,7 @@ struct BallerModeView: View {
                         .foregroundStyle(Color.accent)
                         .padding(.top, 40)
 
-                    Text("Baller Mode")
+                    Text("Session Mode")
                         .font(.system(size: 28, weight: .black, design: .rounded))
 
                     Text("Track levels together with your crew.\nSelect profiles and see everyone's status.")

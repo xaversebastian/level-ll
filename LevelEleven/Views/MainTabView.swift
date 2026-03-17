@@ -638,6 +638,24 @@ struct SubstanceDetailView: View {
                     .padding(.vertical, 8)
                 }
 
+                // Normalization (what to do when effects are too strong)
+                if let normTip = AftercareEngine.normalizationTips.first(where: { $0.id == substance.id }) {
+                    detailSectionHeader("If It Gets Too Strong", color: .orange)
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: "arrow.down.heart.fill")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                            .frame(width: 22)
+                        Text(normTip.tips)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                        Spacer()
+                    }
+                    .padding(.horizontal, DS.screenPadding)
+                    .padding(.vertical, 8)
+                }
+
                 // Drug Checking
                 if let info = substance.drugCheckingInfo {
                     detailSectionHeader("Drug Checking", color: .blue)

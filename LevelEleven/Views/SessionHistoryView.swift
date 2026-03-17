@@ -86,7 +86,7 @@ struct SessionHistoryView: View {
                 .foregroundStyle(.secondary)
             Text("No Past Sessions")
                 .font(.system(size: 20, weight: .bold, design: .rounded))
-            Text("When you end a Baller Mode session,\nit will appear here.")
+            Text("When you end a Session Mode session,\nit will appear here.")
                 .multilineTextAlignment(.center)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

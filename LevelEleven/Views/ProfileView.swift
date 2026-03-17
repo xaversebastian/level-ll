@@ -176,6 +176,8 @@ struct ProfileEditorView: View {
     /// Originale Toleranz-Objekte mit lastUsedDate – wird beim Speichern preserviert
     @State private var existingTolerances: [Tolerance] = []
     @State private var showEmojiPicker = false
+    @State private var selectedMedications: Set<String> = []
+    @State private var expandedMedCategory: MedicationCategory?
     
     // Avatar emoji options – using face emojis that render reliably on all iOS versions
     private let avatarCategories: [(name: String, emojis: [String])] = [
@@ -217,6 +219,7 @@ struct ProfileEditorView: View {
                 VStack(spacing: 0) {
                     basicInfoSection
                     physiologySection
+                    medicationsSection
                     experienceSection
                     tolerancesSection
                 }
@@ -483,6 +486,116 @@ struct ProfileEditorView: View {
         }
     }
 
+    // MARK: - Medications Section
+
+    private var medicationsSection: some View {
+        VStack(spacing: 0) {
+            editorSectionHeader("Medications", color: Color.accent)
+
+            Text("Select medications you take regularly. This enables critical interaction warnings.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.bottom, 8)
+
+            ForEach(MedicationCategory.allCases, id: \.self) { category in
+                let meds = MedicationData.medications(for: category)
+                if !meds.isEmpty {
+                    medicationCategoryRow(category: category, medications: meds)
+                }
+            }
+
+            if selectedMedications.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green.opacity(0.6))
+                    Text("No medications selected")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+            }
+        }
+    }
+
+    private func medicationCategoryRow(category: MedicationCategory, medications: [MedicationEntry]) -> some View {
+        let selectedInCategory = medications.filter { selectedMedications.contains($0.id) }.count
+        let isExpanded = expandedMedCategory == category
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedMedCategory = isExpanded ? nil : category
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: category.icon)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.accent)
+                        .frame(width: 24)
+                    Text(category.displayName)
+                        .font(.subheadline.bold())
+                    Spacer()
+                    if selectedInCategory > 0 {
+                        Text("\(selectedInCategory)")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.accent, in: Capsule())
+                    }
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, DS.screenPadding)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                VStack(spacing: 0) {
+                    ForEach(medications, id: \.id) { med in
+                        Divider().padding(.leading, 54)
+                        Button {
+                            if selectedMedications.contains(med.id) {
+                                selectedMedications.remove(med.id)
+                            } else {
+                                selectedMedications.insert(med.id)
+                                if MedicationData.serotonergicMedIds.contains(med.id) {
+                                    takeSSRI = true
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: selectedMedications.contains(med.id) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(selectedMedications.contains(med.id) ? Color.accent : .secondary.opacity(0.3))
+                                    .frame(width: 24)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(med.name)
+                                        .font(.subheadline)
+                                    if let info = med.interactionInfo {
+                                        Text(info)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, DS.screenPadding)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
     private var tolerancesSection: some View {
         VStack(spacing: 0) {
             editorSectionHeader("Tolerances", color: Color.accent)
@@ -557,6 +670,7 @@ struct ProfileEditorView: View {
         for t in p.tolerances {
             tolerances[t.substanceId] = t.subjectiveLevel
         }
+        selectedMedications = Set(p.medications.map { $0.id })
     }
 
     private func saveProfile() {
@@ -572,6 +686,8 @@ struct ProfileEditorView: View {
             )
         }
 
+        let medicationEntries = selectedMedications.compactMap { MedicationData.byId[$0] }
+
         if let existing = profile {
             var updated = existing
             updated.name = name.trimmingCharacters(in: .whitespaces)
@@ -584,6 +700,7 @@ struct ProfileEditorView: View {
             updated.proLevel = proLevel
             updated.personalLimit = personalLimit
             updated.tolerances = toleranceArray
+            updated.medications = medicationEntries
             appState.updateProfile(updated)
         } else {
             let newProfile = Profile(
@@ -594,6 +711,7 @@ struct ProfileEditorView: View {
                 sex: sex,
                 isNeurodivergent: isNeurodivergent,
                 takeSSRI: takeSSRI,
+                medications: medicationEntries,
                 proLevel: proLevel,
                 tolerances: toleranceArray,
                 personalLimit: personalLimit

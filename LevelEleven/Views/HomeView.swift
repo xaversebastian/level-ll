@@ -12,11 +12,12 @@ struct HomeView: View {
     @State private var showWarnings = false
     @State private var showProfilePicker = false
     @State private var showTimeline = false
-    @State private var showBallerMode = false
+    @State private var showSessionMode = false
     @State private var showQuickDose = false
     @State private var showEmergency = false
     @State private var snoozedWarnings: [String: Date] = [:]
     @State private var timerCancellable: AnyCancellable?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         GeometryReader { geo in
@@ -36,12 +37,18 @@ struct HomeView: View {
             logDoseButton
         }
         .onAppear {
+            currentTime = Date()
             timerCancellable = Timer.publish(every: 10, on: .main, in: .common)
                 .autoconnect()
                 .sink { _ in currentTime = Date() }
         }
         .onDisappear {
             timerCancellable?.cancel()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                currentTime = Date()
+            }
         }
         .sheet(isPresented: $showQuickDose) {
             QuickDoseView().environment(appState)
@@ -66,7 +73,7 @@ struct HomeView: View {
                     }
             }
         }
-        .sheet(isPresented: $showBallerMode) {
+        .sheet(isPresented: $showSessionMode) {
             BallerModeView().environment(appState)
         }
     }
@@ -77,7 +84,7 @@ struct HomeView: View {
         Button {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             if appState.activeSession != nil {
-                showBallerMode = true
+                showSessionMode = true
             } else {
                 showQuickDose = true
             }
@@ -378,7 +385,7 @@ struct HomeView: View {
     // MARK: - Session Strip
 
     private func sessionStrip(_ session: BallerSession) -> some View {
-        Button { showBallerMode = true } label: {
+        Button { showSessionMode = true } label: {
             HStack(spacing: 10) {
                 Circle().fill(.green).frame(width: 7, height: 7)
                 Text(session.name)
